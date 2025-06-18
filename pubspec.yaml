@@ -1,0 +1,72 @@
+name: helping_hands_app
+description: A cross-platform mobile app connecting helpers with helpees for household tasks in Sri Lanka.
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  
+  # Navigation
+  go_router: ^14.2.7
+  
+  # State Management
+  provider: ^6.1.2
+  
+  # UI Components
+  cupertino_icons: ^1.0.8
+  
+  # HTTP & API
+  http: ^1.2.2
+  dio: ^5.4.3+1
+  
+  # Database & Backend
+  supabase_flutter: ^2.5.6
+  
+  # Authentication
+  firebase_core: ^2.31.1
+  firebase_auth: ^4.19.6
+  
+  # Storage
+  shared_preferences: ^2.2.3
+  
+  # Maps
+  google_maps_flutter: ^2.6.1
+  geolocator: ^12.0.0
+  
+  # Image Handling
+  image_picker: ^1.1.2
+  cached_network_image: ^3.3.1
+  
+  # Payments
+  stripe_payment: ^1.1.4
+  
+  # Notifications
+  firebase_messaging: ^14.9.4
+  flutter_local_notifications: ^17.2.2
+  
+  # Utils
+  intl: ^0.19.0
+  uuid: ^4.4.0
+  
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+
+flutter:
+  uses-material-design: true
+  
+  assets:
+    - assets/images/
+    - assets/icons/
+  
+  # fonts:
+  #   - family: Manjari
+  #     fonts:
+  #       - asset: assets/fonts/Manjari-Regular.ttf
+  #       - asset: assets/fonts/Manjari-Bold.ttf
+  #         weight: 700 
