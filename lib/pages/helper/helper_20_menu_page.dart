@@ -103,33 +103,10 @@ class Helper20MenuPage extends StatelessWidget {
                       // Menu Items
                       _buildMenuSection(
                         context,
-                        'Work & Earnings',
+                        'Analytics',
                         [
-                          _MenuItem('My Jobs', Icons.work,
-                              () => _handleMenuTap(context, 'My Jobs')),
-                          _MenuItem('Earnings', Icons.account_balance_wallet,
-                              () => _handleMenuTap(context, 'Earnings')),
-                          _MenuItem('Calendar', Icons.calendar_today,
-                              () => _handleMenuTap(context, 'Calendar')),
-                          _MenuItem('Job History', Icons.history,
-                              () => _handleMenuTap(context, 'Job History')),
-                        ],
-                      ),
-
-                      const SizedBox(height: 16),
-
-                      _buildMenuSection(
-                        context,
-                        'Profile & Settings',
-                        [
-                          _MenuItem('Edit Profile', Icons.person_outline,
-                              () => _handleMenuTap(context, 'Edit Profile')),
-                          _MenuItem('Resume & Skills', Icons.description,
-                              () => _handleMenuTap(context, 'Resume & Skills')),
-                          _MenuItem('Verification', Icons.verified_user,
-                              () => _handleMenuTap(context, 'Verification')),
-                          _MenuItem('Preferences', Icons.settings,
-                              () => _handleMenuTap(context, 'Preferences')),
+                          _MenuItem('Earnings', Icons.analytics,
+                              () => context.push('/helper/earnings')),
                         ],
                       ),
 
@@ -140,16 +117,13 @@ class Helper20MenuPage extends StatelessWidget {
                         'Support & Information',
                         [
                           _MenuItem('Help & Support', Icons.help_outline,
-                              () => _handleMenuTap(context, 'Help & Support')),
+                              () => context.push('/helper/help-support')),
                           _MenuItem('About Us', Icons.info_outline,
-                              () => _handleMenuTap(context, 'About Us')),
-                          _MenuItem(
-                              'Terms & Conditions',
-                              Icons.article,
-                              () => _handleMenuTap(
-                                  context, 'Terms & Conditions')),
+                              () => context.push('/helper/about-us')),
+                          _MenuItem('Terms & Conditions', Icons.article,
+                              () => context.push('/helper/terms-conditions')),
                           _MenuItem('Privacy Policy', Icons.privacy_tip,
-                              () => _handleMenuTap(context, 'Privacy Policy')),
+                              () => context.push('/helper/privacy-policy')),
                         ],
                       ),
 

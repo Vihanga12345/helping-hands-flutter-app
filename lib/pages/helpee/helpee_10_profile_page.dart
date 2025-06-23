@@ -156,7 +156,6 @@ class Helpee10ProfilePage extends StatelessWidget {
                         title: 'Emergency Contact',
                         items: [
                           _buildInfoItem('Name', 'Jane Doe'),
-                          _buildInfoItem('Relationship', 'Sister'),
                           _buildInfoItem('Phone', '+94 77 987 6543'),
                         ],
                       ),

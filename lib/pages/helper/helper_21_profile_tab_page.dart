@@ -29,6 +29,9 @@ class _Helper21ProfileTabPageState extends State<Helper21ProfileTabPage>
       vsync: this,
       initialIndex: widget.initialTabIndex,
     );
+    _tabController.addListener(() {
+      setState(() {}); // Rebuild when tab changes to update edit button
+    });
   }
 
   @override
@@ -66,7 +69,19 @@ class _Helper21ProfileTabPageState extends State<Helper21ProfileTabPage>
                 },
                 rightWidget: IconButton(
                   icon: const Icon(Icons.edit),
-                  onPressed: () => context.push('/helper/profile/edit'),
+                  onPressed: () {
+                    switch (_tabController.index) {
+                      case 0: // Profile tab
+                        context.push('/helper/profile/edit');
+                        break;
+                      case 1: // Jobs tab
+                        context.push('/helper/profile/jobs/edit');
+                        break;
+                      case 2: // Resume tab
+                        context.push('/helper/profile/resume/edit');
+                        break;
+                    }
+                  },
                 ),
               ),
 
@@ -235,6 +250,37 @@ class _Helper21ProfileTabPageState extends State<Helper21ProfileTabPage>
   }
 
   Widget _buildJobsTab() {
+    final List<String> allJobTypes = [
+      'House Cleaning',
+      'Deep Cleaning',
+      'Laundry Service',
+      'Kitchen Cleaning',
+      'Bathroom Cleaning',
+      'Window Cleaning',
+      'Carpet Cleaning',
+      'Organizing',
+      'Gardening',
+      'Pet Care',
+      'Elderly Care',
+      'Baby Sitting',
+      'Cooking',
+      'Grocery Shopping',
+      'Home Maintenance',
+      'Electrical Work',
+      'Plumbing',
+      'Painting',
+      'Moving Help',
+      'Event Setup',
+    ];
+
+    final List<String> selectedJobTypes = [
+      'House Cleaning',
+      'Deep Cleaning',
+      'Laundry Service',
+      'Kitchen Cleaning',
+      'Organizing',
+    ];
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -284,21 +330,101 @@ class _Helper21ProfileTabPageState extends State<Helper21ProfileTabPage>
 
           const SizedBox(height: 16),
 
-          // View Full Jobs Button
+          // Selected Job Types
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: AppColors.white,
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: const [
+                BoxShadow(
+                  color: AppColors.shadowColorLight,
+                  blurRadius: 8,
+                  offset: Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'My Job Types',
+                      style: AppTextStyles.heading3.copyWith(
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                    TextButton.icon(
+                      onPressed: () {
+                        context.push('/helper/profile/jobs/edit');
+                      },
+                      icon: const Icon(Icons.edit, size: 16),
+                      label: const Text('Edit'),
+                      style: TextButton.styleFrom(
+                        foregroundColor: AppColors.primaryGreen,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: selectedJobTypes.map((jobType) {
+                    return Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: AppColors.primaryGreen.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: AppColors.primaryGreen),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.check_circle,
+                            color: AppColors.primaryGreen,
+                            size: 16,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            jobType,
+                            style: const TextStyle(
+                              color: AppColors.primaryGreen,
+                              fontWeight: FontWeight.w500,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 16),
+
+          // Edit Jobs Button
           SizedBox(
             width: double.infinity,
-            child: ElevatedButton(
+            child: ElevatedButton.icon(
               onPressed: () {
-                context.push('/helper/profile/jobs');
+                context.push('/helper/profile/jobs/edit');
               },
+              icon: const Icon(Icons.work_outline, size: 18),
+              label: const Text('Manage Job Types'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primaryGreen,
+                foregroundColor: AppColors.white,
                 padding: const EdgeInsets.symmetric(vertical: 16),
-              ),
-              child: Text(
-                'View All Jobs',
-                style: AppTextStyles.buttonMedium.copyWith(
-                  color: AppColors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
                 ),
               ),
             ),

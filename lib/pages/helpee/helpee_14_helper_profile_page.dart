@@ -22,7 +22,8 @@ class Helpee14HelperProfilePage extends StatelessWidget {
             rightWidget: GestureDetector(
               onTap: () {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Message helper feature coming soon!')),
+                  const SnackBar(
+                      content: Text('Message helper feature coming soon!')),
                 );
               },
               child: Container(
@@ -47,7 +48,7 @@ class Helpee14HelperProfilePage extends StatelessWidget {
               ),
             ),
           ),
-          
+
           // Body Content
           Expanded(
             child: Container(
@@ -124,7 +125,8 @@ class Helpee14HelperProfilePage extends StatelessWidget {
                             Row(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                const Icon(Icons.star, color: AppColors.warning, size: 20),
+                                const Icon(Icons.star,
+                                    color: AppColors.warning, size: 20),
                                 const SizedBox(width: 4),
                                 const Text(
                                   '4.8 (127 reviews)',
@@ -137,7 +139,8 @@ class Helpee14HelperProfilePage extends StatelessWidget {
                             ),
                             const SizedBox(height: 8),
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 12, vertical: 6),
                               decoration: BoxDecoration(
                                 color: AppColors.success.withOpacity(0.1),
                                 borderRadius: BorderRadius.circular(20),
@@ -154,9 +157,9 @@ class Helpee14HelperProfilePage extends StatelessWidget {
                           ],
                         ),
                       ),
-                      
+
                       const SizedBox(height: 20),
-                      
+
                       // Stats Row
                       Row(
                         children: [
@@ -173,49 +176,10 @@ class Helpee14HelperProfilePage extends StatelessWidget {
                           ),
                         ],
                       ),
-                      
+
                       const SizedBox(height: 20),
-                      
-                      // About Section
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(20),
-                        decoration: BoxDecoration(
-                          color: AppColors.white,
-                          borderRadius: BorderRadius.circular(16),
-                          boxShadow: const [
-                            BoxShadow(
-                              color: AppColors.shadowColorLight,
-                              blurRadius: 8,
-                              offset: Offset(0, 4),
-                            ),
-                          ],
-                        ),
-                        child: const Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'About',
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            SizedBox(height: 12),
-                            Text(
-                              'Professional housekeeper with 3+ years of experience. Specialized in deep cleaning, organizing, and maintaining residential properties. Available for both one-time and regular cleaning services.',
-                              style: TextStyle(
-                                fontSize: 14,
-                                height: 1.5,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      
-                      const SizedBox(height: 20),
-                      
-                      // Services Section
+
+                      // About Section with View More button
                       Container(
                         width: double.infinity,
                         padding: const EdgeInsets.all(20),
@@ -234,23 +198,39 @@ class Helpee14HelperProfilePage extends StatelessWidget {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             const Text(
-                              'Services & Rates',
+                              'About',
                               style: TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.w600,
                               ),
                             ),
+                            const SizedBox(height: 12),
+                            const Text(
+                              'Professional housekeeper with 3+ years of experience. Specialized in deep cleaning, organizing, and maintaining residential properties. Available for both one-time and regular cleaning services.',
+                              style: TextStyle(
+                                fontSize: 14,
+                                height: 1.5,
+                              ),
+                            ),
                             const SizedBox(height: 16),
-                            _buildServiceItem('House Cleaning', 'LKR 1,500/session'),
-                            _buildServiceItem('Deep Cleaning', 'LKR 2,500/session'),
-                            _buildServiceItem('Organizing', 'LKR 1,200/hour'),
-                            _buildServiceItem('Laundry Service', 'LKR 800/load'),
+                            Align(
+                              alignment: Alignment.centerRight,
+                              child: TextButton.icon(
+                                onPressed: () {
+                                  context
+                                      .push('/helpee/helper-profile-detailed');
+                                },
+                                icon: const Icon(Icons.visibility, size: 16),
+                                label: const Text('View More'),
+                                style: TextButton.styleFrom(
+                                  foregroundColor: AppColors.primaryGreen,
+                                ),
+                              ),
+                            ),
                           ],
                         ),
                       ),
-                      
-                      const SizedBox(height: 20),
-                      
+
                       // Reviews Section
                       Container(
                         width: double.infinity,
@@ -300,9 +280,9 @@ class Helpee14HelperProfilePage extends StatelessWidget {
                           ],
                         ),
                       ),
-                      
+
                       const SizedBox(height: 24),
-                      
+
                       // Action Buttons
                       Row(
                         children: [
@@ -310,17 +290,21 @@ class Helpee14HelperProfilePage extends StatelessWidget {
                             child: OutlinedButton.icon(
                               onPressed: () {
                                 ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(content: Text('Message helper feature coming soon!')),
+                                  const SnackBar(
+                                      content: Text(
+                                          'Message helper feature coming soon!')),
                                 );
                               },
                               icon: const Icon(Icons.message, size: 18),
                               label: const Text('Message'),
                               style: OutlinedButton.styleFrom(
-                                side: const BorderSide(color: AppColors.primaryGreen),
+                                side: const BorderSide(
+                                    color: AppColors.primaryGreen),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(8),
                                 ),
-                                padding: const EdgeInsets.symmetric(vertical: 16),
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 16),
                               ),
                             ),
                           ),
@@ -338,13 +322,14 @@ class Helpee14HelperProfilePage extends StatelessWidget {
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(8),
                                 ),
-                                padding: const EdgeInsets.symmetric(vertical: 16),
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 16),
                               ),
                             ),
                           ),
                         ],
                       ),
-                      
+
                       const SizedBox(height: 20),
                     ],
                   ),
@@ -352,7 +337,7 @@ class Helpee14HelperProfilePage extends StatelessWidget {
               ),
             ),
           ),
-          
+
           // Navigation Bar
           const AppNavigationBar(
             currentTab: NavigationTab.home,
@@ -395,32 +380,6 @@ class Helpee14HelperProfilePage extends StatelessWidget {
               color: AppColors.textSecondary,
             ),
             textAlign: TextAlign.center,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildServiceItem(String service, String price) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            service,
-            style: const TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-          Text(
-            price,
-            style: const TextStyle(
-              fontSize: 14,
-              color: AppColors.primaryGreen,
-              fontWeight: FontWeight.w600,
-            ),
           ),
         ],
       ),
@@ -478,7 +437,8 @@ class Helpee14HelperProfilePage extends StatelessWidget {
       builder: (BuildContext context) {
         return AlertDialog(
           title: const Text('Hire Helper'),
-          content: const Text('Do you want to send a job request to Saman Perera?'),
+          content:
+              const Text('Do you want to send a job request to Saman Perera?'),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
@@ -501,4 +461,4 @@ class Helpee14HelperProfilePage extends StatelessWidget {
       },
     );
   }
-} 
+}

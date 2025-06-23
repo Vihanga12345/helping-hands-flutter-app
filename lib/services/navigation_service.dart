@@ -23,6 +23,7 @@ import '../pages/helpee/helpee_11_profile_edit_page.dart';
 import '../pages/helpee/helpee_12_job_request_view_page.dart';
 import '../pages/helpee/helpee_13_job_request_edit_page.dart';
 import '../pages/helpee/helpee_14_helper_profile_page.dart';
+import '../pages/helpee/helpee_14_detailed_helper_profile_page.dart';
 import '../pages/helpee/helpee_15_activity_pending_page.dart';
 import '../pages/helpee/helpee_16_activity_ongoing_page.dart';
 import '../pages/helpee/helpee_17_activity_completed_page.dart';
@@ -47,6 +48,9 @@ import '../pages/helper/helper_13_calendar_page.dart';
 import '../pages/helper/helper_19_notification_page.dart';
 import '../pages/helper/helper_20_menu_page.dart';
 import '../pages/helper/helper_21_profile_tab_page.dart';
+import '../pages/helper/helper_24_profile_jobs_edit_page.dart';
+import '../pages/helper/helper_earnings_page.dart';
+import '../pages/helper/helper_help_support_page.dart';
 import '../pages/helper/helper_job_detail_page.dart';
 import '../pages/helper/helper_helpee_profile_page.dart';
 import '../pages/helper/helper_job_detail_pending.dart';
@@ -155,6 +159,11 @@ class NavigationService {
         name: 'helpee-helper-profile',
         builder: (context, state) => const Helpee14HelperProfilePage(),
       ),
+      GoRoute(
+        path: '/helpee/helper-profile-detailed',
+        name: 'helpee-helper-profile-detailed',
+        builder: (context, state) => const Helpee14DetailedHelperProfilePage(),
+      ),
       // Helpee Job Detail Routes
       GoRoute(
         path: '/helpee/job-detail/pending',
@@ -262,6 +271,23 @@ class NavigationService {
         builder: (context, state) => const Helper21ProfileTabPage(),
       ),
       GoRoute(
+        path: '/helper/profile/edit',
+        name: 'helper-profile-edit',
+        builder: (context, state) =>
+            const Helper21ProfileTabPage(initialTabIndex: 0),
+      ),
+      GoRoute(
+        path: '/helper/profile/jobs/edit',
+        name: 'helper-profile-jobs-edit',
+        builder: (context, state) => const Helper24ProfileJobsEditPage(),
+      ),
+      GoRoute(
+        path: '/helper/profile/resume/edit',
+        name: 'helper-profile-resume-edit',
+        builder: (context, state) =>
+            const Helper21ProfileTabPage(initialTabIndex: 2),
+      ),
+      GoRoute(
         path: '/helper/comprehensive-job-detail',
         name: 'helper-comprehensive-job-detail',
         builder: (context, state) => const HelperJobDetailPage(),
@@ -286,6 +312,37 @@ class NavigationService {
         path: '/helper/job-detail/completed',
         name: 'helper-job-detail-completed',
         builder: (context, state) => const HelperJobDetailCompletedPage(),
+      ),
+      GoRoute(
+        path: '/helper/earnings',
+        name: 'helper-earnings',
+        builder: (context, state) => const HelperEarningsPage(),
+      ),
+      GoRoute(
+        path: '/helper/help-support',
+        name: 'helper-help-support',
+        builder: (context, state) => const HelperHelpSupportPage(),
+      ),
+      GoRoute(
+        path: '/helper/about-us',
+        name: 'helper-about-us',
+        builder: (context, state) => const Scaffold(
+          body: Center(child: Text('About Us page coming soon!')),
+        ),
+      ),
+      GoRoute(
+        path: '/helper/terms-conditions',
+        name: 'helper-terms-conditions',
+        builder: (context, state) => const Scaffold(
+          body: Center(child: Text('Terms & Conditions page coming soon!')),
+        ),
+      ),
+      GoRoute(
+        path: '/helper/privacy-policy',
+        name: 'helper-privacy-policy',
+        builder: (context, state) => const Scaffold(
+          body: Center(child: Text('Privacy Policy page coming soon!')),
+        ),
       ),
     ],
   );
