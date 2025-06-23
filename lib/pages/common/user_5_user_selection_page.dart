@@ -24,8 +24,8 @@ class User5UserSelectionPage extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 30),
             child: Column(
               children: [
-                const SizedBox(height: 60),
-                
+                const SizedBox(height: 50),
+
                 // Logo - Using PNG Image
                 Container(
                   width: 120,
@@ -38,51 +38,50 @@ class User5UserSelectionPage extends StatelessWidget {
                     fit: BoxFit.contain,
                   ),
                 ),
-                
-                const SizedBox(height: 24),
-                
+
+                const SizedBox(height: 20),
+
                 // App Name
                 const Text(
                   'Helping Hands',
                   style: TextStyle(
                     color: AppColors.darkGreen,
                     fontSize: 28,
-                    
                     fontWeight: FontWeight.w700,
                   ),
                 ),
-                
-                const SizedBox(height: 60),
-                
+
+                const SizedBox(height: 50),
+
                 // Prompt Text
                 const Text(
                   'Who are you?',
                   style: TextStyle(),
                 ),
-                
-                const SizedBox(height: 40),
-                
+
+                const SizedBox(height: 30),
+
                 // I'm a helpee Button
                 _buildSelectionButton(
                   context,
                   text: "I'm a helpee",
                   onTap: () => context.go('/helpee-auth'),
                 ),
-                
+
                 const SizedBox(height: 20),
-                
+
                 // I'm a helper Button
                 _buildSelectionButton(
                   context,
                   text: "I'm a helper",
                   onTap: () => context.go('/helper-auth'),
                 ),
-                
+
                 const Spacer(),
-                
+
                 // Information Button
                 Padding(
-                  padding: const EdgeInsets.only(bottom: 40),
+                  padding: const EdgeInsets.only(bottom: 30),
                   child: TextButton(
                     onPressed: () {
                       // Navigate to information page (to be implemented)
@@ -97,7 +96,6 @@ class User5UserSelectionPage extends StatelessWidget {
                       style: TextStyle(
                         color: AppColors.darkGreen,
                         fontSize: 16,
-                        
                         fontWeight: FontWeight.w400,
                         decoration: TextDecoration.underline,
                       ),
@@ -111,8 +109,9 @@ class User5UserSelectionPage extends StatelessWidget {
       ),
     );
   }
-  
-  Widget _buildSelectionButton(BuildContext context, {
+
+  Widget _buildSelectionButton(
+    BuildContext context, {
     required String text,
     required VoidCallback onTap,
   }) {
@@ -144,4 +143,4 @@ class User5UserSelectionPage extends StatelessWidget {
       ),
     );
   }
-} 
+}

@@ -26,7 +26,7 @@ class _User1StartPageState extends State<User1StartPage> {
   Widget build(BuildContext context) {
     final screenSize = MediaQuery.of(context).size;
     final logoSize = screenSize.width * 0.6; // 60% of screen width
-    
+
     return Scaffold(
       body: Container(
         width: double.infinity,
@@ -39,75 +39,76 @@ class _User1StartPageState extends State<User1StartPage> {
           ),
         ),
         child: SafeArea(
-          child: SingleChildScrollView(
-            child: ConstrainedBox(
-              constraints: BoxConstraints(
-                minHeight: screenSize.height - MediaQuery.of(context).padding.top - MediaQuery.of(context).padding.bottom,
-              ),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Spacer(flex: 2),
-                  
-                  // Logo Section - Using PNG Image
-                  Container(
-                    width: logoSize.clamp(200.0, 300.0), // Min 200, Max 300
-                    height: logoSize.clamp(200.0, 300.0),
-                    padding: const EdgeInsets.all(20),
-                    child: Image.asset(
-                      'assets/images/logo.png',
-                      fit: BoxFit.contain,
+          child: SizedBox(
+            height: screenSize.height -
+                MediaQuery.of(context).padding.top -
+                MediaQuery.of(context).padding.bottom,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Spacer(flex: 2),
+
+                // Logo Section - Using PNG Image
+                Container(
+                  width: logoSize.clamp(200.0, 300.0), // Min 200, Max 300
+                  height: logoSize.clamp(200.0, 300.0),
+                  padding: const EdgeInsets.all(20),
+                  child: Image.asset(
+                    'assets/images/logo.png',
+                    fit: BoxFit.contain,
+                  ),
+                ),
+
+                SizedBox(
+                    height: screenSize.height * 0.04), // 4% of screen height
+
+                // App Name
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  child: Text(
+                    'Helping Hands',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: AppColors.darkGreen,
+                      fontSize: (screenSize.width * 0.1)
+                          .clamp(24.0, 40.0), // Responsive font size
+                      fontWeight: FontWeight.w700,
+                      shadows: const [
+                        Shadow(
+                          offset: Offset(0, 4),
+                          blurRadius: 4,
+                          color: AppColors.shadowColor,
+                        ),
+                      ],
                     ),
                   ),
-                  
-                  SizedBox(height: screenSize.height * 0.04), // 4% of screen height
-                  
-                  // App Name
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 24),
-                    child: Text(
-                      'Helping Hands',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: AppColors.darkGreen,
-                        fontSize: (screenSize.width * 0.1).clamp(24.0, 40.0), // Responsive font size
-                        fontWeight: FontWeight.w700,
-                        shadows: const [
-                          Shadow(
-                            offset: Offset(0, 4),
-                            blurRadius: 4,
-                            color: AppColors.shadowColor,
-                          ),
-                        ],
-                      ),
+                ),
+
+                const Spacer(flex: 2),
+
+                // Tagline
+                Padding(
+                  padding: const EdgeInsets.only(
+                    bottom: 40,
+                    left: 24,
+                    right: 24,
+                  ),
+                  child: Text(
+                    'Together we grow',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: AppColors.darkGreen,
+                      fontSize: (screenSize.width * 0.05)
+                          .clamp(16.0, 20.0), // Responsive font size
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
-                  
-                  const Spacer(flex: 2),
-                  
-                  // Tagline
-                  Padding(
-                    padding: EdgeInsets.only(
-                      bottom: 40,
-                      left: 24,
-                      right: 24,
-                    ),
-                    child: Text(
-                      'Together we grow',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: AppColors.darkGreen,
-                        fontSize: (screenSize.width * 0.05).clamp(16.0, 20.0), // Responsive font size
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
         ),
       ),
     );
   }
-} 
+}
