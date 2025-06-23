@@ -5,8 +5,16 @@ import '../../utils/app_text_styles.dart';
 import '../../widgets/common/app_header.dart';
 import '../../widgets/common/app_navigation_bar.dart';
 
-class Helpee6MenuPage extends StatelessWidget {
+class Helpee6MenuPage extends StatefulWidget {
   const Helpee6MenuPage({super.key});
+
+  @override
+  State<Helpee6MenuPage> createState() => _Helpee6MenuPageState();
+}
+
+class _Helpee6MenuPageState extends State<Helpee6MenuPage> {
+  bool _isDarkMode = false;
+  String _selectedLanguage = 'English';
 
   @override
   Widget build(BuildContext context) {
@@ -20,7 +28,7 @@ class Helpee6MenuPage extends StatelessWidget {
             showMenuButton: false,
             showNotificationButton: false,
           ),
-          
+
           // Body Content
           Expanded(
             child: Container(
@@ -87,9 +95,9 @@ class Helpee6MenuPage extends StatelessWidget {
                           ],
                         ),
                       ),
-                      
+
                       const SizedBox(height: 24),
-                      
+
                       // Menu Items
                       Expanded(
                         child: ListView(
@@ -99,59 +107,17 @@ class Helpee6MenuPage extends StatelessWidget {
                               title: 'Notifications',
                               onTap: () => context.go('/helpee/notifications'),
                             ),
-                            _buildMenuItem(
-                              icon: Icons.visibility,
-                              title: 'Appearance',
-                              onTap: () {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(content: Text('Appearance settings coming soon!')),
-                                );
-                              },
-                            ),
-                            _buildMenuItem(
-                              icon: Icons.home,
-                              title: 'Home Location',
-                              onTap: () {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(content: Text('Home location settings coming soon!')),
-                                );
-                              },
-                            ),
-                            _buildMenuItem(
-                              icon: Icons.language,
-                              title: 'Language',
-                              onTap: () {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(content: Text('Language settings coming soon!')),
-                                );
-                              },
-                            ),
-                            _buildMenuItem(
-                              icon: Icons.emergency,
-                              title: 'Emergency Contact',
-                              onTap: () {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(content: Text('Emergency contact settings coming soon!')),
-                                );
-                              },
-                            ),
+                            _buildDarkModeMenuItem(),
+                            _buildLanguageMenuItem(),
                             _buildMenuItem(
                               icon: Icons.help,
                               title: 'Help & Support',
-                              onTap: () {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(content: Text('Help & Support coming soon!')),
-                                );
-                              },
+                              onTap: () => context.go('/helpee/help-support'),
                             ),
                             _buildMenuItem(
                               icon: Icons.payment,
                               title: 'Payments',
-                              onTap: () {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(content: Text('Payments page coming soon!')),
-                                );
-                              },
+                              onTap: () => context.go('/helpee/payments'),
                             ),
                             _buildMenuItem(
                               icon: Icons.info,
@@ -175,7 +141,7 @@ class Helpee6MenuPage extends StatelessWidget {
               ),
             ),
           ),
-          
+
           // Navigation Bar
           const AppNavigationBar(
             currentTab: NavigationTab.home,
@@ -221,6 +187,84 @@ class Helpee6MenuPage extends StatelessWidget {
     );
   }
 
+  Widget _buildDarkModeMenuItem() {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      child: ListTile(
+        leading: const Icon(
+          Icons.visibility,
+          color: AppColors.primaryGreen,
+        ),
+        title: const Text(
+          'Dark Mode',
+          style: TextStyle(
+            color: AppColors.textPrimary,
+            fontSize: 16,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        trailing: Switch(
+          value: _isDarkMode,
+          onChanged: (value) {
+            setState(() {
+              _isDarkMode = value;
+            });
+          },
+        ),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        tileColor: AppColors.white,
+      ),
+    );
+  }
+
+  Widget _buildLanguageMenuItem() {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      child: ListTile(
+        leading: const Icon(
+          Icons.language,
+          color: AppColors.primaryGreen,
+        ),
+        title: const Text(
+          'Language',
+          style: TextStyle(
+            color: AppColors.textPrimary,
+            fontSize: 16,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        trailing: DropdownButton<String>(
+          value: _selectedLanguage,
+          onChanged: (String? newValue) {
+            setState(() {
+              _selectedLanguage = newValue!;
+            });
+          },
+          items: const [
+            DropdownMenuItem<String>(
+              value: 'English',
+              child: Text('English'),
+            ),
+            DropdownMenuItem<String>(
+              value: 'Sinhala',
+              child: Text('Sinhala'),
+            ),
+            DropdownMenuItem<String>(
+              value: 'Tamil',
+              child: Text('Tamil'),
+            ),
+          ],
+        ),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        tileColor: AppColors.white,
+      ),
+    );
+  }
+
   void _showLogoutDialog(BuildContext context) {
     showDialog(
       context: context,
@@ -245,4 +289,4 @@ class Helpee6MenuPage extends StatelessWidget {
       },
     );
   }
-} 
+}

@@ -23,7 +23,7 @@ class _Helper11ActivityOngoingPageState
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(
-          builder: (context) => const Helper10ActivityPendingPage(),
+          builder: (context) => const HelperActivityPendingPage(),
           settings: const RouteSettings(
               arguments: {'initialTab': 1}), // 1 = Ongoing tab
         ),

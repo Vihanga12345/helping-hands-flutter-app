@@ -6,8 +6,8 @@ import '../../widgets/common/app_header.dart';
 import '../../widgets/common/app_navigation_bar.dart';
 import '../../widgets/ui_elements/helpee_profile_bar.dart';
 
-class HelperJobDetailPage extends StatelessWidget {
-  const HelperJobDetailPage({super.key});
+class HelperComprehensiveJobDetailPage extends StatelessWidget {
+  const HelperComprehensiveJobDetailPage({super.key});
 
   @override
   Widget build(BuildContext context) {

@@ -6,8 +6,8 @@ import '../../widgets/common/app_header.dart';
 import '../../widgets/common/app_navigation_bar.dart';
 import '../../widgets/ui_elements/helpee_profile_bar.dart';
 
-class HelperJobDetailPage extends StatelessWidget {
-  const HelperJobDetailPage({super.key});
+class HelperJobDetailPendingPage extends StatelessWidget {
+  const HelperJobDetailPendingPage({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -27,30 +27,21 @@ class HelperJobDetailPage extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Segment 1: Main Job Details
                     _buildMainJobDetails(),
                     const SizedBox(height: 24),
-
-                    // Segment 2: Job Questions
                     _buildJobQuestions(),
                     const SizedBox(height: 24),
-
-                    // Segment 3: Job Additional Details
                     _buildJobAdditionalDetails(),
                     const SizedBox(height: 24),
-
-                    // Segment 4: Posted By / Assigned To
-                    _buildPostedBySection(),
+                    _buildPostedBySection(context),
                     const SizedBox(height: 24),
-
-                    // Segment 5: Job Action Buttons
-                    _buildJobActionButtons(context),
+                    _buildPendingJobActions(context),
                     const SizedBox(height: 24),
                   ],
                 ),
               ),
             ),
-            AppNavigationBar(
+            const AppNavigationBar(
               currentTab: NavigationTab.activity,
               userType: UserType.helper,
             ),
@@ -60,7 +51,6 @@ class HelperJobDetailPage extends StatelessWidget {
     );
   }
 
-  // Segment 1: Main Job Details
   Widget _buildMainJobDetails() {
     return Container(
       width: double.infinity,
@@ -79,12 +69,11 @@ class HelperJobDetailPage extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header with Status Badge
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'Main Job Details',
+                'Job Details',
                 style: AppTextStyles.heading3.copyWith(
                   fontWeight: FontWeight.w700,
                   color: AppColors.textPrimary,
@@ -108,31 +97,20 @@ class HelperJobDetailPage extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 16),
-
-          // 1. Job Type
           _buildDetailRow('Job Type', 'General House Cleaning'),
           const SizedBox(height: 12),
-
-          // 2. Job Hourly Rate
           _buildDetailRow('Hourly Rate', 'LKR 2,500 / Hour'),
           const SizedBox(height: 12),
-
-          // 3. Job Date
           _buildDetailRow('Date', '21st May 2024'),
           const SizedBox(height: 12),
-
-          // 4. Job Time
           _buildDetailRow('Time', '2:00 PM - 5:00 PM'),
           const SizedBox(height: 12),
-
-          // 5. Job Location
           _buildDetailRow('Location', 'Colombo 03, 1.5 km away'),
         ],
       ),
     );
   }
 
-  // Segment 2: Job Questions
   Widget _buildJobQuestions() {
     return Container(
       width: double.infinity,
@@ -152,17 +130,10 @@ class HelperJobDetailPage extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Job Questions',
+            'Job Questions & Answers',
             style: AppTextStyles.heading3.copyWith(
               fontWeight: FontWeight.w700,
               color: AppColors.textPrimary,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Questions created by the admin and answered by the helpee',
-            style: AppTextStyles.bodyMedium.copyWith(
-              color: AppColors.textSecondary,
             ),
           ),
           const SizedBox(height: 16),
@@ -174,14 +145,11 @@ class HelperJobDetailPage extends StatelessWidget {
           const SizedBox(height: 12),
           _buildQuestionAnswer('Q3: Any specific cleaning requirements?',
               'A: Deep cleaning required, especially bathrooms and kitchen'),
-          const SizedBox(height: 12),
-          _buildQuestionAnswer('Q4: Pets in the house?', 'A: No pets'),
         ],
       ),
     );
   }
 
-  // Segment 3: Job Additional Details
   Widget _buildJobAdditionalDetails() {
     return Container(
       width: double.infinity,
@@ -201,33 +169,21 @@ class HelperJobDetailPage extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Job Additional Details',
+            'Job Description',
             style: AppTextStyles.heading3.copyWith(
               fontWeight: FontWeight.w700,
               color: AppColors.textPrimary,
             ),
           ),
           const SizedBox(height: 16),
-
-          // Job Description
           Text(
-            'Job Description',
-            style: AppTextStyles.bodyLarge.copyWith(
-              fontWeight: FontWeight.w600,
-              color: AppColors.textPrimary,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'I need a thorough deep cleaning of my 3-bedroom house. This includes cleaning all bathrooms, kitchen, bedrooms, and common areas. Please pay special attention to the bathrooms and kitchen as they need deep cleaning. All cleaning supplies are available at home.',
+            'I need a thorough deep cleaning of my 3-bedroom house. This includes cleaning all bathrooms, kitchen, bedrooms, and common areas. Please pay special attention to the bathrooms and kitchen as they need deep cleaning.',
             style: AppTextStyles.bodyMedium.copyWith(
               color: AppColors.textSecondary,
               height: 1.5,
             ),
           ),
           const SizedBox(height: 16),
-
-          // Attachments
           Text(
             'Attachments',
             style: AppTextStyles.bodyLarge.copyWith(
@@ -236,11 +192,7 @@ class HelperJobDetailPage extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 8),
-
-          // Attachment items
           _buildAttachmentItem('House_photos.jpg', '2.1 MB'),
-          const SizedBox(height: 8),
-          _buildAttachmentItem('Room_layout.pdf', '1.5 MB'),
           const SizedBox(height: 8),
           _buildAttachmentItem('Cleaning_requirements.pdf', '890 KB'),
         ],
@@ -248,8 +200,7 @@ class HelperJobDetailPage extends StatelessWidget {
     );
   }
 
-  // Segment 4: Posted By / Assigned To
-  Widget _buildPostedBySection() {
+  Widget _buildPostedBySection(BuildContext context) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(20),
@@ -275,20 +226,16 @@ class HelperJobDetailPage extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 16),
-
-          // Helpee Profile Bar
           HelpeeProfileBar(
             name: 'Sarah Wilson',
             rating: 4.8,
             jobCount: 24,
             profileImageUrl: 'assets/images/profile_placeholder.png',
             onTap: () {
-              // Navigate to helpee profile page
+              context.push('/helper/helpee-profile');
             },
           ),
           const SizedBox(height: 12),
-
-          // Contact buttons
           Row(
             children: [
               Expanded(
@@ -323,8 +270,7 @@ class HelperJobDetailPage extends StatelessWidget {
     );
   }
 
-  // Segment 5: Job Action Buttons
-  Widget _buildJobActionButtons(BuildContext context) {
+  Widget _buildPendingJobActions(BuildContext context) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(20),
@@ -350,8 +296,6 @@ class HelperJobDetailPage extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 16),
-
-          // For Pending Job requests - Accept/Reject buttons
           Row(
             children: [
               Expanded(
@@ -406,28 +350,25 @@ class HelperJobDetailPage extends StatelessWidget {
     );
   }
 
-  // Helper widgets
   Widget _buildDetailRow(String label, String value) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         SizedBox(
-          width: 100,
+          width: 120,
           child: Text(
             label,
             style: AppTextStyles.bodyMedium.copyWith(
               fontWeight: FontWeight.w600,
-              color: AppColors.textSecondary,
+              color: AppColors.textPrimary,
             ),
           ),
         ),
-        const SizedBox(width: 16),
         Expanded(
           child: Text(
             value,
             style: AppTextStyles.bodyMedium.copyWith(
-              color: AppColors.textPrimary,
-              fontWeight: FontWeight.w500,
+              color: AppColors.textSecondary,
             ),
           ),
         ),
@@ -436,78 +377,55 @@ class HelperJobDetailPage extends StatelessWidget {
   }
 
   Widget _buildQuestionAnswer(String question, String answer) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.primaryGreen.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            question,
-            style: AppTextStyles.bodyMedium.copyWith(
-              fontWeight: FontWeight.w600,
-              color: AppColors.textPrimary,
-            ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          question,
+          style: AppTextStyles.bodyMedium.copyWith(
+            fontWeight: FontWeight.w600,
+            color: AppColors.textPrimary,
           ),
-          const SizedBox(height: 8),
-          Text(
-            answer,
-            style: AppTextStyles.bodyMedium.copyWith(
-              color: AppColors.textSecondary,
-              height: 1.4,
-            ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          answer,
+          style: AppTextStyles.bodyMedium.copyWith(
+            color: AppColors.textSecondary,
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
-  Widget _buildAttachmentItem(String fileName, String fileSize) {
+  Widget _buildAttachmentItem(String filename, String size) {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: AppColors.lightGrey.withOpacity(0.3),
+        color: AppColors.backgroundLight,
         borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: AppColors.borderLight),
       ),
       child: Row(
         children: [
-          const Icon(
-            Icons.attachment,
+          Icon(
+            Icons.attach_file,
             color: AppColors.primaryGreen,
             size: 20,
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 8),
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  fileName,
-                  style: AppTextStyles.bodyMedium.copyWith(
-                    fontWeight: FontWeight.w500,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-                Text(
-                  fileSize,
-                  style: AppTextStyles.bodySmall.copyWith(
-                    color: AppColors.textSecondary,
-                  ),
-                ),
-              ],
+            child: Text(
+              filename,
+              style: AppTextStyles.bodyMedium.copyWith(
+                color: AppColors.textPrimary,
+              ),
             ),
           ),
-          IconButton(
-            onPressed: () {
-              // Open attachment
-            },
-            icon: const Icon(
-              Icons.download,
-              color: AppColors.primaryGreen,
-              size: 20,
+          Text(
+            size,
+            style: AppTextStyles.bodySmall.copyWith(
+              color: AppColors.textSecondary,
             ),
           ),
         ],
@@ -518,26 +436,54 @@ class HelperJobDetailPage extends StatelessWidget {
   void _showAcceptDialog(BuildContext context) {
     showDialog(
       context: context,
-      builder: (BuildContext dialogContext) {
+      builder: (BuildContext context) {
         return AlertDialog(
-          title: const Text('Accept Job Request'),
-          content: const Text(
-              'Are you sure you want to accept this job? You will be committed to completing this work on the specified date and time.'),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: Text(
+            'Accept Job',
+            style: AppTextStyles.heading3.copyWith(
+              fontWeight: FontWeight.w700,
+              color: AppColors.textPrimary,
+            ),
+          ),
+          content: Text(
+            'Are you sure you want to accept this job?',
+            style: AppTextStyles.bodyMedium.copyWith(
+              color: AppColors.textSecondary,
+            ),
+          ),
           actions: [
             TextButton(
-              onPressed: () => Navigator.of(dialogContext).pop(),
-              child: const Text('Cancel'),
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text(
+                'Cancel',
+                style: AppTextStyles.buttonMedium.copyWith(
+                  color: AppColors.textSecondary,
+                ),
+              ),
             ),
             ElevatedButton(
               onPressed: () {
-                Navigator.of(dialogContext).pop();
-                _acceptJob(context);
+                Navigator.of(context).pop();
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Job accepted successfully!'),
+                    backgroundColor: AppColors.primaryGreen,
+                  ),
+                );
+                context.push('/helper/activity/ongoing');
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primaryGreen,
                 foregroundColor: AppColors.white,
               ),
-              child: const Text('Accept'),
+              child: Text(
+                'Accept',
+                style: AppTextStyles.buttonMedium.copyWith(
+                  color: AppColors.white,
+                ),
+              ),
             ),
           ],
         );
@@ -548,52 +494,58 @@ class HelperJobDetailPage extends StatelessWidget {
   void _showRejectDialog(BuildContext context) {
     showDialog(
       context: context,
-      builder: (BuildContext dialogContext) {
+      builder: (BuildContext context) {
         return AlertDialog(
-          title: const Text('Reject Job Request'),
-          content: const Text(
-              'Are you sure you want to reject this job? This action cannot be undone.'),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: Text(
+            'Reject Job',
+            style: AppTextStyles.heading3.copyWith(
+              fontWeight: FontWeight.w700,
+              color: AppColors.textPrimary,
+            ),
+          ),
+          content: Text(
+            'Are you sure you want to reject this job?',
+            style: AppTextStyles.bodyMedium.copyWith(
+              color: AppColors.textSecondary,
+            ),
+          ),
           actions: [
             TextButton(
-              onPressed: () => Navigator.of(dialogContext).pop(),
-              child: const Text('Cancel'),
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text(
+                'Cancel',
+                style: AppTextStyles.buttonMedium.copyWith(
+                  color: AppColors.textSecondary,
+                ),
+              ),
             ),
             ElevatedButton(
               onPressed: () {
-                Navigator.of(dialogContext).pop();
-                _rejectJob(context);
+                Navigator.of(context).pop();
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Job rejected'),
+                    backgroundColor: AppColors.error,
+                  ),
+                );
+                context.push('/helper/requests/private');
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.error,
                 foregroundColor: AppColors.white,
               ),
-              child: const Text('Reject'),
+              child: Text(
+                'Reject',
+                style: AppTextStyles.buttonMedium.copyWith(
+                  color: AppColors.white,
+                ),
+              ),
             ),
           ],
         );
       },
     );
-  }
-
-  void _acceptJob(BuildContext context) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Job accepted! Moving to ongoing jobs.'),
-        backgroundColor: AppColors.success,
-      ),
-    );
-    // Navigate to activity ongoing page
-    context.go('/helper/activity/ongoing');
-  }
-
-  void _rejectJob(BuildContext context) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Job rejected.'),
-        backgroundColor: AppColors.error,
-      ),
-    );
-    // Navigate back to requests
-    context.pop();
   }
 }

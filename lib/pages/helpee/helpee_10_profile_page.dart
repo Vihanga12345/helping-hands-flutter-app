@@ -20,7 +20,7 @@ class Helpee10ProfilePage extends StatelessWidget {
             showMenuButton: true,
             showNotificationButton: false,
             rightWidget: GestureDetector(
-              onTap: () => context.go('/helpee/profile-edit'),
+              onTap: () => context.go('/helpee/profile/edit'),
               child: Container(
                 width: 30,
                 height: 30,
@@ -43,7 +43,7 @@ class Helpee10ProfilePage extends StatelessWidget {
               ),
             ),
           ),
-          
+
           // Body Content
           Expanded(
             child: Container(
@@ -135,9 +135,9 @@ class Helpee10ProfilePage extends StatelessWidget {
                           ],
                         ),
                       ),
-                      
+
                       const SizedBox(height: 20),
-                      
+
                       // Personal Information
                       _buildInfoSection(
                         title: 'Personal Information',
@@ -148,9 +148,9 @@ class Helpee10ProfilePage extends StatelessWidget {
                           _buildInfoItem('Date of Birth', 'January 15, 1990'),
                         ],
                       ),
-                      
+
                       const SizedBox(height: 16),
-                      
+
                       // Emergency Contact
                       _buildInfoSection(
                         title: 'Emergency Contact',
@@ -160,9 +160,9 @@ class Helpee10ProfilePage extends StatelessWidget {
                           _buildInfoItem('Phone', '+94 77 987 6543'),
                         ],
                       ),
-                      
+
                       const SizedBox(height: 16),
-                      
+
                       // Preferences
                       _buildInfoSection(
                         title: 'Preferences',
@@ -172,7 +172,51 @@ class Helpee10ProfilePage extends StatelessWidget {
                           _buildInfoItem('Notifications', 'Enabled'),
                         ],
                       ),
-                      
+
+                      const SizedBox(height: 20),
+
+                      // Action Buttons
+                      Row(
+                        children: [
+                          Expanded(
+                            child: ElevatedButton.icon(
+                              onPressed: () =>
+                                  context.go('/helpee/profile/edit'),
+                              icon: const Icon(Icons.edit, size: 18),
+                              label: const Text('Edit Profile'),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppColors.primaryGreen,
+                                foregroundColor: AppColors.white,
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 12),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: OutlinedButton.icon(
+                              onPressed: () {
+                                _showLogoutDialog(context);
+                              },
+                              icon: const Icon(Icons.logout, size: 18),
+                              label: const Text('Logout'),
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: AppColors.error,
+                                side: const BorderSide(color: AppColors.error),
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 12),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+
                       const SizedBox(height: 20),
                     ],
                   ),
@@ -180,7 +224,7 @@ class Helpee10ProfilePage extends StatelessWidget {
               ),
             ),
           ),
-          
+
           // Navigation Bar
           const AppNavigationBar(
             currentTab: NavigationTab.profile,
@@ -276,4 +320,29 @@ class Helpee10ProfilePage extends StatelessWidget {
       ),
     );
   }
-} 
+
+  void _showLogoutDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Logout'),
+          content: const Text('Are you sure you want to logout?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                context.go('/user-selection');
+              },
+              child: const Text('Logout'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
