@@ -21,7 +21,7 @@ class _Helper13CalendarPageState extends State<Helper13CalendarPage> {
       body: Column(
         children: [
           AppHeader(
-            title: 'My Calendar',
+            title: 'Calendar',
             showMenuButton: true,
             showNotificationButton: true,
             rightWidget: IconButton(
@@ -36,7 +36,7 @@ class _Helper13CalendarPageState extends State<Helper13CalendarPage> {
               context.push('/helper/menu');
             },
             onNotificationPressed: () {
-              context.push('/helper/notification');
+              context.push('/helper/notifications');
             },
           ),
           Expanded(

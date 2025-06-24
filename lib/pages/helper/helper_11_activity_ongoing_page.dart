@@ -41,6 +41,12 @@ class _Helper11ActivityOngoingPageState
             title: 'Activities',
             showMenuButton: true,
             showNotificationButton: true,
+            onMenuPressed: () {
+              context.push('/helper/menu');
+            },
+            onNotificationPressed: () {
+              context.push('/helper/notifications');
+            },
           ),
           Expanded(
             child: Container(

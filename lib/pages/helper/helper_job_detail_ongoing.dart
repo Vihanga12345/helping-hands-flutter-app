@@ -46,6 +46,12 @@ class _HelperJobDetailOngoingPageState
               showBackButton: true,
               showMenuButton: true,
               showNotificationButton: true,
+              onMenuPressed: () {
+                context.push('/helper/menu');
+              },
+              onNotificationPressed: () {
+                context.push('/helper/notifications');
+              },
             ),
             Expanded(
               child: SingleChildScrollView(

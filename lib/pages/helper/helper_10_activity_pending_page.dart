@@ -47,6 +47,12 @@ class _HelperActivityPendingPageState extends State<HelperActivityPendingPage>
             title: 'Activities',
             showMenuButton: true,
             showNotificationButton: true,
+            onMenuPressed: () {
+              context.push('/helper/menu');
+            },
+            onNotificationPressed: () {
+              context.push('/helper/notifications');
+            },
           ),
           Expanded(
             child: Container(
@@ -204,10 +210,24 @@ class _HelperActivityPendingPageState extends State<HelperActivityPendingPage>
                 ? AppColors.primaryGreen
                 : AppColors.success;
 
+    // Determine correct navigation route based on job type and status
+    String getNavigationRoute() {
+      switch (jobType) {
+        case 'pending':
+          return '/helper/job-detail/pending'; // Private request: Accept/Reject
+        case 'ongoing':
+          return '/helper/job-detail/ongoing'; // Ongoing: Start Job / Pause/Resume/Complete
+        case 'completed':
+          return '/helper/job-detail/completed'; // Completed: Report only
+        default:
+          return '/helper/job-detail/pending';
+      }
+    }
+
     return Column(
       children: [
         GestureDetector(
-          onTap: () => context.push('/helper/comprehensive-job-detail'),
+          onTap: () => context.push(getNavigationRoute()),
           child: Container(
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
