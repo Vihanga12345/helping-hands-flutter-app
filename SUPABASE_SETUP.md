@@ -21,6 +21,7 @@
 2. Copy the **entire content** from `supabase/migrations/001_initial_schema.sql`
 3. Paste it and click **"RUN"** ▶️
 4. ✅ **Creates all 13 tables with relationships**
+5. ✅ **No RLS (Row Level Security) enabled** - Full access for development
 
 ### **Step 3: Add Initial Data**
 1. Create **another new query** in SQL Editor
@@ -97,4 +98,20 @@ Your database is now ready for your Flutter app to connect and start building fe
 3. 📱 **Start Development** - Build your app features
 4. 🧪 **Test Everything** - User registration, job posting, etc.
 
-**Your Helping Hands app database is ready! 🎉** 
+**Your Helping Hands app database is ready! 🎉**
+
+---
+
+## 🔒 **SECURITY NOTES**
+
+### **RLS (Row Level Security) Status:**
+- ✅ **Currently DISABLED** - All tables have full access for development
+- 🔄 **Future Implementation** - Can be enabled later when needed for production
+- 📝 **Benefits**: Faster development, easier testing, no permission issues during setup
+
+### **When to Enable RLS Later:**
+- Production deployment
+- Multi-tenant requirements
+- Enhanced data privacy needs
+
+**For now, focus on building features without security complexity! 🚀** 

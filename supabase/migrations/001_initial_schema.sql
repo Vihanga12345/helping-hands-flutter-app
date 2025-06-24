@@ -1,6 +1,10 @@
 -- Helping Hands App - Complete Database Schema
 -- Migration: 001_initial_schema.sql
 
+-- NOTE: RLS (Row Level Security) is intentionally NOT enabled for development
+-- This provides full access to all tables for easier development and testing
+-- RLS can be enabled later for production if needed
+
 -- Enable necessary extensions
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
