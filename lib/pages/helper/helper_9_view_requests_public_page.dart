@@ -115,8 +115,8 @@ class Helper9ViewRequestsPublicPage extends StatelessWidget {
         // Job Tile - Clickable
         GestureDetector(
           onTap: () {
-            // Navigate to job detail page
-            context.push('/helper/job-detail');
+            // Navigate to pending job detail page since these are requests
+            context.push('/helper/job-detail/pending');
           },
           child: Container(
             margin: const EdgeInsets.only(bottom: 12),

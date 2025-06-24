@@ -28,7 +28,7 @@ class _Helpee6MenuPageState extends State<Helpee6MenuPage> {
             showMenuButton: false,
             showNotificationButton: false,
           ),
-
+          
           // Body Content
           Expanded(
             child: Container(
@@ -95,9 +95,9 @@ class _Helpee6MenuPageState extends State<Helpee6MenuPage> {
                           ],
                         ),
                       ),
-
+                      
                       const SizedBox(height: 24),
-
+                      
                       // Menu Items
                       Expanded(
                         child: ListView(
@@ -141,7 +141,7 @@ class _Helpee6MenuPageState extends State<Helpee6MenuPage> {
               ),
             ),
           ),
-
+          
           // Navigation Bar
           const AppNavigationBar(
             currentTab: NavigationTab.home,
@@ -289,4 +289,4 @@ class _Helpee6MenuPageState extends State<Helpee6MenuPage> {
       },
     );
   }
-}
+} 

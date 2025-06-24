@@ -166,7 +166,7 @@ class _Helper24ProfileJobsEditPageState
                               style: const TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.w600,
-                                color: AppColors.primaryGreen,
+                        color: AppColors.primaryGreen,
                               ),
                             ),
                             const SizedBox(height: 8),
@@ -351,11 +351,11 @@ class _Helper24ProfileJobsEditPageState
                           ),
                           child: const Text(
                             'Save Job Preferences',
-                            style: TextStyle(
+                        style: TextStyle(
                               fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
                         ),
                       ),
 

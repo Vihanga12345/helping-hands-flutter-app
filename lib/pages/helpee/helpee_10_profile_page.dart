@@ -43,7 +43,7 @@ class Helpee10ProfilePage extends StatelessWidget {
               ),
             ),
           ),
-
+          
           // Body Content
           Expanded(
             child: Container(
@@ -135,9 +135,9 @@ class Helpee10ProfilePage extends StatelessWidget {
                           ],
                         ),
                       ),
-
+                      
                       const SizedBox(height: 20),
-
+                      
                       // Personal Information
                       _buildInfoSection(
                         title: 'Personal Information',
@@ -148,9 +148,9 @@ class Helpee10ProfilePage extends StatelessWidget {
                           _buildInfoItem('Date of Birth', 'January 15, 1990'),
                         ],
                       ),
-
+                      
                       const SizedBox(height: 16),
-
+                      
                       // Emergency Contact
                       _buildInfoSection(
                         title: 'Emergency Contact',
@@ -159,9 +159,9 @@ class Helpee10ProfilePage extends StatelessWidget {
                           _buildInfoItem('Phone', '+94 77 987 6543'),
                         ],
                       ),
-
+                      
                       const SizedBox(height: 16),
-
+                      
                       // Preferences
                       _buildInfoSection(
                         title: 'Preferences',
@@ -215,7 +215,7 @@ class Helpee10ProfilePage extends StatelessWidget {
                           ),
                         ],
                       ),
-
+                      
                       const SizedBox(height: 20),
                     ],
                   ),
@@ -223,7 +223,7 @@ class Helpee10ProfilePage extends StatelessWidget {
               ),
             ),
           ),
-
+          
           // Navigation Bar
           const AppNavigationBar(
             currentTab: NavigationTab.profile,
@@ -344,4 +344,4 @@ class Helpee10ProfilePage extends StatelessWidget {
       },
     );
   }
-}
+} 

@@ -129,7 +129,7 @@ class _Helpee8CalendarPageState extends State<Helpee8CalendarPage> {
                         calendarStyle: CalendarStyle(
                           outsideDaysVisible: false,
                           selectedDecoration: const BoxDecoration(
-                            color: AppColors.primaryGreen,
+                              color: AppColors.primaryGreen,
                             shape: BoxShape.circle,
                           ),
                           todayDecoration: BoxDecoration(
@@ -152,8 +152,8 @@ class _Helpee8CalendarPageState extends State<Helpee8CalendarPage> {
                           ),
                           formatButtonTextStyle: const TextStyle(
                             color: Colors.white,
+                            ),
                           ),
-                        ),
                       ),
                     ),
 
@@ -181,7 +181,7 @@ class _Helpee8CalendarPageState extends State<Helpee8CalendarPage> {
                               _getEventsForDay(_selectedDay!).isNotEmpty)
                             ..._getEventsForDay(_selectedDay!)
                                 .map((event) => _buildJobCardFromEvent(
-                                      context: context,
+                            context: context,
                                       event: event,
                                     ))
                                 .toList()
@@ -197,7 +197,7 @@ class _Helpee8CalendarPageState extends State<Helpee8CalendarPage> {
                                     color: Colors.black.withOpacity(0.1),
                                     blurRadius: 8,
                                     offset: const Offset(0, 2),
-                                  ),
+                          ),
                                 ],
                               ),
                               child: Column(
@@ -216,7 +216,7 @@ class _Helpee8CalendarPageState extends State<Helpee8CalendarPage> {
                                   ),
                                 ],
                               ),
-                            ),
+                          ),
                         ],
                       ),
                     ),

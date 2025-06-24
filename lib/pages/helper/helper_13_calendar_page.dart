@@ -214,7 +214,7 @@ class _Helper13CalendarPageState extends State<Helper13CalendarPage> {
                               status: 'ONGOING',
                               statusColor: AppColors.success,
                               onTap: () {
-                                context.push('/helper/job-ongoing');
+                                context.push('/helper/job-detail/ongoing');
                               },
                             ),
 
@@ -227,7 +227,20 @@ class _Helper13CalendarPageState extends State<Helper13CalendarPage> {
                               status: 'PENDING',
                               statusColor: AppColors.warning,
                               onTap: () {
-                                context.push('/helper/job-pending-request');
+                                context.push('/helper/job-detail/pending');
+                              },
+                            ),
+
+                            _buildJobTile(
+                              title: 'Garden Maintenance',
+                              hourlyRate: '3,200 / Hr',
+                              date: 'Today',
+                              time: '10:00 AM - 1:00 PM',
+                              location: 'Nugegoda',
+                              status: 'COMPLETED',
+                              statusColor: AppColors.primaryGreen,
+                              onTap: () {
+                                context.push('/helper/job-detail/completed');
                               },
                             ),
 

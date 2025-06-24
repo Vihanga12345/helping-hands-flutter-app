@@ -6,9 +6,9 @@ import '../../widgets/common/app_header.dart';
 import '../../widgets/common/app_navigation_bar.dart';
 import '../../widgets/ui_elements/helpee_profile_bar.dart';
 
-// Template for Private Job Request - Accept/Reject actions
-class HelperJobDetailPendingPage extends StatelessWidget {
-  const HelperJobDetailPendingPage({super.key});
+// Template for Public Job Request - Accept/Ignore actions
+class HelperJobDetailPublicPage extends StatelessWidget {
+  const HelperJobDetailPublicPage({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -17,7 +17,7 @@ class HelperJobDetailPendingPage extends StatelessWidget {
         child: Column(
           children: [
             AppHeader(
-              title: 'Private Job Request',
+              title: 'Public Job Request',
               showBackButton: true,
               showMenuButton: true,
               showNotificationButton: true,
@@ -36,13 +36,13 @@ class HelperJobDetailPendingPage extends StatelessWidget {
                   children: [
                     _buildMainJobDetails(),
                     const SizedBox(height: 24),
-                    _buildJobQuestions(),
+                    _buildJobDescription(),
                     const SizedBox(height: 24),
-                    _buildJobAdditionalDetails(),
+                    _buildJobRequirements(),
                     const SizedBox(height: 24),
                     _buildPostedBySection(context),
                     const SizedBox(height: 24),
-                    _buildPrivateRequestActions(context),
+                    _buildPublicRequestActions(context),
                     const SizedBox(height: 24),
                   ],
                 ),
@@ -90,13 +90,13 @@ class HelperJobDetailPendingPage extends StatelessWidget {
                 padding:
                     const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
-                  color: AppColors.primaryGreen.withOpacity(0.1),
+                  color: AppColors.warning.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
-                  'PRIVATE REQUEST',
+                  'PUBLIC REQUEST',
                   style: AppTextStyles.bodySmall.copyWith(
-                    color: AppColors.primaryGreen,
+                    color: AppColors.warning,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
@@ -104,21 +104,21 @@ class HelperJobDetailPendingPage extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 16),
-          _buildDetailRow('Job Type', 'General House Cleaning'),
+          _buildDetailRow('Job Type', 'Garden Maintenance'),
           const SizedBox(height: 12),
-          _buildDetailRow('Hourly Rate', 'LKR 2,500 / Hour'),
+          _buildDetailRow('Hourly Rate', 'LKR 1,800 / Hour'),
           const SizedBox(height: 12),
-          _buildDetailRow('Date', '21st May 2024'),
+          _buildDetailRow('Date', 'Tomorrow, 22nd May 2024'),
           const SizedBox(height: 12),
-          _buildDetailRow('Time', '2:00 PM - 5:00 PM'),
+          _buildDetailRow('Time', '8:00 AM - 12:00 PM'),
           const SizedBox(height: 12),
-          _buildDetailRow('Location', 'Colombo 03, 1.5 km away'),
+          _buildDetailRow('Location', 'Mount Lavinia, 3.2 km away'),
         ],
       ),
     );
   }
 
-  Widget _buildJobQuestions() {
+  Widget _buildJobDescription() {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(20),
@@ -137,33 +137,26 @@ class HelperJobDetailPendingPage extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Job Requirements',
+            'Job Description',
             style: AppTextStyles.heading3.copyWith(
               fontWeight: FontWeight.w700,
               color: AppColors.textPrimary,
             ),
           ),
-          const SizedBox(height: 16),
-          _buildQuestionAnswer(
-            'What specific tasks need to be completed?',
-            'Deep cleaning of living room, kitchen, and 2 bedrooms. Focus on floors, surfaces, and bathroom cleaning.',
-          ),
-          const SizedBox(height: 16),
-          _buildQuestionAnswer(
-            'Are there any specific instructions?',
-            'Please bring your own cleaning supplies. Pet-friendly products preferred as we have a cat.',
-          ),
-          const SizedBox(height: 16),
-          _buildQuestionAnswer(
-            'Any access instructions?',
-            'Ring the doorbell. If no answer, call the provided number. Parking available in front of the house.',
+          const SizedBox(height: 12),
+          Text(
+            'Looking for someone to help with garden maintenance including grass cutting, hedge trimming, and general garden cleanup. This is a one-time job but may lead to regular work if satisfied with service.',
+            style: AppTextStyles.bodyMedium.copyWith(
+              color: AppColors.textSecondary,
+              height: 1.5,
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildJobAdditionalDetails() {
+  Widget _buildJobRequirements() {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(20),
@@ -182,32 +175,38 @@ class HelperJobDetailPendingPage extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Additional Information',
+            'Requirements & Details',
             style: AppTextStyles.heading3.copyWith(
               fontWeight: FontWeight.w700,
               color: AppColors.textPrimary,
             ),
           ),
           const SizedBox(height: 16),
-          _buildDetailRow('Estimated Duration', '3-4 hours'),
+          _buildDetailRow('Experience Required', 'Basic gardening experience'),
           const SizedBox(height: 12),
-          _buildDetailRow('Property Type', 'Apartment - 3 bedrooms'),
+          _buildDetailRow('Tools Provided', 'Basic tools available on-site'),
           const SizedBox(height: 12),
-          _buildDetailRow('Payment Method', 'Cash payment after completion'),
+          _buildDetailRow('Garden Size', 'Medium-sized residential garden'),
+          const SizedBox(height: 12),
+          _buildDetailRow('Parking', 'Street parking available'),
+          const SizedBox(height: 12),
+          _buildDetailRow('Payment', 'Cash or bank transfer'),
           const SizedBox(height: 16),
-
-          // Attachments if any
           Text(
-            'Attachments',
+            'Additional Notes',
             style: AppTextStyles.bodyLarge.copyWith(
               fontWeight: FontWeight.w600,
               color: AppColors.textPrimary,
             ),
           ),
           const SizedBox(height: 8),
-          _buildAttachmentItem('House Layout.jpg', '1.2 MB'),
-          const SizedBox(height: 8),
-          _buildAttachmentItem('Special Instructions.pdf', '856 KB'),
+          Text(
+            '• Please bring your own gloves if preferred\n• Garden waste disposal will be handled by homeowner\n• Light refreshments will be provided',
+            style: AppTextStyles.bodyMedium.copyWith(
+              color: AppColors.textSecondary,
+              height: 1.4,
+            ),
+          ),
         ],
       ),
     );
@@ -240,9 +239,9 @@ class HelperJobDetailPendingPage extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           const HelpeeProfileBar(
-            name: 'Emily Davis',
-            rating: 4.7,
-            jobCount: 15,
+            name: 'Michael Brown',
+            rating: 4.5,
+            jobCount: 8,
           ),
           const SizedBox(height: 16),
           Row(
@@ -279,7 +278,7 @@ class HelperJobDetailPendingPage extends StatelessWidget {
     );
   }
 
-  Widget _buildPrivateRequestActions(BuildContext context) {
+  Widget _buildPublicRequestActions(BuildContext context) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(20),
@@ -310,20 +309,20 @@ class HelperJobDetailPendingPage extends StatelessWidget {
               Expanded(
                 child: OutlinedButton(
                   onPressed: () {
-                    _showRejectDialog(context);
+                    _showIgnoreDialog(context);
                   },
                   style: OutlinedButton.styleFrom(
-                    foregroundColor: AppColors.error,
-                    side: const BorderSide(color: AppColors.error),
+                    foregroundColor: AppColors.textSecondary,
+                    side: const BorderSide(color: AppColors.textSecondary),
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(25),
                     ),
                   ),
                   child: Text(
-                    'Reject',
+                    'Ignore',
                     style: AppTextStyles.buttonMedium.copyWith(
-                      color: AppColors.error,
+                      color: AppColors.textSecondary,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -385,63 +384,6 @@ class HelperJobDetailPendingPage extends StatelessWidget {
     );
   }
 
-  Widget _buildQuestionAnswer(String question, String answer) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          question,
-          style: AppTextStyles.bodyMedium.copyWith(
-            fontWeight: FontWeight.w600,
-            color: AppColors.textPrimary,
-          ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          answer,
-          style: AppTextStyles.bodyMedium.copyWith(
-            color: AppColors.textSecondary,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildAttachmentItem(String filename, String size) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: AppColors.backgroundLight,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: AppColors.borderLight),
-      ),
-      child: Row(
-        children: [
-          Icon(
-            Icons.attach_file,
-            color: AppColors.primaryGreen,
-            size: 20,
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              filename,
-              style: AppTextStyles.bodyMedium.copyWith(
-                color: AppColors.textPrimary,
-              ),
-            ),
-          ),
-          Text(
-            size,
-            style: AppTextStyles.bodySmall.copyWith(
-              color: AppColors.textSecondary,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   void _showAcceptDialog(BuildContext context) {
     showDialog(
       context: context,
@@ -450,14 +392,14 @@ class HelperJobDetailPendingPage extends StatelessWidget {
           shape:
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           title: Text(
-            'Accept Private Request',
+            'Accept Public Request',
             style: AppTextStyles.heading3.copyWith(
               fontWeight: FontWeight.w700,
               color: AppColors.textPrimary,
             ),
           ),
           content: Text(
-            'Are you sure you want to accept this private job request?',
+            'Are you sure you want to accept this public job request? You will be committed to completing this job.',
             style: AppTextStyles.bodyMedium.copyWith(
               color: AppColors.textSecondary,
             ),
@@ -477,7 +419,7 @@ class HelperJobDetailPendingPage extends StatelessWidget {
                 Navigator.of(context).pop();
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
-                    content: Text('Private job request accepted!'),
+                    content: Text('Public job request accepted!'),
                     backgroundColor: AppColors.primaryGreen,
                   ),
                 );
@@ -503,7 +445,7 @@ class HelperJobDetailPendingPage extends StatelessWidget {
     );
   }
 
-  void _showRejectDialog(BuildContext context) {
+  void _showIgnoreDialog(BuildContext context) {
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -511,14 +453,14 @@ class HelperJobDetailPendingPage extends StatelessWidget {
           shape:
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           title: Text(
-            'Reject Private Request',
+            'Ignore Public Request',
             style: AppTextStyles.heading3.copyWith(
               fontWeight: FontWeight.w700,
               color: AppColors.textPrimary,
             ),
           ),
           content: Text(
-            'Are you sure you want to reject this private job request?',
+            'This request will be removed from your view. You can always find it again in the public requests section.',
             style: AppTextStyles.bodyMedium.copyWith(
               color: AppColors.textSecondary,
             ),
@@ -538,21 +480,21 @@ class HelperJobDetailPendingPage extends StatelessWidget {
                 Navigator.of(context).pop();
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
-                    content: Text('Private job request rejected'),
-                    backgroundColor: AppColors.error,
+                    content: Text('Public request ignored'),
+                    backgroundColor: AppColors.textSecondary,
                   ),
                 );
                 context.pop();
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.error,
+                backgroundColor: AppColors.textSecondary,
                 foregroundColor: AppColors.white,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
               ),
               child: Text(
-                'Reject',
+                'Ignore',
                 style: AppTextStyles.buttonMedium.copyWith(
                   color: AppColors.white,
                 ),

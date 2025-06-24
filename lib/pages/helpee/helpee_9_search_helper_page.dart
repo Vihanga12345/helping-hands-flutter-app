@@ -4,6 +4,7 @@ import '../../utils/app_colors.dart';
 import '../../utils/app_text_styles.dart';
 import '../../widgets/common/app_header.dart';
 import '../../widgets/common/app_navigation_bar.dart';
+import '../../widgets/ui_elements/helper_profile_bar.dart';
 
 class Helpee9SearchHelperPage extends StatefulWidget {
   const Helpee9SearchHelperPage({super.key});
@@ -127,14 +128,14 @@ class _Helpee9SearchHelperPageState extends State<Helpee9SearchHelperPage> {
                         padding: const EdgeInsets.symmetric(horizontal: 16),
                         itemCount: 5, // Demo helpers
                         itemBuilder: (context, index) {
-                          return _buildHelperCard(
-                            name: 'Helper ${index + 1}',
+                          return _buildHelperSearchResult(
+                            name: 'John Smith ${index + 1}',
                             category: _categories[(index % 4) + 1],
                             rating: 4.5 + (index * 0.1),
+                            jobCount: 50 + (index * 10),
                             experience: '${index + 2} years',
                             rate: 'LKR ${(index + 15) * 100}/hour',
                             distance: '${index + 1}.2 km away',
-                            imageUrl: null,
                           );
                         },
                       ),
@@ -155,91 +156,71 @@ class _Helpee9SearchHelperPageState extends State<Helpee9SearchHelperPage> {
     );
   }
 
-  Widget _buildHelperCard({
+  Widget _buildHelperSearchResult({
     required String name,
     required String category,
     required double rating,
+    required int jobCount,
     required String experience,
     required String rate,
     required String distance,
-    String? imageUrl,
   }) {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
+      child: Column(
+        children: [
+          // Helper Profile Bar
+          HelperProfileBar(
+            name: name,
+            rating: rating,
+            jobCount: jobCount,
+            onTap: () {
+              context.push('/helpee/helper-profile');
+            },
+          ),
+
+          const SizedBox(height: 8),
+
+          // Additional Info and Action Buttons
+          Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: AppColors.white,
-        borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(12),
         boxShadow: const [
           BoxShadow(
             color: AppColors.shadowColorLight,
-            blurRadius: 8,
-            offset: Offset(0, 4),
+                  blurRadius: 4,
+                  offset: Offset(0, 2),
           ),
         ],
       ),
       child: Column(
         children: [
-          Row(
-            children: [
-              // Profile Image
-              const CircleAvatar(
-                radius: 30,
-                backgroundColor: AppColors.primaryGreen,
-                child: Icon(
-                  Icons.person,
-                  color: AppColors.white,
-                  size: 30,
-                ),
-              ),
-
-              const SizedBox(width: 16),
-
-              // Helper Info
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                // Additional Info Row
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(
-                      name,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
                     Text(
                       category,
                       style: const TextStyle(
                         color: AppColors.primaryGreen,
                         fontSize: 14,
-                        fontWeight: FontWeight.w500,
+                            fontWeight: FontWeight.w600,
                       ),
-                    ),
-                    Row(
-                      children: [
-                        const Icon(
-                          Icons.star,
-                          color: AppColors.warning,
-                          size: 16,
                         ),
                         Text(
-                          ' ${rating.toStringAsFixed(1)}',
-                          style: const TextStyle(fontSize: 14),
-                        ),
-                        Text(
-                          ' • $experience',
+                          '$experience experience',
                           style: const TextStyle(
-                            fontSize: 14,
+                            fontSize: 12,
                             color: AppColors.textSecondary,
                           ),
                         ),
                       ],
                     ),
-                  ],
-                ),
-              ),
-
-              // Rate and Distance
               Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
@@ -271,7 +252,7 @@ class _Helpee9SearchHelperPageState extends State<Helpee9SearchHelperPage> {
               Expanded(
                 child: OutlinedButton(
                   onPressed: () {
-                    context.go('/helpee/helper-profile');
+                          context.push('/helpee/helper-profile');
                   },
                   style: OutlinedButton.styleFrom(
                     side: const BorderSide(color: AppColors.primaryGreen),
@@ -309,6 +290,9 @@ class _Helpee9SearchHelperPageState extends State<Helpee9SearchHelperPage> {
                 ),
               ),
             ],
+                ),
+              ],
+            ),
           ),
         ],
       ),

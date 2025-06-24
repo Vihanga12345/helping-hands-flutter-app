@@ -15,21 +15,33 @@ class Helper22ProfileEditPage extends StatefulWidget {
 
 class _Helper22ProfileEditPageState extends State<Helper22ProfileEditPage> {
   final _formKey = GlobalKey<FormState>();
-  final _nameController = TextEditingController(text: 'John Smith');
+
+  // Text Controllers
+  final _firstNameController = TextEditingController(text: 'John');
+  final _lastNameController = TextEditingController(text: 'Smith');
+  final _phoneController = TextEditingController(text: '+94 71 234 5678');
   final _emailController = TextEditingController(text: 'john.smith@email.com');
-  final _phoneController = TextEditingController(text: '+94 77 123 4567');
-  final _locationController = TextEditingController(text: 'Colombo, Sri Lanka');
-  final _aboutController = TextEditingController(
+  final _locationController = TextEditingController(text: 'Colombo 07');
+  final _aboutMeController = TextEditingController(
       text:
-          'Experienced house cleaner with over 2 years of professional service.');
+          'Experienced professional helper with 5+ years in household services. Specialized in deep cleaning, organizing, and maintenance work. I take pride in delivering quality service and ensuring customer satisfaction.');
+  final _emergencyNameController = TextEditingController(text: 'Jane Smith');
+  final _emergencyPhoneController =
+      TextEditingController(text: '+94 71 234 5679');
+
+  String _selectedGender = 'Male';
+  DateTime _selectedBirthDate = DateTime(1990, 5, 15);
 
   @override
   void dispose() {
-    _nameController.dispose();
-    _emailController.dispose();
+    _firstNameController.dispose();
+    _lastNameController.dispose();
     _phoneController.dispose();
+    _emailController.dispose();
     _locationController.dispose();
-    _aboutController.dispose();
+    _aboutMeController.dispose();
+    _emergencyNameController.dispose();
+    _emergencyPhoneController.dispose();
     super.dispose();
   }
 
@@ -53,22 +65,22 @@ class _Helper22ProfileEditPageState extends State<Helper22ProfileEditPage> {
               AppHeader(
                 title: 'Edit Profile',
                 showBackButton: true,
-                onBackPressed: () => context.pop(),
+                showMenuButton: true,
+                showNotificationButton: true,
+                onMenuPressed: () {
+                  context.push('/helper/menu');
+                },
+                onNotificationPressed: () {
+                  context.push('/helper/notifications');
+                },
                 rightWidget: TextButton(
-                  onPressed: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Profile updated successfully!'),
-                        backgroundColor: AppColors.success,
-                      ),
-                    );
-                    context.pop();
-                  },
-                  child: Text(
+                  onPressed: _saveProfile,
+                  child: const Text(
                     'Save',
-                    style: TextStyle().copyWith(
+                    style: TextStyle(
                       color: AppColors.primaryGreen,
                       fontWeight: FontWeight.w600,
+                      fontSize: 16,
                     ),
                   ),
                 ),
@@ -81,77 +93,58 @@ class _Helper22ProfileEditPageState extends State<Helper22ProfileEditPage> {
                   child: Form(
                     key: _formKey,
                     child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Profile Photo Section
-                        Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.all(20),
-                          decoration: BoxDecoration(
-                            color: AppColors.white,
-                            borderRadius: BorderRadius.circular(16),
-                            boxShadow: const [
-                              BoxShadow(
-                                color: AppColors.shadowColorLight,
-                                blurRadius: 8,
-                                offset: Offset(0, 4),
-                              ),
-                            ],
-                          ),
-                          child: Column(
+                        // Profile Picture Section
+                        Center(
+                          child: Stack(
                             children: [
-                              Stack(
-                                children: [
-                                  Container(
-                                    width: 100,
-                                    height: 100,
-                                    decoration: BoxDecoration(
-                                      color: AppColors.primaryGreen
-                                          .withOpacity(0.1),
-                                      borderRadius: BorderRadius.circular(50),
-                                    ),
-                                    child: const Icon(
-                                      Icons.person,
-                                      size: 50,
-                                      color: AppColors.primaryGreen,
-                                    ),
+                              Container(
+                                width: 120,
+                                height: 120,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color: AppColors.primaryGreen,
+                                    width: 3,
                                   ),
-                                  Positioned(
-                                    bottom: 0,
-                                    right: 0,
-                                    child: GestureDetector(
-                                      onTap: () {
-                                        ScaffoldMessenger.of(context)
-                                            .showSnackBar(
-                                          const SnackBar(
-                                              content: Text('Opening camera')),
-                                        );
-                                      },
-                                      child: Container(
-                                        width: 30,
-                                        height: 30,
-                                        decoration: BoxDecoration(
-                                          color: AppColors.primaryGreen,
-                                          borderRadius:
-                                              BorderRadius.circular(15),
-                                          border: Border.all(
-                                              color: AppColors.white, width: 3),
-                                        ),
-                                        child: const Icon(
-                                          Icons.camera_alt,
-                                          size: 18,
-                                          color: AppColors.white,
-                                        ),
+                                ),
+                                child: ClipOval(
+                                  child: Image.asset(
+                                    'assets/images/helper_profile.jpg',
+                                    fit: BoxFit.cover,
+                                    errorBuilder:
+                                        (context, error, stackTrace) =>
+                                            Container(
+                                      color: AppColors.lightGrey,
+                                      child: const Icon(
+                                        Icons.person,
+                                        size: 60,
+                                        color: AppColors.textSecondary,
                                       ),
                                     ),
                                   ),
-                                ],
+                                ),
                               ),
-                              const SizedBox(height: 16),
-                              Text(
-                                'Change Profile Photo',
-                                style: TextStyle().copyWith(
-                                  color: AppColors.primaryGreen,
-                                  fontWeight: FontWeight.w600,
+                              Positioned(
+                                bottom: 0,
+                                right: 0,
+                                child: Container(
+                                  width: 36,
+                                  height: 36,
+                                  decoration: BoxDecoration(
+                                    color: AppColors.primaryGreen,
+                                    shape: BoxShape.circle,
+                                    border: Border.all(
+                                      color: AppColors.white,
+                                      width: 2,
+                                    ),
+                                  ),
+                                  child: const Icon(
+                                    Icons.camera_alt,
+                                    color: AppColors.white,
+                                    size: 20,
+                                  ),
                                 ),
                               ),
                             ],
@@ -160,7 +153,7 @@ class _Helper22ProfileEditPageState extends State<Helper22ProfileEditPage> {
 
                         const SizedBox(height: 24),
 
-                        // Personal Information
+                        // Personal Information Section
                         Container(
                           width: double.infinity,
                           padding: const EdgeInsets.all(20),
@@ -180,25 +173,159 @@ class _Helper22ProfileEditPageState extends State<Helper22ProfileEditPage> {
                             children: [
                               Text(
                                 'Personal Information',
-                                style: TextStyle(),
+                                style: AppTextStyles.heading3.copyWith(
+                                  color: AppColors.primaryGreen,
+                                  fontWeight: FontWeight.w700,
+                                ),
                               ),
-                              const SizedBox(height: 20),
-                              _buildTextField(
-                                controller: _nameController,
-                                label: 'Full Name',
-                                icon: Icons.person,
+                              const SizedBox(height: 16),
+
+                              // First Name
+                              _buildTextFormField(
+                                label: 'First Name',
+                                controller: _firstNameController,
+                                icon: Icons.person_outline,
                                 validator: (value) {
                                   if (value == null || value.isEmpty) {
-                                    return 'Please enter your full name';
+                                    return 'Please enter your first name';
                                   }
                                   return null;
                                 },
                               ),
+
                               const SizedBox(height: 16),
-                              _buildTextField(
+
+                              // Last Name
+                              _buildTextFormField(
+                                label: 'Last Name',
+                                controller: _lastNameController,
+                                icon: Icons.person_outline,
+                                validator: (value) {
+                                  if (value == null || value.isEmpty) {
+                                    return 'Please enter your last name';
+                                  }
+                                  return null;
+                                },
+                              ),
+
+                              const SizedBox(height: 16),
+
+                              // Phone Number
+                              _buildTextFormField(
+                                label: 'Phone Number',
+                                controller: _phoneController,
+                                icon: Icons.phone_outlined,
+                                keyboardType: TextInputType.phone,
+                                validator: (value) {
+                                  if (value == null || value.isEmpty) {
+                                    return 'Please enter your phone number';
+                                  }
+                                  return null;
+                                },
+                              ),
+
+                              const SizedBox(height: 16),
+
+                              // Gender Dropdown
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Gender',
+                                    style: AppTextStyles.bodyMedium.copyWith(
+                                      fontWeight: FontWeight.w600,
+                                      color: AppColors.textPrimary,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  DropdownButtonFormField<String>(
+                                    value: _selectedGender,
+                                    decoration: InputDecoration(
+                                      prefixIcon: const Icon(Icons.person),
+                                      border: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      contentPadding:
+                                          const EdgeInsets.symmetric(
+                                        horizontal: 16,
+                                        vertical: 16,
+                                      ),
+                                    ),
+                                    items: ['Male', 'Female', 'Other']
+                                        .map((String value) {
+                                      return DropdownMenuItem<String>(
+                                        value: value,
+                                        child: Text(value),
+                                      );
+                                    }).toList(),
+                                    onChanged: (String? newValue) {
+                                      setState(() {
+                                        _selectedGender = newValue!;
+                                      });
+                                    },
+                                  ),
+                                ],
+                              ),
+
+                              const SizedBox(height: 16),
+
+                              // Birthday
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Birthday',
+                                    style: AppTextStyles.bodyMedium.copyWith(
+                                      fontWeight: FontWeight.w600,
+                                      color: AppColors.textPrimary,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  GestureDetector(
+                                    onTap: () => _selectDate(context),
+                                    child: Container(
+                                      padding: const EdgeInsets.all(16),
+                                      decoration: BoxDecoration(
+                                        border: Border.all(color: Colors.grey),
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      child: Row(
+                                        children: [
+                                          const Icon(Icons.cake_outlined),
+                                          const SizedBox(width: 12),
+                                          Text(
+                                            '${_selectedBirthDate.day}/${_selectedBirthDate.month}/${_selectedBirthDate.year}',
+                                            style: AppTextStyles.bodyMedium,
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+
+                              const SizedBox(height: 16),
+
+                              // Location
+                              _buildTextFormField(
+                                label: 'Location',
+                                controller: _locationController,
+                                icon: Icons.location_on_outlined,
+                                validator: (value) {
+                                  if (value == null || value.isEmpty) {
+                                    return 'Please enter your location';
+                                  }
+                                  return null;
+                                },
+                              ),
+
+                              const SizedBox(height: 16),
+
+                              // Email
+                              _buildTextFormField(
+                                label: 'Email',
                                 controller: _emailController,
-                                label: 'Email Address',
-                                icon: Icons.email,
+                                icon: Icons.email_outlined,
                                 keyboardType: TextInputType.emailAddress,
                                 validator: (value) {
                                   if (value == null || value.isEmpty) {
@@ -210,38 +337,13 @@ class _Helper22ProfileEditPageState extends State<Helper22ProfileEditPage> {
                                   return null;
                                 },
                               ),
-                              const SizedBox(height: 16),
-                              _buildTextField(
-                                controller: _phoneController,
-                                label: 'Phone Number',
-                                icon: Icons.phone,
-                                keyboardType: TextInputType.phone,
-                                validator: (value) {
-                                  if (value == null || value.isEmpty) {
-                                    return 'Please enter your phone number';
-                                  }
-                                  return null;
-                                },
-                              ),
-                              const SizedBox(height: 16),
-                              _buildTextField(
-                                controller: _locationController,
-                                label: 'Location',
-                                icon: Icons.location_on,
-                                validator: (value) {
-                                  if (value == null || value.isEmpty) {
-                                    return 'Please enter your location';
-                                  }
-                                  return null;
-                                },
-                              ),
                             ],
                           ),
                         ),
 
-                        const SizedBox(height: 24),
+                        const SizedBox(height: 20),
 
-                        // About Me
+                        // About Me Section
                         Container(
                           width: double.infinity,
                           padding: const EdgeInsets.all(20),
@@ -261,28 +363,24 @@ class _Helper22ProfileEditPageState extends State<Helper22ProfileEditPage> {
                             children: [
                               Text(
                                 'About Me',
-                                style: TextStyle(),
+                                style: AppTextStyles.heading3.copyWith(
+                                  color: AppColors.primaryGreen,
+                                  fontWeight: FontWeight.w700,
+                                ),
                               ),
-                              const SizedBox(height: 20),
+                              const SizedBox(height: 16),
+
+                              // About Me Text Area
                               TextFormField(
-                                controller: _aboutController,
+                                controller: _aboutMeController,
                                 maxLines: 4,
                                 decoration: InputDecoration(
-                                  labelText: 'Tell us about yourself',
                                   hintText:
-                                      'Describe your experience, skills, and what makes you a great helper...',
+                                      'Tell clients about yourself, your experience, and what makes you special...',
                                   border: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(12),
-                                    borderSide: const BorderSide(
-                                        color: AppColors.lightGrey),
                                   ),
-                                  focusedBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                    borderSide: const BorderSide(
-                                        color: AppColors.primaryGreen,
-                                        width: 2),
-                                  ),
-                                  prefixIcon: const Icon(Icons.description),
+                                  contentPadding: const EdgeInsets.all(16),
                                 ),
                                 validator: (value) {
                                   if (value == null || value.isEmpty) {
@@ -295,9 +393,9 @@ class _Helper22ProfileEditPageState extends State<Helper22ProfileEditPage> {
                           ),
                         ),
 
-                        const SizedBox(height: 24),
+                        const SizedBox(height: 20),
 
-                        // Services & Specialization
+                        // Emergency Contact Section
                         Container(
                           width: double.infinity,
                           padding: const EdgeInsets.all(20),
@@ -316,69 +414,47 @@ class _Helper22ProfileEditPageState extends State<Helper22ProfileEditPage> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                'Services & Specialization',
-                                style: TextStyle(),
-                              ),
-                              const SizedBox(height: 16),
-                              Text(
-                                'Your current services:',
-                                style: TextStyle().copyWith(
-                                  color: AppColors.textSecondary,
+                                'Emergency Contact',
+                                style: AppTextStyles.heading3.copyWith(
+                                  color: AppColors.primaryGreen,
+                                  fontWeight: FontWeight.w700,
                                 ),
                               ),
-                              const SizedBox(height: 12),
-                              Wrap(
-                                spacing: 8,
-                                runSpacing: 8,
-                                children: [
-                                  _buildServiceChip('House Cleaning', true),
-                                  _buildServiceChip('Deep Cleaning', true),
-                                  _buildServiceChip('Office Cleaning', false),
-                                  _buildServiceChip('Maintenance', true),
-                                  _buildServiceChip('Organizing', false),
-                                  _buildServiceChip('Window Cleaning', false),
-                                ],
-                              ),
                               const SizedBox(height: 16),
-                              OutlinedButton.icon(
-                                onPressed: () {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                        content:
-                                            Text('Edit services coming soon')),
-                                  );
+
+                              // Emergency Contact Name
+                              _buildTextFormField(
+                                label: 'Emergency Contact Name',
+                                controller: _emergencyNameController,
+                                icon: Icons.person_outline,
+                                validator: (value) {
+                                  if (value == null || value.isEmpty) {
+                                    return 'Please enter emergency contact name';
+                                  }
+                                  return null;
                                 },
-                                icon: const Icon(Icons.edit, size: 18),
-                                label: const Text('Edit Services'),
+                              ),
+
+                              const SizedBox(height: 16),
+
+                              // Emergency Contact Phone
+                              _buildTextFormField(
+                                label: 'Emergency Contact Phone',
+                                controller: _emergencyPhoneController,
+                                icon: Icons.phone_outlined,
+                                keyboardType: TextInputType.phone,
+                                validator: (value) {
+                                  if (value == null || value.isEmpty) {
+                                    return 'Please enter emergency contact phone';
+                                  }
+                                  return null;
+                                },
                               ),
                             ],
                           ),
                         ),
 
-                        const SizedBox(height: 32),
-
-                        // Save Button
-                        SizedBox(
-                          width: double.infinity,
-                          height: 56,
-                          child: ElevatedButton(
-                            onPressed: () {
-                              if (_formKey.currentState!.validate()) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content:
-                                        Text('Profile updated successfully!'),
-                                    backgroundColor: AppColors.success,
-                                  ),
-                                );
-                                context.pop();
-                              }
-                            },
-                            child: const Text('Save Changes'),
-                          ),
-                        ),
-
-                        const SizedBox(height: 20),
+                        const SizedBox(height: 24),
                       ],
                     ),
                   ),
@@ -386,7 +462,7 @@ class _Helper22ProfileEditPageState extends State<Helper22ProfileEditPage> {
               ),
 
               // Navigation Bar
-              AppNavigationBar(
+              const AppNavigationBar(
                 currentTab: NavigationTab.profile,
                 userType: UserType.helper,
               ),
@@ -397,64 +473,71 @@ class _Helper22ProfileEditPageState extends State<Helper22ProfileEditPage> {
     );
   }
 
-  Widget _buildTextField({
-    required TextEditingController controller,
+  Widget _buildTextFormField({
     required String label,
+    required TextEditingController controller,
     required IconData icon,
     TextInputType? keyboardType,
     String? Function(String?)? validator,
+    int maxLines = 1,
+    String? hintText,
   }) {
-    return TextFormField(
-      controller: controller,
-      keyboardType: keyboardType,
-      decoration: InputDecoration(
-        labelText: label,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppColors.lightGrey),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: AppTextStyles.bodyMedium.copyWith(
+            fontWeight: FontWeight.w600,
+            color: AppColors.textPrimary,
+          ),
         ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppColors.primaryGreen, width: 2),
+        const SizedBox(height: 8),
+        TextFormField(
+          controller: controller,
+          keyboardType: keyboardType,
+          maxLines: maxLines,
+          decoration: InputDecoration(
+            prefixIcon: Icon(icon),
+            hintText: hintText,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 16,
+            ),
+          ),
+          validator: validator,
         ),
-        prefixIcon: Icon(icon),
-      ),
-      validator: validator,
+      ],
     );
   }
 
-  Widget _buildServiceChip(String service, bool isSelected) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        color: isSelected
-            ? AppColors.primaryGreen.withOpacity(0.1)
-            : AppColors.lightGrey.withOpacity(0.5),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: isSelected ? AppColors.primaryGreen : AppColors.lightGrey,
-        ),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (isSelected)
-            const Icon(
-              Icons.check_circle,
-              size: 16,
-              color: AppColors.primaryGreen,
-            ),
-          if (isSelected) const SizedBox(width: 4),
-          Text(
-            service,
-            style: TextStyle().copyWith(
-              color:
-                  isSelected ? AppColors.primaryGreen : AppColors.textSecondary,
-              fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-            ),
-          ),
-        ],
-      ),
+  Future<void> _selectDate(BuildContext context) async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: _selectedBirthDate,
+      firstDate: DateTime(1950),
+      lastDate: DateTime.now(),
     );
+    if (picked != null && picked != _selectedBirthDate) {
+      setState(() {
+        _selectedBirthDate = picked;
+      });
+    }
+  }
+
+  void _saveProfile() {
+    if (_formKey.currentState!.validate()) {
+      // Here you would typically save to backend
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Profile updated successfully!'),
+          backgroundColor: AppColors.success,
+        ),
+      );
+      context.pop();
+    }
   }
 }
