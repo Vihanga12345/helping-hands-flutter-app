@@ -3,7 +3,6 @@
 
 -- Enable necessary extensions
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
-CREATE EXTENSION IF NOT EXISTS "postgis";
 
 -- 1. USERS TABLE (Helpers, Helpees, Admins)
 CREATE TABLE users (
