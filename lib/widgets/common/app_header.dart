@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../utils/app_colors.dart';
+import '../../services/custom_auth_service.dart';
 
 class AppHeader extends StatelessWidget {
   final String title;
@@ -52,14 +53,15 @@ class AppHeader extends StatelessWidget {
               // Left Button (Back or Menu)
               if (showBackButton)
                 GestureDetector(
-                  onTap: onBackPressed ?? () {
-                    if (context.canPop()) {
-                      context.pop();
-                    } else {
-                      // If there's nothing to pop, go to the home page
-                      context.go('/helpee/home');
-                    }
-                  },
+                  onTap: onBackPressed ??
+                      () {
+                        if (context.canPop()) {
+                          context.pop();
+                        } else {
+                          // If there's nothing to pop, go to the appropriate home page
+                          _navigateToHome(context);
+                        }
+                      },
                   child: Container(
                     width: 30,
                     height: 30,
@@ -83,7 +85,7 @@ class AppHeader extends StatelessWidget {
                 )
               else if (showMenuButton)
                 GestureDetector(
-                  onTap: onMenuPressed ?? () => context.go('/helpee/menu'),
+                  onTap: onMenuPressed ?? () => _navigateToMenu(context),
                   child: Container(
                     width: 30,
                     height: 30,
@@ -107,7 +109,7 @@ class AppHeader extends StatelessWidget {
                 )
               else
                 const SizedBox(width: 30),
-              
+
               // Title
               Expanded(
                 child: Text(
@@ -121,11 +123,12 @@ class AppHeader extends StatelessWidget {
                   ),
                 ),
               ),
-              
+
               // Right Button (Notification or Custom)
               if (showNotificationButton && rightWidget == null)
                 GestureDetector(
-                  onTap: onNotificationPressed ?? () => context.go('/helpee/notifications'),
+                  onTap: onNotificationPressed ??
+                      () => _navigateToNotifications(context),
                   child: Container(
                     width: 30,
                     height: 30,
@@ -159,4 +162,31 @@ class AppHeader extends StatelessWidget {
       ),
     );
   }
-} 
+
+  void _navigateToMenu(BuildContext context) {
+    final currentUser = CustomAuthService().currentUser;
+    if (currentUser != null && currentUser['user_type'] == 'helper') {
+      context.go('/helper/menu');
+    } else {
+      context.go('/helpee/menu');
+    }
+  }
+
+  void _navigateToNotifications(BuildContext context) {
+    final currentUser = CustomAuthService().currentUser;
+    if (currentUser != null && currentUser['user_type'] == 'helper') {
+      context.go('/helper/notifications');
+    } else {
+      context.go('/helpee/notifications');
+    }
+  }
+
+  void _navigateToHome(BuildContext context) {
+    final currentUser = CustomAuthService().currentUser;
+    if (currentUser != null && currentUser['user_type'] == 'helper') {
+      context.go('/helper/home');
+    } else {
+      context.go('/helpee/home');
+    }
+  }
+}

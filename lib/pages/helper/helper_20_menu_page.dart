@@ -4,9 +4,61 @@ import '../../utils/app_colors.dart';
 import '../../utils/app_text_styles.dart';
 import '../../widgets/common/app_header.dart';
 import '../../widgets/common/app_navigation_bar.dart';
+import '../../services/user_data_service.dart';
+import '../../services/custom_auth_service.dart';
 
-class Helper20MenuPage extends StatelessWidget {
+class Helper20MenuPage extends StatefulWidget {
   const Helper20MenuPage({super.key});
+
+  @override
+  State<Helper20MenuPage> createState() => _Helper20MenuPageState();
+}
+
+class _Helper20MenuPageState extends State<Helper20MenuPage> {
+  final UserDataService _userDataService = UserDataService();
+  final CustomAuthService _authService = CustomAuthService();
+
+  Map<String, dynamic>? _userProfile;
+  Map<String, dynamic>? _userStatistics;
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserProfile();
+  }
+
+  Future<void> _loadUserProfile() async {
+    try {
+      setState(() {
+        _isLoading = true;
+      });
+
+      final currentUser = _authService.currentUser;
+      if (currentUser == null) {
+        print('❌ No current user found');
+        return;
+      }
+
+      final results = await Future.wait([
+        _userDataService.getCurrentUserProfile(),
+        _userDataService.getHelperStatistics(currentUser['user_id']),
+      ]);
+
+      setState(() {
+        _userProfile = results[0] as Map<String, dynamic>?;
+        _userStatistics = results[1] as Map<String, dynamic>;
+        _isLoading = false;
+      });
+
+      print('✅ Menu profile data loaded successfully');
+    } catch (e) {
+      print('❌ Error loading menu profile data: $e');
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -51,51 +103,86 @@ class Helper20MenuPage extends StatelessWidget {
                             ),
                           ],
                         ),
-                        child: Row(
-                          children: [
-                            Container(
-                              width: 60,
-                              height: 60,
-                              decoration: BoxDecoration(
-                                color: AppColors.primaryGreen.withOpacity(0.1),
-                                borderRadius: BorderRadius.circular(30),
-                              ),
-                              child: const Icon(
-                                Icons.person,
-                                size: 30,
-                                color: AppColors.primaryGreen,
-                              ),
-                            ),
-                            const SizedBox(width: 16),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'John Smith',
-                                    style: TextStyle(),
+                        child: _isLoading
+                            ? const Center(
+                                child: Padding(
+                                  padding: EdgeInsets.all(20.0),
+                                  child: CircularProgressIndicator(
+                                    color: AppColors.primaryGreen,
                                   ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    'Verified Helper • 4.8 ⭐',
-                                    style: TextStyle().copyWith(
-                                      color: AppColors.textSecondary,
+                                ),
+                              )
+                            : Row(
+                                children: [
+                                  Container(
+                                    width: 60,
+                                    height: 60,
+                                    decoration: BoxDecoration(
+                                      color: AppColors.primaryGreen
+                                          .withOpacity(0.1),
+                                      borderRadius: BorderRadius.circular(30),
+                                    ),
+                                    child: ClipOval(
+                                      child:
+                                          _userProfile?['profile_image_url'] !=
+                                                  null
+                                              ? Image.network(
+                                                  _userProfile![
+                                                      'profile_image_url'],
+                                                  fit: BoxFit.cover,
+                                                  errorBuilder: (context, error,
+                                                          stackTrace) =>
+                                                      const Icon(
+                                                    Icons.person,
+                                                    size: 30,
+                                                    color:
+                                                        AppColors.primaryGreen,
+                                                  ),
+                                                )
+                                              : const Icon(
+                                                  Icons.person,
+                                                  size: 30,
+                                                  color: AppColors.primaryGreen,
+                                                ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 16),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          '${_userProfile?['first_name'] ?? ''} ${_userProfile?['last_name'] ?? ''}'
+                                              .trim(),
+                                          style:
+                                              AppTextStyles.heading3.copyWith(
+                                            fontWeight: FontWeight.w700,
+                                            color: AppColors.textPrimary,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          'Verified Helper • ${(_userStatistics?['rating'] ?? 0.0).toStringAsFixed(1)} ⭐',
+                                          style:
+                                              AppTextStyles.bodyMedium.copyWith(
+                                            color: AppColors.textSecondary,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  IconButton(
+                                    onPressed: () {
+                                      context.push('/helper/profile/edit');
+                                    },
+                                    icon: const Icon(
+                                      Icons.edit,
+                                      color: AppColors.primaryGreen,
                                     ),
                                   ),
                                 ],
                               ),
-                            ),
-                            IconButton(
-                              onPressed: () {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                      content: Text('Opening profile')),
-                                );
-                              },
-                              icon: const Icon(Icons.edit),
-                            ),
-                          ],
-                        ),
                       ),
 
                       const SizedBox(height: 24),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import '../utils/route_guard.dart';
 
 // Common User Pages
 import '../pages/common/user_1_start_page.dart';
@@ -23,7 +24,6 @@ import '../pages/helpee/helpee_11_profile_edit_page.dart';
 import '../pages/helpee/helpee_12_job_request_view_page.dart';
 import '../pages/helpee/helpee_13_job_request_edit_page.dart';
 import '../pages/helpee/helpee_14_helper_profile_page.dart';
-import '../pages/helpee/helpee_14_detailed_helper_profile_page.dart';
 import '../pages/helpee/helpee_15_activity_pending_page.dart';
 import '../pages/helpee/helpee_16_activity_ongoing_page.dart';
 import '../pages/helpee/helpee_17_activity_completed_page.dart';
@@ -41,8 +41,7 @@ import '../pages/helper/helper_1_auth_page.dart';
 import '../pages/helper/helper_2_login_page.dart';
 import '../pages/helper/helper_3_registration_page_1.dart';
 import '../pages/helper/helper_7_home_page.dart';
-import '../pages/helper/helper_8_view_requests_private_page.dart';
-import '../pages/helper/helper_9_view_requests_public_page.dart';
+import '../pages/helper/helper_8_view_requests_page.dart';
 import '../pages/helper/helper_10_activity_pending_page.dart';
 import '../pages/helper/helper_13_calendar_page.dart';
 import '../pages/helper/helper_19_notification_page.dart';
@@ -56,16 +55,13 @@ import '../pages/helper/helper_help_support_page.dart';
 import '../pages/helper/helper_about_us_page.dart';
 import '../pages/helper/helper_terms_conditions_page.dart';
 import '../pages/helper/helper_privacy_policy_page.dart';
-import '../pages/helper/helper_job_detail_page.dart';
 import '../pages/helper/helper_helpee_profile_page.dart';
-import '../pages/helper/helper_job_detail_pending.dart';
-import '../pages/helper/helper_job_detail_ongoing.dart';
-import '../pages/helper/helper_job_detail_completed.dart';
-import '../pages/helper/helper_job_detail_public.dart';
+import '../pages/helper/helper_comprehensive_job_detail_page.dart';
 
 class NavigationService {
   static final GoRouter router = GoRouter(
     initialLocation: '/',
+    redirect: (context, state) => RouteGuard.guardRoute(context, state),
     routes: [
       // Common User Routes
       GoRoute(
@@ -128,7 +124,13 @@ class NavigationService {
       GoRoute(
         path: '/helpee/job-request',
         name: 'helpee-job-request',
-        builder: (context, state) => const Helpee7JobRequestPage(),
+        builder: (context, state) {
+          final extra = state.extra as Map<String, dynamic>?;
+          return Helpee7JobRequestPage(
+            isEdit: extra?['isEdit'] ?? false,
+            jobData: extra?['jobData'],
+          );
+        },
       ),
       GoRoute(
         path: '/helpee/calendar',
@@ -163,28 +165,58 @@ class NavigationService {
       GoRoute(
         path: '/helpee/helper-profile',
         name: 'helpee-helper-profile',
-        builder: (context, state) => const Helpee14HelperProfilePage(),
+        builder: (context, state) {
+          final extra = state.extra as Map<String, dynamic>?;
+          return Helpee14HelperProfilePage(
+            helperId: extra?['helperId'],
+            helperData: extra?['helperData'],
+          );
+        },
       ),
       GoRoute(
         path: '/helpee/helper-profile-detailed',
         name: 'helpee-helper-profile-detailed',
-        builder: (context, state) => const Helpee14DetailedHelperProfilePage(),
+        builder: (context, state) {
+          final extra = state.extra as Map<String, dynamic>?;
+          return Helpee14HelperProfilePage(
+            helperId: extra?['helperId'],
+            helperData: extra?['helperData'],
+          );
+        },
       ),
       // Helpee Job Detail Routes
       GoRoute(
         path: '/helpee/job-detail/pending',
         name: 'helpee-job-detail-pending',
-        builder: (context, state) => const HelpeeJobDetailPendingPage(),
+        builder: (context, state) {
+          final extra = state.extra as Map<String, dynamic>?;
+          return HelpeeJobDetailPendingPage(
+            jobId: extra?['jobId'],
+            jobData: extra?['jobData'],
+          );
+        },
       ),
       GoRoute(
         path: '/helpee/job-detail/ongoing',
         name: 'helpee-job-detail-ongoing',
-        builder: (context, state) => const HelpeeJobDetailOngoingPage(),
+        builder: (context, state) {
+          final extra = state.extra as Map<String, dynamic>?;
+          return HelpeeJobDetailOngoingPage(
+            jobId: extra?['jobId'],
+            jobData: extra?['jobData'],
+          );
+        },
       ),
       GoRoute(
         path: '/helpee/job-detail/completed',
         name: 'helpee-job-detail-completed',
-        builder: (context, state) => const HelpeeJobDetailCompletedPage(),
+        builder: (context, state) {
+          final extra = state.extra as Map<String, dynamic>?;
+          return HelpeeJobDetailCompletedPage(
+            jobId: extra?['jobId'],
+            jobData: extra?['jobData'],
+          );
+        },
       ),
       GoRoute(
         path: '/helpee/about-us',
@@ -205,6 +237,17 @@ class NavigationService {
         path: '/helpee/profile/edit',
         name: 'helpee-profile-edit',
         builder: (context, state) => const Helpee11ProfileEditPage(),
+      ),
+      GoRoute(
+        path: '/helpee/job-request-edit',
+        name: 'helpee-job-request-edit',
+        builder: (context, state) {
+          final extra = state.extra as Map<String, dynamic>?;
+          return Helpee13JobRequestEditPage(
+            jobId: extra?['jobId'],
+            jobData: extra?['jobData'],
+          );
+        },
       ),
 
       // Helper Routes
@@ -227,34 +270,42 @@ class NavigationService {
         path: '/helper/home',
         name: 'helperHome',
         builder: (context, state) => const Helper7HomePage(),
+        routes: [
+          GoRoute(
+            path: 'requests',
+            builder: (context, state) => const Helper8ViewRequestsPage(),
+          ),
+        ],
       ),
       GoRoute(
         path: '/helper/view-requests/private',
         name: 'helper-view-requests-private',
-        builder: (context, state) => const Helper8ViewRequestsPrivatePage(),
+        builder: (context, state) =>
+            const Helper8ViewRequestsPage(initialTabIndex: 0),
       ),
       GoRoute(
         path: '/helper/view-requests/public',
         name: 'helper-view-requests-public',
-        builder: (context, state) => const Helper9ViewRequestsPublicPage(),
+        builder: (context, state) =>
+            const Helper8ViewRequestsPage(initialTabIndex: 1),
       ),
       GoRoute(
         path: '/helper/activity/pending',
         name: 'helper-activity-pending',
         builder: (context, state) =>
-            const HelperActivityPendingPage(initialTabIndex: 0),
+            const Helper10ActivityPendingPage(initialTabIndex: 0),
       ),
       GoRoute(
         path: '/helper/activity/ongoing',
         name: 'helper-activity-ongoing',
         builder: (context, state) =>
-            const HelperActivityPendingPage(initialTabIndex: 1),
+            const Helper10ActivityPendingPage(initialTabIndex: 1),
       ),
       GoRoute(
         path: '/helper/activity/completed',
         name: 'helper-activity-completed',
         builder: (context, state) =>
-            const HelperActivityPendingPage(initialTabIndex: 2),
+            const Helper10ActivityPendingPage(initialTabIndex: 2),
       ),
       GoRoute(
         path: '/helper/calendar',
@@ -292,36 +343,26 @@ class NavigationService {
         builder: (context, state) => const Helper26ProfileResumeEditPage(),
       ),
       GoRoute(
-        path: '/helper/comprehensive-job-detail',
+        path: '/helper/comprehensive-job-detail/:jobId',
         name: 'helper-comprehensive-job-detail',
-        builder: (context, state) => const HelperJobDetailPage(),
+        builder: (context, state) {
+          final jobId = state.pathParameters['jobId']!;
+          return HelperComprehensiveJobDetailPage(jobId: jobId);
+        },
       ),
       GoRoute(
         path: '/helper/helpee-profile',
         name: 'helper-helpee-profile',
-        builder: (context, state) => const HelperHelpeeProfilePage(),
+        builder: (context, state) {
+          final extra = state.extra as Map<String, dynamic>?;
+          return HelperHelpeeProfilePage(
+            helpeeId: extra?['helpeeId'],
+            helpeeData: extra?['helpeeData'],
+            helpeeStats: extra?['helpeeStats'],
+          );
+        },
       ),
-      // Helper Job Detail Routes
-      GoRoute(
-        path: '/helper/job-detail/pending',
-        name: 'helper-job-detail-pending',
-        builder: (context, state) => const HelperJobDetailPendingPage(),
-      ),
-      GoRoute(
-        path: '/helper/job-detail/ongoing',
-        name: 'helper-job-detail-ongoing',
-        builder: (context, state) => const HelperJobDetailOngoingPage(),
-      ),
-      GoRoute(
-        path: '/helper/job-detail/completed',
-        name: 'helper-job-detail-completed',
-        builder: (context, state) => const HelperJobDetailCompletedPage(),
-      ),
-      GoRoute(
-        path: '/helper/job-detail/public',
-        name: 'helper-job-detail-public',
-        builder: (context, state) => const HelperJobDetailPublicPage(),
-      ),
+
       GoRoute(
         path: '/helper/earnings',
         name: 'helper-earnings',

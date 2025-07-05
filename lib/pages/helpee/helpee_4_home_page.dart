@@ -4,9 +4,19 @@ import '../../utils/app_colors.dart';
 import '../../utils/app_text_styles.dart';
 import '../../widgets/common/app_header.dart';
 import '../../widgets/common/app_navigation_bar.dart';
+import '../../services/user_data_service.dart';
+import '../../services/custom_auth_service.dart';
 
-class Helpee4HomePage extends StatelessWidget {
+class Helpee4HomePage extends StatefulWidget {
   const Helpee4HomePage({super.key});
+
+  @override
+  State<Helpee4HomePage> createState() => _Helpee4HomePageState();
+}
+
+class _Helpee4HomePageState extends State<Helpee4HomePage> {
+  final UserDataService _userDataService = UserDataService();
+  final CustomAuthService _authService = CustomAuthService();
 
   @override
   Widget build(BuildContext context) {
@@ -20,7 +30,7 @@ class Helpee4HomePage extends StatelessWidget {
             showMenuButton: true,
             showNotificationButton: true,
           ),
-          
+
           // Body Content
           Expanded(
             child: Container(
@@ -40,68 +50,11 @@ class Helpee4HomePage extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Welcome Section
-                      Container(
-                        padding: const EdgeInsets.all(20),
-                        decoration: BoxDecoration(
-                          color: AppColors.white,
-                          borderRadius: BorderRadius.circular(16),
-                          boxShadow: const [
-                            BoxShadow(
-                              color: AppColors.shadowColorLight,
-                              blurRadius: 8,
-                              offset: Offset(0, 4),
-                            ),
-                          ],
-                        ),
-                        child: Row(
-                          children: [
-                            const CircleAvatar(
-                              radius: 30,
-                              backgroundColor: AppColors.primaryGreen,
-                              child: Icon(
-                                Icons.person,
-                                color: AppColors.white,
-                                size: 30,
-                              ),
-                            ),
-                            const SizedBox(width: 16),
-                            const Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'Welcome, John!',
-                                    style: TextStyle(
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                  Text(
-                                    'Ready to get some help today?',
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      color: AppColors.textSecondary,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            IconButton(
-                              onPressed: () {
-                                context.go('/helpee/search-helper');
-                              },
-                              icon: const Icon(
-                                Icons.search,
-                                color: AppColors.primaryGreen,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      
-                      const SizedBox(height: 20),
-                      
+                      // Welcome Section - Dynamic
+                      _buildWelcomeSection(),
+
+                      const SizedBox(height: 32),
+
                       // Quick Actions
                       const Text(
                         'Quick Actions',
@@ -110,7 +63,7 @@ class Helpee4HomePage extends StatelessWidget {
                           fontWeight: FontWeight.w600,
                         ),
                       ),
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 16),
                       Row(
                         children: [
                           Expanded(
@@ -132,38 +85,88 @@ class Helpee4HomePage extends StatelessWidget {
                           ),
                         ],
                       ),
-                      
-                      const SizedBox(height: 20),
-                      
-                      // Recent Activity
-                      const Text(
-                        'Recent Activity',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w600,
-                        ),
+
+                      const SizedBox(height: 32),
+
+                      // Additional Quick Actions
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _buildQuickActionCard(
+                              context,
+                              'My Activity',
+                              Icons.work_history,
+                              () => context.go('/helpee/activity/pending'),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: _buildQuickActionCard(
+                              context,
+                              'Calendar',
+                              Icons.calendar_today,
+                              () => context.go('/helpee/calendar'),
+                            ),
+                          ),
+                        ],
                       ),
-                      const SizedBox(height: 12),
-                      Expanded(
-                        child: ListView(
+
+                      const SizedBox(height: 32),
+
+                      // Help Information
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          color: AppColors.white,
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: const [
+                            BoxShadow(
+                              color: AppColors.shadowColorLight,
+                              blurRadius: 8,
+                              offset: Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            _buildActivityItem(
-                              'House Cleaning',
-                              'Completed yesterday',
-                              Icons.check_circle,
-                              AppColors.success,
+                            Text(
+                              'Need Help?',
+                              style: const TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.textPrimary,
+                              ),
                             ),
-                            _buildActivityItem(
-                              'Garden Maintenance',
-                              'In progress',
-                              Icons.schedule,
-                              AppColors.warning,
+                            const SizedBox(height: 12),
+                            Text(
+                              'Get started by creating your first job request or browse available helpers in your area.',
+                              style: const TextStyle(
+                                fontSize: 14,
+                                color: AppColors.textSecondary,
+                                height: 1.4,
+                              ),
                             ),
-                            _buildActivityItem(
-                              'Cooking Service',
-                              'Pending approval',
-                              Icons.pending,
-                              AppColors.warning,
+                            const SizedBox(height: 16),
+                            SizedBox(
+                              width: double.infinity,
+                              child: ElevatedButton(
+                                onPressed: () =>
+                                    context.go('/helpee/job-request'),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: AppColors.primaryGreen,
+                                  padding:
+                                      const EdgeInsets.symmetric(vertical: 12),
+                                ),
+                                child: const Text(
+                                  'Create Job Request',
+                                  style: TextStyle(
+                                    color: AppColors.white,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
                             ),
                           ],
                         ),
@@ -174,7 +177,7 @@ class Helpee4HomePage extends StatelessWidget {
               ),
             ),
           ),
-          
+
           // Navigation Bar
           const AppNavigationBar(
             currentTab: NavigationTab.home,
@@ -182,6 +185,81 @@ class Helpee4HomePage extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildWelcomeSection() {
+    return FutureBuilder<Map<String, dynamic>?>(
+      future: _userDataService.getCurrentUserProfile(),
+      builder: (context, snapshot) {
+        String welcomeName = 'Welcome!';
+
+        if (snapshot.hasData && snapshot.data != null) {
+          final firstName = snapshot.data!['first_name'] ?? '';
+          if (firstName.isNotEmpty) {
+            welcomeName = 'Welcome, $firstName!';
+          }
+        }
+
+        return Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: AppColors.white,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: const [
+              BoxShadow(
+                color: AppColors.shadowColorLight,
+                blurRadius: 8,
+                offset: Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              const CircleAvatar(
+                radius: 30,
+                backgroundColor: AppColors.primaryGreen,
+                child: Icon(
+                  Icons.person,
+                  color: AppColors.white,
+                  size: 30,
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      welcomeName,
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const Text(
+                      'Ready to get some help today?',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              IconButton(
+                onPressed: () {
+                  context.go('/helpee/search-helper');
+                },
+                icon: const Icon(
+                  Icons.search,
+                  color: AppColors.primaryGreen,
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 
@@ -234,63 +312,4 @@ class Helpee4HomePage extends StatelessWidget {
       ),
     );
   }
-
-  Widget _buildActivityItem(
-    String title,
-    String subtitle,
-    IconData icon,
-    Color iconColor,
-  ) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: AppColors.white,
-        borderRadius: BorderRadius.circular(8),
-        boxShadow: const [
-          BoxShadow(
-            color: AppColors.shadowColorLight,
-            blurRadius: 2,
-            offset: Offset(0, 1),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Icon(
-            icon,
-            color: iconColor,
-            size: 24,
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                Text(
-                  subtitle,
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: AppColors.textSecondary,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const Icon(
-            Icons.arrow_forward_ios,
-            size: 16,
-            color: AppColors.textSecondary,
-          ),
-        ],
-      ),
-    );
-  }
-} 
+}

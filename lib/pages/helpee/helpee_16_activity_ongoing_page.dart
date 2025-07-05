@@ -20,7 +20,7 @@ class Helpee16ActivityOngoingPage extends StatelessWidget {
             showMenuButton: true,
             showNotificationButton: true,
           ),
-          
+
           // Body Content
           Expanded(
             child: Container(
@@ -55,9 +55,11 @@ class Helpee16ActivityOngoingPage extends StatelessWidget {
                         children: [
                           Expanded(
                             child: GestureDetector(
-                              onTap: () => context.go('/helpee/activity/pending'),
+                              onTap: () =>
+                                  context.go('/helpee/activity/pending'),
                               child: Container(
-                                padding: const EdgeInsets.symmetric(vertical: 12),
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 12),
                                 child: const Text(
                                   'Pending',
                                   textAlign: TextAlign.center,
@@ -88,9 +90,11 @@ class Helpee16ActivityOngoingPage extends StatelessWidget {
                           ),
                           Expanded(
                             child: GestureDetector(
-                              onTap: () => context.go('/helpee/activity/completed'),
+                              onTap: () =>
+                                  context.go('/helpee/activity/completed'),
                               child: Container(
-                                padding: const EdgeInsets.symmetric(vertical: 12),
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 12),
                                 child: const Text(
                                   'Completed',
                                   textAlign: TextAlign.center,
@@ -105,7 +109,7 @@ class Helpee16ActivityOngoingPage extends StatelessWidget {
                         ],
                       ),
                     ),
-                    
+
                     // Ongoing Jobs List
                     Expanded(
                       child: ListView.builder(
@@ -131,7 +135,7 @@ class Helpee16ActivityOngoingPage extends StatelessWidget {
               ),
             ),
           ),
-          
+
           // Navigation Bar - Activity tab active
           const AppNavigationBar(
             currentTab: NavigationTab.activity,
@@ -187,9 +191,12 @@ class Helpee16ActivityOngoingPage extends StatelessWidget {
                 ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                 decoration: BoxDecoration(
-                  color: status == 'In Progress' ? AppColors.success : AppColors.warning,
+                  color: status == 'In Progress'
+                      ? AppColors.success
+                      : AppColors.warning,
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
@@ -203,9 +210,9 @@ class Helpee16ActivityOngoingPage extends StatelessWidget {
               ),
             ],
           ),
-          
+
           const SizedBox(height: 12),
-          
+
           // Job Details
           Text(
             title,
@@ -228,9 +235,9 @@ class Helpee16ActivityOngoingPage extends StatelessWidget {
               ),
             ],
           ),
-          
+
           const SizedBox(height: 12),
-          
+
           // Progress Bar
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -246,14 +253,15 @@ class Helpee16ActivityOngoingPage extends StatelessWidget {
               LinearProgressIndicator(
                 value: progress,
                 backgroundColor: AppColors.lightGrey,
-                valueColor: const AlwaysStoppedAnimation<Color>(AppColors.success),
+                valueColor:
+                    const AlwaysStoppedAnimation<Color>(AppColors.success),
                 minHeight: 6,
               ),
             ],
           ),
-          
+
           const SizedBox(height: 12),
-          
+
           // Bottom Info
           Row(
             children: [
@@ -323,9 +331,9 @@ class Helpee16ActivityOngoingPage extends StatelessWidget {
               ),
             ],
           ),
-          
+
           const SizedBox(height: 16),
-          
+
           // Action Buttons
           Row(
             children: [
@@ -333,7 +341,8 @@ class Helpee16ActivityOngoingPage extends StatelessWidget {
                 child: OutlinedButton.icon(
                   onPressed: () {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Message helper feature coming soon!')),
+                      const SnackBar(
+                          content: Text('Message helper feature coming soon!')),
                     );
                   },
                   icon: const Icon(Icons.message, size: 16),
@@ -350,7 +359,44 @@ class Helpee16ActivityOngoingPage extends StatelessWidget {
               Expanded(
                 child: ElevatedButton.icon(
                   onPressed: () {
-                    context.go('/helpee/job/ongoing', extra: jobId);
+                    // Navigate to job detail page using SAME LOGIC as calendar and activity - determine route by status
+                    String normalizedStatus =
+                        status.toLowerCase().replaceAll(' ', '');
+
+                    String route;
+                    switch (normalizedStatus) {
+                      case 'pending':
+                        route = '/helpee/job-detail/pending';
+                        break;
+                      case 'inprogress':
+                      case 'ongoing':
+                      case 'started':
+                      case 'paused':
+                      case 'accepted':
+                      case 'confirmed':
+                        route = '/helpee/job-detail/ongoing';
+                        break;
+                      case 'completed':
+                        route = '/helpee/job-detail/completed';
+                        break;
+                      default:
+                        route =
+                            '/helpee/job-detail/ongoing'; // Default for ongoing page
+                    }
+
+                    context.push(route, extra: {
+                      'jobId': jobId,
+                      'jobData': {
+                        'id': jobId,
+                        'title': title,
+                        'helper': helper,
+                        'status': status,
+                        'price': price,
+                        'startedDate': startedDate,
+                        'estimatedCompletion': estimatedCompletion,
+                        'progress': progress,
+                      }
+                    });
                   },
                   icon: const Icon(Icons.visibility, size: 16),
                   label: const Text('View Job'),
@@ -369,4 +415,4 @@ class Helpee16ActivityOngoingPage extends StatelessWidget {
       ),
     );
   }
-} 
+}

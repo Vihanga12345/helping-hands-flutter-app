@@ -4,23 +4,28 @@ import '../../utils/app_colors.dart';
 import '../../utils/app_text_styles.dart';
 import '../../widgets/common/app_header.dart';
 import '../../widgets/common/app_navigation_bar.dart';
+import '../../widgets/common/job_action_buttons.dart';
+import '../../services/job_data_service.dart';
+import '../../services/custom_auth_service.dart';
 
-class HelperActivityPendingPage extends StatefulWidget {
+class Helper10ActivityPendingPage extends StatefulWidget {
   final int initialTabIndex;
 
-  const HelperActivityPendingPage({
+  const Helper10ActivityPendingPage({
     super.key,
     this.initialTabIndex = 0,
   });
 
   @override
-  State<HelperActivityPendingPage> createState() =>
-      _HelperActivityPendingPageState();
+  State<Helper10ActivityPendingPage> createState() =>
+      _Helper10ActivityPendingPageState();
 }
 
-class _HelperActivityPendingPageState extends State<HelperActivityPendingPage>
-    with TickerProviderStateMixin {
+class _Helper10ActivityPendingPageState
+    extends State<Helper10ActivityPendingPage> with TickerProviderStateMixin {
   late TabController _tabController;
+  final JobDataService _jobDataService = JobDataService();
+  final CustomAuthService _authService = CustomAuthService();
 
   @override
   void initState() {
@@ -114,9 +119,9 @@ class _HelperActivityPendingPageState extends State<HelperActivityPendingPage>
                     child: TabBarView(
                       controller: _tabController,
                       children: [
-                        _buildPendingTab(),
-                        _buildOngoingTab(),
-                        _buildCompletedTab(),
+                        _buildDynamicJobList('pending'),
+                        _buildDynamicJobList('ongoing'),
+                        _buildDynamicJobList('completed'),
                       ],
                     ),
                   ),
@@ -133,101 +138,58 @@ class _HelperActivityPendingPageState extends State<HelperActivityPendingPage>
     );
   }
 
-  Widget _buildPendingTab() {
-    return ListView.builder(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
-      itemCount: 2,
-      itemBuilder: (context, index) {
-        return _buildJobCard(
-          title: index == 0 ? 'House Cleaning' : 'Gardening',
-          pay: index == 0 ? '1500/Hr' : '1200/Hr',
-          date: index == 0 ? 'Dec 25, 2024' : 'Dec 26, 2024',
-          time: index == 0 ? '10:00 AM' : '2:00 PM',
-          location: index == 0 ? 'Colombo 03' : 'Mount Lavinia',
-          status: 'PENDING',
-          helpee: index == 0 ? 'Sarah Wilson' : 'John Smith',
-          jobType: 'pending',
-        );
-      },
-    );
-  }
-
-  Widget _buildOngoingTab() {
-    return ListView.builder(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
-      itemCount: 2,
-      itemBuilder: (context, index) {
-        return _buildJobCard(
-          title: index == 0 ? 'House Cleaning' : 'Gardening',
-          pay: index == 0 ? '1500/Hr' : '1200/Hr',
-          date: index == 0 ? 'Dec 24, 2024' : 'Dec 25, 2024',
-          time: index == 0 ? '9:00 AM' : '3:00 PM',
-          location: index == 0 ? 'Colombo 07' : 'Nugegoda',
-          status: index == 0 ? 'STARTED' : 'ACCEPTED',
-          helpee: index == 0 ? 'Emily Davis' : 'Mike Johnson',
-          jobType: 'ongoing',
-          jobState: index == 0 ? 'started' : 'accepted',
-        );
-      },
-    );
-  }
-
-  Widget _buildCompletedTab() {
-    return ListView.builder(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
-      itemCount: 2,
-      itemBuilder: (context, index) {
-        return _buildJobCard(
-          title: index == 0 ? 'House Cleaning' : 'Gardening',
-          pay: index == 0 ? 'LKR 4,000' : 'LKR 2,400',
-          date: index == 0 ? 'Dec 20, 2024' : 'Dec 18, 2024',
-          time: index == 0 ? '9:00 AM' : '2:00 PM',
-          location: index == 0 ? 'Colombo 03' : 'Kandy',
-          status: 'COMPLETED',
-          helpee: index == 0 ? 'Anna Brown' : 'Robert White',
-          jobType: 'completed',
-        );
-      },
-    );
-  }
-
-  Widget _buildJobCard({
-    required String title,
-    required String pay,
-    required String date,
-    required String time,
-    required String location,
-    required String status,
-    required String helpee,
-    required String jobType,
-    String? jobState,
-  }) {
-    Color statusColor = status == 'PENDING'
-        ? AppColors.warning
-        : status == 'STARTED'
-            ? AppColors.success
-            : status == 'ACCEPTED'
-                ? AppColors.primaryGreen
-                : AppColors.success;
-
-    // Determine correct navigation route based on job type and status
-    String getNavigationRoute() {
-      switch (jobType) {
-        case 'pending':
-          return '/helper/job-detail/pending'; // Private request: Accept/Reject
-        case 'ongoing':
-          return '/helper/job-detail/ongoing'; // Ongoing: Start Job / Pause/Resume/Complete
-        case 'completed':
-          return '/helper/job-detail/completed'; // Completed: Report only
-        default:
-          return '/helper/job-detail/pending';
-      }
+  Widget _buildDynamicJobList(String status) {
+    final currentUser = _authService.currentUser;
+    if (currentUser == null) {
+      return _buildNotLoggedInState();
     }
+
+    // Use the new method for the 'pending' tab
+    final future = status == 'pending'
+        ? _jobDataService.getHelperPendingJobs(currentUser['user_id'])
+        : _jobDataService.getJobsByHelperAndStatus(
+            currentUser['user_id'], status);
+
+    return FutureBuilder<List<Map<String, dynamic>>>(
+      future: future,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return _buildLoadingState();
+        }
+
+        if (snapshot.hasError) {
+          return _buildErrorState(status);
+        }
+
+        final jobs = snapshot.data ?? [];
+
+        if (jobs.isEmpty) {
+          return _buildEmptyState(status);
+        }
+
+        return ListView.builder(
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          itemCount: jobs.length,
+          itemBuilder: (context, index) {
+            final job = jobs[index];
+            return _buildJobCard(job);
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildJobCard(Map<String, dynamic> job) {
+    Color statusColor = _getStatusColor(job['status']);
 
     return Column(
       children: [
         GestureDetector(
-          onTap: () => context.push(getNavigationRoute()),
+          onTap: () {
+            // Navigate to the comprehensive job detail page with the job ID
+            final jobId = job['id'] as String;
+            context.push('/helper/comprehensive-job-detail/$jobId');
+          },
           child: Container(
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
@@ -249,7 +211,7 @@ class _HelperActivityPendingPageState extends State<HelperActivityPendingPage>
                   children: [
                     Expanded(
                       child: Text(
-                        title,
+                        job['title'] ?? 'Unknown Job',
                         style: AppTextStyles.heading3.copyWith(
                           fontWeight: FontWeight.w700,
                           color: AppColors.textPrimary,
@@ -264,7 +226,7 @@ class _HelperActivityPendingPageState extends State<HelperActivityPendingPage>
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Text(
-                        status,
+                        (job['status'] ?? 'UNKNOWN').toUpperCase(),
                         style: AppTextStyles.bodySmall.copyWith(
                           color: statusColor,
                           fontWeight: FontWeight.bold,
@@ -287,7 +249,7 @@ class _HelperActivityPendingPageState extends State<HelperActivityPendingPage>
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: Text(
-                        pay,
+                        job['pay'] ?? 'Rate not set',
                         style: AppTextStyles.bodyMedium.copyWith(
                           color: AppColors.white,
                           fontWeight: FontWeight.w600,
@@ -299,204 +261,21 @@ class _HelperActivityPendingPageState extends State<HelperActivityPendingPage>
                 const SizedBox(height: 12),
 
                 // Info pills
-                Container(
-                  width: double.infinity,
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: AppColors.primaryGreen.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(25),
-                  ),
-                  child: Text(date,
-                      style: AppTextStyles.bodyMedium.copyWith(
-                          color: AppColors.primaryGreen,
-                          fontWeight: FontWeight.w600)),
-                ),
+                _buildInfoPill(job['date'] ?? 'Date not set'),
                 const SizedBox(height: 8),
-                Container(
-                  width: double.infinity,
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: AppColors.primaryGreen.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(25),
-                  ),
-                  child: Text(time,
-                      style: AppTextStyles.bodyMedium.copyWith(
-                          color: AppColors.primaryGreen,
-                          fontWeight: FontWeight.w600)),
-                ),
+                _buildInfoPill(job['time'] ?? 'Time not set'),
                 const SizedBox(height: 8),
-                Container(
-                  width: double.infinity,
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: AppColors.primaryGreen.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(25),
-                  ),
-                  child: Text(location,
-                      style: AppTextStyles.bodyMedium.copyWith(
-                          color: AppColors.primaryGreen,
-                          fontWeight: FontWeight.w600)),
-                ),
+                _buildInfoPill(job['location'] ?? 'Location not set'),
                 const SizedBox(height: 16),
 
-                // Clickable Profile Bar
-                GestureDetector(
-                  onTap: () => context.push('/helper/helpee-profile'),
-                  child: Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: AppColors.backgroundLight,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Row(
-                      children: [
-                        CircleAvatar(
-                          radius: 20,
-                          backgroundColor: AppColors.primaryGreen,
-                          child: Text(helpee[0],
-                              style: AppTextStyles.buttonMedium.copyWith(
-                                  color: AppColors.white,
-                                  fontWeight: FontWeight.bold)),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Text(helpee,
-                              style: AppTextStyles.bodyMedium.copyWith(
-                                  fontWeight: FontWeight.w600,
-                                  color: AppColors.textPrimary)),
-                        ),
-                        const Icon(Icons.arrow_forward_ios, size: 16),
-                      ],
-                    ),
-                  ),
+                // Dynamic action buttons with timer functionality
+                JobActionButtons(
+                  job: job,
+                  userType: 'helper',
+                  onJobUpdated: () => setState(() {}),
+                  showTimer: ['started', 'paused']
+                      .contains(job['status']?.toLowerCase()),
                 ),
-                const SizedBox(height: 16),
-
-                // Action buttons based on job type
-                if (jobType == 'completed') ...[
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: () => _showReportDialog(context, title),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.error,
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(25)),
-                      ),
-                      child: Text('Report',
-                          style: AppTextStyles.buttonMedium.copyWith(
-                              color: AppColors.white,
-                              fontWeight: FontWeight.w600)),
-                    ),
-                  ),
-                ] else if (jobType == 'ongoing') ...[
-                  if (jobState == 'started') ...[
-                    Row(
-                      children: [
-                        Expanded(
-                          child: OutlinedButton(
-                            onPressed: () => ScaffoldMessenger.of(context)
-                                .showSnackBar(const SnackBar(
-                                    content: Text('Job Paused'))),
-                            style: OutlinedButton.styleFrom(
-                              foregroundColor: AppColors.warning,
-                              side: const BorderSide(color: AppColors.warning),
-                              padding: const EdgeInsets.symmetric(vertical: 12),
-                              shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(25)),
-                            ),
-                            child: Text('Pause',
-                                style: AppTextStyles.buttonMedium.copyWith(
-                                    color: AppColors.warning,
-                                    fontWeight: FontWeight.w600)),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: ElevatedButton(
-                            onPressed: () => ScaffoldMessenger.of(context)
-                                .showSnackBar(const SnackBar(
-                                    content: Text('Job Completed'))),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: AppColors.success,
-                              padding: const EdgeInsets.symmetric(vertical: 12),
-                              shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(25)),
-                            ),
-                            child: Text('Complete',
-                                style: AppTextStyles.buttonMedium.copyWith(
-                                    color: AppColors.white,
-                                    fontWeight: FontWeight.w600)),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ] else ...[
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        onPressed: () => ScaffoldMessenger.of(context)
-                            .showSnackBar(
-                                const SnackBar(content: Text('Job Started!'))),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primaryGreen,
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(25)),
-                        ),
-                        child: Text('Start Job',
-                            style: AppTextStyles.buttonMedium.copyWith(
-                                color: AppColors.white,
-                                fontWeight: FontWeight.w600)),
-                      ),
-                    ),
-                  ],
-                ] else ...[
-                  Row(
-                    children: [
-                      Expanded(
-                        child: OutlinedButton(
-                          onPressed: () => ScaffoldMessenger.of(context)
-                              .showSnackBar(
-                                  SnackBar(content: Text('Rejected $title'))),
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: AppColors.error,
-                            side: const BorderSide(color: AppColors.error),
-                            padding: const EdgeInsets.symmetric(vertical: 12),
-                            shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(25)),
-                          ),
-                          child: Text('Reject',
-                              style: AppTextStyles.buttonMedium.copyWith(
-                                  color: AppColors.error,
-                                  fontWeight: FontWeight.w600)),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: ElevatedButton(
-                          onPressed: () => ScaffoldMessenger.of(context)
-                              .showSnackBar(
-                                  SnackBar(content: Text('Accepted $title'))),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.primaryGreen,
-                            padding: const EdgeInsets.symmetric(vertical: 12),
-                            shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(25)),
-                          ),
-                          child: Text('Accept',
-                              style: AppTextStyles.buttonMedium.copyWith(
-                                  color: AppColors.white,
-                                  fontWeight: FontWeight.w600)),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
               ],
             ),
           ),
@@ -506,26 +285,396 @@ class _HelperActivityPendingPageState extends State<HelperActivityPendingPage>
     );
   }
 
-  void _showReportDialog(BuildContext context, String title) {
+  Widget _buildInfoPill(String text) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      decoration: BoxDecoration(
+        color: AppColors.primaryGreen.withOpacity(0.2),
+        borderRadius: BorderRadius.circular(25),
+      ),
+      child: Text(text,
+          style: AppTextStyles.bodyMedium.copyWith(
+              color: AppColors.primaryGreen, fontWeight: FontWeight.w600)),
+    );
+  }
+
+  Widget _buildHelperActionButtons(Map<String, dynamic> job) {
+    String status = (job['status'] ?? 'pending').toLowerCase();
+    bool isPrivate = job['is_private'] ?? false;
+
+    if (status == 'completed') {
+      // For completed jobs: Rate helpee
+      return SizedBox(
+        width: double.infinity,
+        child: ElevatedButton(
+          onPressed: () => context.push('/helper/rate-helpee'),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AppColors.primaryGreen,
+            padding: const EdgeInsets.symmetric(vertical: 12),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
+          ),
+          child: Text('Rate Helpee',
+              style: AppTextStyles.buttonMedium.copyWith(
+                  color: AppColors.white, fontWeight: FontWeight.w600)),
+        ),
+      );
+    } else if (status == 'ongoing' ||
+        status == 'started' ||
+        status == 'accepted') {
+      // For ongoing jobs: different buttons based on state
+      if (status == 'started') {
+        // For started jobs: Complete Job and Message Helpee
+        return Row(
+          children: [
+            Expanded(
+              child: OutlinedButton(
+                onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                        content: Text('Opening chat with helpee...'))),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AppColors.primaryGreen,
+                  side: const BorderSide(color: AppColors.primaryGreen),
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(25)),
+                ),
+                child: Text('Message',
+                    style: AppTextStyles.buttonMedium.copyWith(
+                        color: AppColors.primaryGreen,
+                        fontWeight: FontWeight.w600)),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: ElevatedButton(
+                onPressed: () =>
+                    _showCompleteJobDialog(context, job['title'] ?? 'Job'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primaryGreen,
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(25)),
+                ),
+                child: Text('Complete Job',
+                    style: AppTextStyles.buttonMedium.copyWith(
+                        color: AppColors.white, fontWeight: FontWeight.w600)),
+              ),
+            ),
+          ],
+        );
+      } else {
+        // For accepted jobs: Start Job button
+        return SizedBox(
+          width: double.infinity,
+          child: ElevatedButton(
+            onPressed: () =>
+                _showStartJobDialog(context, job['title'] ?? 'Job'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primaryGreen,
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(25)),
+            ),
+            child: Text('Start Job',
+                style: AppTextStyles.buttonMedium.copyWith(
+                    color: AppColors.white, fontWeight: FontWeight.w600)),
+          ),
+        );
+      }
+    } else {
+      // For pending jobs: Accept and Decline options
+      return Row(
+        children: [
+          Expanded(
+            child: OutlinedButton(
+              onPressed: () =>
+                  _showDeclineJobDialog(context, job['title'] ?? 'Job'),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: AppColors.error,
+                side: const BorderSide(color: AppColors.error),
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(25)),
+              ),
+              child: Text('Decline',
+                  style: AppTextStyles.buttonMedium.copyWith(
+                      color: AppColors.error, fontWeight: FontWeight.w600)),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: ElevatedButton(
+              onPressed: () =>
+                  _showAcceptJobDialog(context, job['title'] ?? 'Job'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primaryGreen,
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(25)),
+              ),
+              child: Text('Accept',
+                  style: AppTextStyles.buttonMedium.copyWith(
+                      color: AppColors.white, fontWeight: FontWeight.w600)),
+            ),
+          ),
+        ],
+      );
+    }
+  }
+
+  Color _getStatusColor(String status) {
+    switch (status) {
+      case 'PENDING':
+        return AppColors.warning;
+      case 'STARTED':
+        return AppColors.success;
+      case 'ACCEPTED':
+        return AppColors.primaryGreen;
+      case 'COMPLETED':
+        return AppColors.success;
+      default:
+        return AppColors.textSecondary;
+    }
+  }
+
+  Widget _buildLoadingState() {
+    return const Center(
+      child: Padding(
+        padding: EdgeInsets.all(50.0),
+        child: CircularProgressIndicator(
+          color: AppColors.primaryGreen,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEmptyState(String status) {
+    String message;
+    IconData icon;
+
+    switch (status) {
+      case 'pending':
+        message = 'No pending jobs\nNew opportunities will appear here';
+        icon = Icons.pending_actions;
+        break;
+      case 'ongoing':
+        message = 'No ongoing jobs\nAccepted jobs will appear here';
+        icon = Icons.work_outline;
+        break;
+      case 'completed':
+        message = 'No completed jobs\nFinished jobs will appear here';
+        icon = Icons.check_circle_outline;
+        break;
+      default:
+        message = 'No jobs found';
+        icon = Icons.work_off;
+    }
+
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(50.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              icon,
+              size: 64,
+              color: AppColors.textSecondary.withOpacity(0.5),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              message,
+              style: const TextStyle(
+                fontSize: 16,
+                color: AppColors.textSecondary,
+                height: 1.4,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildErrorState(String status) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(50.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(
+              Icons.error_outline,
+              size: 64,
+              color: AppColors.error,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Unable to load $status jobs',
+              style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+                color: AppColors.textPrimary,
+              ),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'Please check your connection and try again',
+              style: TextStyle(
+                color: AppColors.textSecondary,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: () {
+                setState(() {}); // Trigger rebuild to retry
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primaryGreen,
+              ),
+              child: const Text(
+                'Retry',
+                style: TextStyle(color: AppColors.white),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNotLoggedInState() {
+    return const Center(
+      child: Padding(
+        padding: EdgeInsets.all(50.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.person_off,
+              size: 64,
+              color: AppColors.textSecondary,
+            ),
+            SizedBox(height: 16),
+            Text(
+              'Please log in to view your jobs',
+              style: TextStyle(
+                fontSize: 16,
+                color: AppColors.textSecondary,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showAcceptJobDialog(BuildContext context, String jobTitle) {
     showDialog(
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: const Text('Report Issue'),
-          content: Text('Report an issue with "$title"'),
+          title: const Text('Accept Job'),
+          content: Text('Accept "$jobTitle"?'),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
               child: const Text('Cancel'),
             ),
-            ElevatedButton(
+            TextButton(
               onPressed: () {
                 Navigator.of(context).pop();
                 ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Report submitted for "$title"')),
+                  SnackBar(content: Text('Accepted $jobTitle')),
                 );
               },
-              child: const Text('Submit Report'),
+              child: const Text('Accept'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _showDeclineJobDialog(BuildContext context, String jobTitle) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Decline Job'),
+          content: Text('Decline "$jobTitle"?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Declined $jobTitle')),
+                );
+              },
+              child: const Text('Decline'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _showStartJobDialog(BuildContext context, String jobTitle) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Start Job'),
+          content: Text('Start working on "$jobTitle"?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Started $jobTitle')),
+                );
+              },
+              child: const Text('Start'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _showCompleteJobDialog(BuildContext context, String jobTitle) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Complete Job'),
+          content: Text('Mark "$jobTitle" as completed?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Completed $jobTitle')),
+                );
+              },
+              child: const Text('Complete'),
             ),
           ],
         );

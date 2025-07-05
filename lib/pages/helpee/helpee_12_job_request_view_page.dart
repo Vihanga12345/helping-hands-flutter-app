@@ -4,14 +4,32 @@ import '../../utils/app_colors.dart';
 import '../../utils/app_text_styles.dart';
 import '../../widgets/common/app_header.dart';
 import '../../widgets/common/app_navigation_bar.dart';
+import '../../services/job_data_service.dart';
 
-class Helpee12JobRequestViewPage extends StatelessWidget {
-  const Helpee12JobRequestViewPage({super.key});
+class Helpee12JobRequestViewPage extends StatefulWidget {
+  final String? jobId;
+  final Map<String, dynamic>? jobData;
+
+  const Helpee12JobRequestViewPage({
+    super.key,
+    this.jobId,
+    this.jobData,
+  });
+
+  @override
+  State<Helpee12JobRequestViewPage> createState() =>
+      _Helpee12JobRequestViewPageState();
+}
+
+class _Helpee12JobRequestViewPageState
+    extends State<Helpee12JobRequestViewPage> {
+  final JobDataService _jobDataService = JobDataService();
+  bool _isDeleting = false;
 
   @override
   Widget build(BuildContext context) {
-    final String jobId = GoRouterState.of(context).extra as String? ?? 'JOB1001';
-    
+    final String jobId = widget.jobId ?? widget.jobData?['id'] ?? 'JOB1001';
+
     return Scaffold(
       body: Column(
         children: [
@@ -45,7 +63,7 @@ class Helpee12JobRequestViewPage extends StatelessWidget {
               ),
             ),
           ),
-          
+
           // Body Content
           Expanded(
             child: Container(
@@ -94,7 +112,8 @@ class Helpee12JobRequestViewPage extends StatelessWidget {
                                   ),
                                 ),
                                 Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 12, vertical: 6),
                                   decoration: BoxDecoration(
                                     color: AppColors.warning,
                                     borderRadius: BorderRadius.circular(20),
@@ -121,10 +140,11 @@ class Helpee12JobRequestViewPage extends StatelessWidget {
                             const SizedBox(height: 16),
                             Row(
                               children: [
-                                const Icon(Icons.calendar_today, color: AppColors.primaryGreen, size: 20),
+                                const Icon(Icons.calendar_today,
+                                    color: AppColors.primaryGreen, size: 20),
                                 const SizedBox(width: 8),
                                 const Text(
-                                  'Submitted: Dec 20, 2024', 
+                                  'Submitted: Dec 20, 2024',
                                   style: TextStyle(fontSize: 14),
                                 ),
                               ],
@@ -132,7 +152,8 @@ class Helpee12JobRequestViewPage extends StatelessWidget {
                             const SizedBox(height: 8),
                             Row(
                               children: [
-                                const Icon(Icons.attach_money, color: AppColors.primaryGreen, size: 20),
+                                const Icon(Icons.attach_money,
+                                    color: AppColors.primaryGreen, size: 20),
                                 const SizedBox(width: 8),
                                 const Text(
                                   'Budget: LKR 2,500',
@@ -147,9 +168,9 @@ class Helpee12JobRequestViewPage extends StatelessWidget {
                           ],
                         ),
                       ),
-                      
+
                       const SizedBox(height: 20),
-                      
+
                       // Job Details
                       _buildDetailSection(
                         title: 'Job Details',
@@ -160,21 +181,24 @@ class Helpee12JobRequestViewPage extends StatelessWidget {
                           _buildDetailItem('Duration', '4 hours (estimated)'),
                         ],
                       ),
-                      
+
                       const SizedBox(height: 16),
-                      
+
                       // Location Details
                       _buildDetailSection(
                         title: 'Location',
                         children: [
-                          _buildDetailItem('Address', '123 Main Street, Colombo 07'),
-                          _buildDetailItem('Nearest Landmark', 'Next to City Mall'),
-                          _buildDetailItem('Access Instructions', 'Ring bell at main gate'),
+                          _buildDetailItem(
+                              'Address', '123 Main Street, Colombo 07'),
+                          _buildDetailItem(
+                              'Nearest Landmark', 'Next to City Mall'),
+                          _buildDetailItem(
+                              'Access Instructions', 'Ring bell at main gate'),
                         ],
                       ),
-                      
+
                       const SizedBox(height: 16),
-                      
+
                       // Description
                       _buildDetailSection(
                         title: 'Description',
@@ -197,9 +221,9 @@ class Helpee12JobRequestViewPage extends StatelessWidget {
                           ),
                         ],
                       ),
-                      
+
                       const SizedBox(height: 16),
-                      
+
                       // Requirements
                       _buildDetailSection(
                         title: 'Special Requirements',
@@ -216,9 +240,9 @@ class Helpee12JobRequestViewPage extends StatelessWidget {
                           ),
                         ],
                       ),
-                      
+
                       const SizedBox(height: 16),
-                      
+
                       // Images Section
                       _buildDetailSection(
                         title: 'Photos',
@@ -235,7 +259,8 @@ class Helpee12JobRequestViewPage extends StatelessWidget {
                                   decoration: BoxDecoration(
                                     color: AppColors.lightGrey,
                                     borderRadius: BorderRadius.circular(12),
-                                    border: Border.all(color: AppColors.primaryGreen),
+                                    border: Border.all(
+                                        color: AppColors.primaryGreen),
                                   ),
                                   child: const Center(
                                     child: Icon(
@@ -250,9 +275,9 @@ class Helpee12JobRequestViewPage extends StatelessWidget {
                           ),
                         ],
                       ),
-                      
+
                       const SizedBox(height: 24),
-                      
+
                       // Action Buttons
                       Row(
                         children: [
@@ -266,7 +291,8 @@ class Helpee12JobRequestViewPage extends StatelessWidget {
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(8),
                                 ),
-                                padding: const EdgeInsets.symmetric(vertical: 16),
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 16),
                               ),
                               child: const Text(
                                 'Cancel Request',
@@ -280,7 +306,8 @@ class Helpee12JobRequestViewPage extends StatelessWidget {
                           Expanded(
                             child: ElevatedButton(
                               onPressed: () {
-                                context.go('/helpee/job-request-edit', extra: jobId);
+                                context.go('/helpee/job-request-edit',
+                                    extra: jobId);
                               },
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: AppColors.primaryGreen,
@@ -288,14 +315,15 @@ class Helpee12JobRequestViewPage extends StatelessWidget {
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(8),
                                 ),
-                                padding: const EdgeInsets.symmetric(vertical: 16),
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 16),
                               ),
                               child: const Text('Edit Request'),
                             ),
                           ),
                         ],
                       ),
-                      
+
                       const SizedBox(height: 20),
                     ],
                   ),
@@ -303,7 +331,7 @@ class Helpee12JobRequestViewPage extends StatelessWidget {
               ),
             ),
           ),
-          
+
           // Navigation Bar
           const AppNavigationBar(
             currentTab: NavigationTab.home,
@@ -404,22 +432,17 @@ class Helpee12JobRequestViewPage extends StatelessWidget {
       builder: (BuildContext context) {
         return AlertDialog(
           title: const Text('Cancel Request'),
-          content: const Text('Are you sure you want to cancel this job request? This action cannot be undone.'),
+          content: const Text(
+              'Are you sure you want to cancel this job request? This action cannot be undone and the job will be permanently deleted.'),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
               child: const Text('Keep Request'),
             ),
             TextButton(
-              onPressed: () {
+              onPressed: () async {
                 Navigator.of(context).pop();
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Job request cancelled successfully'),
-                    backgroundColor: AppColors.success,
-                  ),
-                );
-                context.pop();
+                await _cancelRequest();
               },
               style: TextButton.styleFrom(foregroundColor: AppColors.error),
               child: const Text('Cancel Request'),
@@ -429,4 +452,52 @@ class Helpee12JobRequestViewPage extends StatelessWidget {
       },
     );
   }
-} 
+
+  Future<void> _cancelRequest() async {
+    if (_isDeleting) return;
+
+    setState(() {
+      _isDeleting = true;
+    });
+
+    try {
+      final jobId = widget.jobId ?? widget.jobData?['id'];
+      if (jobId == null) {
+        throw Exception('No job ID available');
+      }
+
+      final success = await _jobDataService.cancelJob(
+          jobId.toString(), 'Cancelled by helpee');
+
+      if (success) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Job request cancelled and deleted successfully'),
+              backgroundColor: AppColors.success,
+            ),
+          );
+          // Navigate back to home
+          context.go('/helpee/home');
+        }
+      } else {
+        throw Exception('Failed to cancel job request');
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error cancelling job: $e'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isDeleting = false;
+        });
+      }
+    }
+  }
+}

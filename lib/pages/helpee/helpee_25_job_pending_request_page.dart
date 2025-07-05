@@ -4,28 +4,43 @@ import '../../utils/app_colors.dart';
 import '../../utils/app_text_styles.dart';
 import '../../widgets/common/app_header.dart';
 import '../../widgets/common/app_navigation_bar.dart';
+import '../../services/job_data_service.dart';
 
 class Helpee25JobPendingRequestPage extends StatefulWidget {
-  const Helpee25JobPendingRequestPage({super.key});
+  final String? jobId;
+  final Map<String, dynamic>? jobData;
+
+  const Helpee25JobPendingRequestPage({
+    super.key,
+    this.jobId,
+    this.jobData,
+  });
 
   @override
-  State<Helpee25JobPendingRequestPage> createState() => _Helpee25JobPendingRequestPageState();
+  State<Helpee25JobPendingRequestPage> createState() =>
+      _Helpee25JobPendingRequestPageState();
 }
 
-class _Helpee25JobPendingRequestPageState extends State<Helpee25JobPendingRequestPage> {
+class _Helpee25JobPendingRequestPageState
+    extends State<Helpee25JobPendingRequestPage> {
+  final JobDataService _jobDataService = JobDataService();
+  bool _isDeleting = false;
+
   @override
   Widget build(BuildContext context) {
-    final jobData = GoRouterState.of(context).extra as Map<String, dynamic>? ?? {
-      'jobId': 'JOB1001',
-      'jobTitle': 'House Cleaning',
-      'requestedDate': '15 Dec 2024',
-      'requestedTime': '10:00 AM',
-      'duration': '3 hours',
-      'address': '123 Galle Road, Colombo 03',
-      'description': 'Deep cleaning of 3-bedroom house including kitchen and bathrooms.',
-      'price': 'LKR 2,500',
-      'createdAt': '12 Dec 2024, 2:30 PM',
-    };
+    final jobData = widget.jobData ??
+        {
+          'jobId': 'JOB1001',
+          'jobTitle': 'House Cleaning',
+          'requestedDate': '15 Dec 2024',
+          'requestedTime': '10:00 AM',
+          'duration': '3 hours',
+          'address': '123 Galle Road, Colombo 03',
+          'description':
+              'Deep cleaning of 3-bedroom house including kitchen and bathrooms.',
+          'price': 'LKR 2,500',
+          'createdAt': '12 Dec 2024, 2:30 PM',
+        };
 
     return Scaffold(
       body: Column(
@@ -37,7 +52,7 @@ class _Helpee25JobPendingRequestPageState extends State<Helpee25JobPendingReques
             showMenuButton: false,
             showNotificationButton: false,
           ),
-          
+
           // Body Content
           Expanded(
             child: Container(
@@ -63,7 +78,8 @@ class _Helpee25JobPendingRequestPageState extends State<Helpee25JobPendingReques
                         decoration: BoxDecoration(
                           color: Colors.orange.withOpacity(0.1),
                           borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: Colors.orange.withOpacity(0.3)),
+                          border:
+                              Border.all(color: Colors.orange.withOpacity(0.3)),
                         ),
                         child: const Row(
                           children: [
@@ -95,9 +111,9 @@ class _Helpee25JobPendingRequestPageState extends State<Helpee25JobPendingReques
                           ],
                         ),
                       ),
-                      
+
                       const SizedBox(height: 20),
-                      
+
                       // Job Details Card
                       Container(
                         width: double.infinity,
@@ -121,7 +137,8 @@ class _Helpee25JobPendingRequestPageState extends State<Helpee25JobPendingReques
                                 Container(
                                   padding: const EdgeInsets.all(8),
                                   decoration: BoxDecoration(
-                                    color: AppColors.primaryGreen.withOpacity(0.1),
+                                    color:
+                                        AppColors.primaryGreen.withOpacity(0.1),
                                     borderRadius: BorderRadius.circular(8),
                                   ),
                                   child: const Icon(
@@ -133,7 +150,8 @@ class _Helpee25JobPendingRequestPageState extends State<Helpee25JobPendingReques
                                 const SizedBox(width: 12),
                                 Expanded(
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       Text(
                                         jobData['jobTitle'],
@@ -162,17 +180,21 @@ class _Helpee25JobPendingRequestPageState extends State<Helpee25JobPendingReques
                                 ),
                               ],
                             ),
-                            
+
                             const SizedBox(height: 20),
-                            
+
                             // Job Details
-                            _buildDetailRow(Icons.calendar_today, 'Date', jobData['requestedDate']),
-                            _buildDetailRow(Icons.access_time, 'Time', jobData['requestedTime']),
-                            _buildDetailRow(Icons.timer, 'Duration', jobData['duration']),
-                            _buildDetailRow(Icons.location_on, 'Address', jobData['address']),
-                            
+                            _buildDetailRow(Icons.calendar_today, 'Date',
+                                jobData['requestedDate']),
+                            _buildDetailRow(Icons.access_time, 'Time',
+                                jobData['requestedTime']),
+                            _buildDetailRow(
+                                Icons.timer, 'Duration', jobData['duration']),
+                            _buildDetailRow(Icons.location_on, 'Address',
+                                jobData['address']),
+
                             const SizedBox(height: 16),
-                            
+
                             // Description
                             const Text(
                               'Description',
@@ -193,9 +215,9 @@ class _Helpee25JobPendingRequestPageState extends State<Helpee25JobPendingReques
                           ],
                         ),
                       ),
-                      
+
                       const SizedBox(height: 20),
-                      
+
                       // Request Information
                       Container(
                         width: double.infinity,
@@ -222,17 +244,18 @@ class _Helpee25JobPendingRequestPageState extends State<Helpee25JobPendingReques
                               ),
                             ),
                             const SizedBox(height: 16),
-                            
-                            _buildInfoRow('Request Created', jobData['createdAt']),
+                            _buildInfoRow(
+                                'Request Created', jobData['createdAt']),
                             _buildInfoRow('Status', 'Waiting for Helper'),
                             _buildInfoRow('Priority', 'Standard'),
-                            _buildInfoRow('Estimated Response', 'Within 2 hours'),
+                            _buildInfoRow(
+                                'Estimated Response', 'Within 2 hours'),
                           ],
                         ),
                       ),
-                      
+
                       const SizedBox(height: 20),
-                      
+
                       // Available Actions
                       Container(
                         width: double.infinity,
@@ -259,7 +282,7 @@ class _Helpee25JobPendingRequestPageState extends State<Helpee25JobPendingReques
                               ),
                             ),
                             const SizedBox(height: 16),
-                            
+
                             // Edit Request Button
                             SizedBox(
                               width: double.infinity,
@@ -270,16 +293,17 @@ class _Helpee25JobPendingRequestPageState extends State<Helpee25JobPendingReques
                                 label: const Text('Edit Request'),
                                 style: OutlinedButton.styleFrom(
                                   foregroundColor: AppColors.primaryGreen,
-                                  side: const BorderSide(color: AppColors.primaryGreen),
+                                  side: const BorderSide(
+                                      color: AppColors.primaryGreen),
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(12),
                                   ),
                                 ),
                               ),
                             ),
-                            
+
                             const SizedBox(height: 12),
-                            
+
                             // Cancel Request Button
                             SizedBox(
                               width: double.infinity,
@@ -300,9 +324,9 @@ class _Helpee25JobPendingRequestPageState extends State<Helpee25JobPendingReques
                           ],
                         ),
                       ),
-                      
+
                       const SizedBox(height: 20),
-                      
+
                       // Tips Card
                       Container(
                         width: double.infinity,
@@ -310,14 +334,16 @@ class _Helpee25JobPendingRequestPageState extends State<Helpee25JobPendingReques
                         decoration: BoxDecoration(
                           color: AppColors.primaryGreen.withOpacity(0.1),
                           borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: AppColors.primaryGreen.withOpacity(0.3)),
+                          border: Border.all(
+                              color: AppColors.primaryGreen.withOpacity(0.3)),
                         ),
                         child: const Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Row(
                               children: [
-                                Icon(Icons.lightbulb, color: AppColors.primaryGreen),
+                                Icon(Icons.lightbulb,
+                                    color: AppColors.primaryGreen),
                                 SizedBox(width: 8),
                                 Text(
                                   'Tips for faster response',
@@ -343,7 +369,7 @@ class _Helpee25JobPendingRequestPageState extends State<Helpee25JobPendingReques
                           ],
                         ),
                       ),
-                      
+
                       const SizedBox(height: 20),
                     ],
                   ),
@@ -351,7 +377,7 @@ class _Helpee25JobPendingRequestPageState extends State<Helpee25JobPendingReques
               ),
             ),
           ),
-          
+
           // Navigation Bar
           const AppNavigationBar(
             currentTab: NavigationTab.home,
@@ -426,25 +452,20 @@ class _Helpee25JobPendingRequestPageState extends State<Helpee25JobPendingReques
       builder: (BuildContext context) {
         return AlertDialog(
           title: const Text('Cancel Request'),
-          content: const Text('Are you sure you want to cancel this job request? This action cannot be undone.'),
+          content: const Text(
+              'Are you sure you want to cancel this job request? This action cannot be undone and the job will be permanently deleted.'),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
               child: const Text('Keep Request'),
             ),
             ElevatedButton(
-              onPressed: () {
+              onPressed: () async {
                 Navigator.of(context).pop();
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Job request cancelled successfully'),
-                    backgroundColor: Colors.red,
-                  ),
-                );
-                context.go('/helpee/home');
+                await _performCancelRequest();
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red,
+                backgroundColor: AppColors.error,
                 foregroundColor: AppColors.white,
               ),
               child: const Text('Cancel Request'),
@@ -454,4 +475,52 @@ class _Helpee25JobPendingRequestPageState extends State<Helpee25JobPendingReques
       },
     );
   }
-} 
+
+  Future<void> _performCancelRequest() async {
+    if (_isDeleting) return;
+
+    setState(() {
+      _isDeleting = true;
+    });
+
+    try {
+      final jobId = widget.jobId ?? widget.jobData?['id'];
+      if (jobId == null) {
+        throw Exception('No job ID available');
+      }
+
+      final success = await _jobDataService.cancelJob(
+          jobId.toString(), 'Cancelled by helpee');
+
+      if (success) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Job request cancelled and deleted successfully'),
+              backgroundColor: AppColors.success,
+            ),
+          );
+          // Navigate back to home
+          context.go('/helpee/home');
+        }
+      } else {
+        throw Exception('Failed to cancel job request');
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error cancelling job: $e'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isDeleting = false;
+        });
+      }
+    }
+  }
+}

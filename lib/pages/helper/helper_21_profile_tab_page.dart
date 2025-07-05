@@ -4,6 +4,9 @@ import '../../utils/app_colors.dart';
 import '../../utils/app_text_styles.dart';
 import '../../widgets/common/app_header.dart';
 import '../../widgets/common/app_navigation_bar.dart';
+import '../../services/user_data_service.dart';
+import '../../services/helper_data_service.dart';
+import '../../services/custom_auth_service.dart';
 
 class Helper21ProfileTabPage extends StatefulWidget {
   final int initialTabIndex;
@@ -21,43 +24,18 @@ class _Helper21ProfileTabPageState extends State<Helper21ProfileTabPage>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
 
-  // Sample data - will be replaced with real data from database
-  final List<String> _selectedJobTypes = [
-    'House Cleaning',
-    'Deep Cleaning',
-    'Laundry Service',
-    'Kitchen Cleaning',
-    'Organizing',
-    'Gardening',
-    'Pet Care',
-  ];
+  // Services
+  final UserDataService _userDataService = UserDataService();
+  final HelperDataService _helperDataService = HelperDataService();
+  final CustomAuthService _authService = CustomAuthService();
 
-  final List<Map<String, String>> _attachments = [
-    {
-      'name': 'Cleaning Certificate.pdf',
-      'type': 'document',
-      'size': '2.1 MB',
-      'date': '2024-01-15'
-    },
-    {
-      'name': 'Work Sample 1.jpg',
-      'type': 'image',
-      'size': '1.8 MB',
-      'date': '2024-02-20'
-    },
-    {
-      'name': 'First Aid Certificate.pdf',
-      'type': 'document',
-      'size': '1.2 MB',
-      'date': '2024-03-10'
-    },
-    {
-      'name': 'Work Sample 2.jpg',
-      'type': 'image',
-      'size': '2.3 MB',
-      'date': '2024-03-15'
-    },
-  ];
+  // Data variables
+  Map<String, dynamic>? _userProfile;
+  Map<String, dynamic>? _userStatistics;
+  List<Map<String, dynamic>> _helperJobTypes = [];
+  List<Map<String, dynamic>> _helperDocuments = [];
+  bool _isLoading = true;
+  String? _currentUserId;
 
   @override
   void initState() {
@@ -67,6 +45,50 @@ class _Helper21ProfileTabPageState extends State<Helper21ProfileTabPage>
       vsync: this,
       initialIndex: widget.initialTabIndex,
     );
+    _loadProfileData();
+  }
+
+  Future<void> _loadProfileData() async {
+    try {
+      setState(() {
+        _isLoading = true;
+      });
+
+      // Get current user
+      final currentUser = _authService.currentUser;
+      if (currentUser == null) {
+        print('❌ No current user found');
+        return;
+      }
+
+      _currentUserId = currentUser['user_id'];
+      print('👤 Loading profile for helper: $_currentUserId');
+
+      // Load all data in parallel
+      final results = await Future.wait([
+        _userDataService.getCurrentUserProfile(),
+        _userDataService.getHelperStatistics(_currentUserId!),
+        _helperDataService.getHelperJobTypes(_currentUserId!),
+        _helperDataService.getHelperDocuments(_currentUserId!),
+      ]);
+
+      setState(() {
+        _userProfile = results[0] as Map<String, dynamic>?;
+        _userStatistics = results[1] as Map<String, dynamic>;
+        _helperJobTypes = results[2] as List<Map<String, dynamic>>;
+        _helperDocuments = results[3] as List<Map<String, dynamic>>;
+        _isLoading = false;
+      });
+
+      print('✅ Profile data loaded successfully');
+      print('📊 Job types: ${_helperJobTypes.length}');
+      print('📄 Documents: ${_helperDocuments.length}');
+    } catch (e) {
+      print('❌ Error loading profile data: $e');
+      setState(() {
+        _isLoading = false;
+      });
+    }
   }
 
   @override
@@ -91,7 +113,7 @@ class _Helper21ProfileTabPageState extends State<Helper21ProfileTabPage>
         child: SafeArea(
           child: Column(
             children: [
-              // Header with pencil edit button
+              // Header with notification button (edit button removed)
               AppHeader(
                 title: 'Profile',
                 showMenuButton: true,
@@ -102,69 +124,109 @@ class _Helper21ProfileTabPageState extends State<Helper21ProfileTabPage>
                 onNotificationPressed: () {
                   context.push('/helper/notifications');
                 },
-                rightWidget: IconButton(
-                  icon: const Icon(
-                    Icons.edit,
-                    color: AppColors.primaryGreen,
-                  ),
-                  onPressed: () {
-                    switch (_tabController.index) {
-                      case 0: // Profile tab
-                        context.push('/helper/profile/edit');
-                        break;
-                      case 1: // Jobs tab
-                        context.push('/helper/profile/jobs/edit');
-                        break;
-                      case 2: // Resume tab
-                        context.push('/helper/profile/resume/edit');
-                        break;
-                    }
-                  },
-                ),
               ),
 
-              // Tab Bar
-              Container(
-                margin: const EdgeInsets.all(16),
+              // Tab Bar and Edit Button Row
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
+                child: Row(
+                  children: [
+                    // Tab Bar Container (takes up available space but compressed to left)
+                    Flexible(
+                      flex: 3,
+                      child: Container(
                 decoration: BoxDecoration(
                   color: AppColors.white,
-                  borderRadius: BorderRadius.circular(12),
-                  boxShadow: const [
+                  borderRadius: BorderRadius.circular(30),
+                  boxShadow: [
                     BoxShadow(
-                      color: AppColors.shadowColorLight,
-                      blurRadius: 4,
-                      offset: Offset(0, 2),
+                      color: Colors.black.withOpacity(0.08),
+                      blurRadius: 20,
+                      offset: const Offset(0, 8),
                     ),
                   ],
                 ),
-                child: TabBar(
-                  controller: _tabController,
-                  labelColor: AppColors.white,
-                  unselectedLabelColor: AppColors.textSecondary,
-                  indicator: BoxDecoration(
-                    color: AppColors.primaryGreen,
-                    borderRadius: BorderRadius.circular(8),
+                child: Container(
+                  padding: const EdgeInsets.all(4),
+                  child: TabBar(
+                    controller: _tabController,
+                    labelColor: AppColors.white,
+                    unselectedLabelColor: AppColors.textSecondary,
+                    indicator: BoxDecoration(
+                      color: AppColors.primaryGreen,
+                      borderRadius: BorderRadius.circular(26),
+                      boxShadow: [
+                        BoxShadow(
+                                  color:
+                                      AppColors.primaryGreen.withOpacity(0.3),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    indicatorSize: TabBarIndicatorSize.tab,
+                    dividerColor: Colors.transparent,
+                    labelStyle: AppTextStyles.buttonMedium.copyWith(
+                      fontWeight: FontWeight.w600,
+                              fontSize: 13,
+                    ),
+                            unselectedLabelStyle:
+                                AppTextStyles.buttonMedium.copyWith(
+                      fontWeight: FontWeight.w500,
+                              fontSize: 13,
+                    ),
+                    tabs: const [
+                      Tab(
+                        child: Padding(
+                                  padding: EdgeInsets.symmetric(vertical: 10),
+                          child: Text('Profile'),
+                        ),
+                      ),
+                      Tab(
+                        child: Padding(
+                                  padding: EdgeInsets.symmetric(vertical: 10),
+                          child: Text('Jobs'),
+                        ),
+                      ),
+                      Tab(
+                        child: Padding(
+                                  padding: EdgeInsets.symmetric(vertical: 10),
+                          child: Text('Resume'),
+                        ),
+                      ),
+                    ],
+                          ),
                   ),
-                  indicatorSize: TabBarIndicatorSize.tab,
-                  dividerColor: Colors.transparent,
-                  tabs: const [
-                    Tab(text: 'Profile'),
-                    Tab(text: 'Jobs'),
-                    Tab(text: 'Resume'),
+                ),
+              ),
+
+                    // Spacer between TabBar and Edit Button
+                    const SizedBox(width: 16),
+
+                    // Edit Button
+                    _buildEditButtonForCurrentTab(),
                   ],
                 ),
               ),
 
+              const SizedBox(height: 15),
+
               // Tab Content
               Expanded(
-                child: TabBarView(
-                  controller: _tabController,
-                  children: [
-                    _buildProfileTab(),
-                    _buildJobsTab(),
-                    _buildResumeTab(),
-                  ],
-                ),
+                child: _isLoading
+                    ? const Center(
+                        child: CircularProgressIndicator(
+                          color: AppColors.primaryGreen,
+                        ),
+                      )
+                    : TabBarView(
+                        controller: _tabController,
+                        children: [
+                          _buildProfileTab(),
+                          _buildJobsTab(),
+                          _buildResumeTab(),
+                        ],
+                      ),
               ),
 
               // Navigation Bar
@@ -180,6 +242,12 @@ class _Helper21ProfileTabPageState extends State<Helper21ProfileTabPage>
   }
 
   Widget _buildProfileTab() {
+    if (_userProfile == null) {
+      return const Center(
+        child: Text('Unable to load profile data'),
+      );
+    }
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -213,25 +281,35 @@ class _Helper21ProfileTabPageState extends State<Helper21ProfileTabPage>
                     ),
                   ),
                   child: ClipOval(
-                    child: Image.asset(
-                      'assets/images/helper_profile.jpg',
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) => Container(
-                        color: AppColors.lightGrey,
-                        child: const Icon(
-                          Icons.person,
-                          size: 60,
-                          color: AppColors.textSecondary,
-                        ),
-                      ),
-                    ),
+                    child: _userProfile!['profile_image_url'] != null
+                        ? Image.network(
+                            _userProfile!['profile_image_url'],
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) =>
+                                Container(
+                              color: AppColors.lightGrey,
+                              child: const Icon(
+                                Icons.person,
+                                size: 60,
+                                color: AppColors.textSecondary,
+                              ),
+                            ),
+                          )
+                        : Container(
+                            color: AppColors.lightGrey,
+                            child: const Icon(
+                              Icons.person,
+                              size: 60,
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
                   ),
                 ),
                 const SizedBox(height: 16),
 
                 // Username (First name + Last name)
                 Text(
-                  'John Smith',
+                  '${_userProfile!['first_name'] ?? ''} ${_userProfile!['last_name'] ?? ''}',
                   style: AppTextStyles.heading2.copyWith(
                     color: AppColors.textPrimary,
                     fontWeight: FontWeight.w700,
@@ -246,7 +324,7 @@ class _Helper21ProfileTabPageState extends State<Helper21ProfileTabPage>
                     const Icon(Icons.star, color: AppColors.warning, size: 20),
                     const SizedBox(width: 4),
                     Text(
-                      '4.8 (125 reviews)',
+                      '${_userStatistics?['rating']?.toStringAsFixed(1) ?? '0.0'} (${_userStatistics?['total_reviews'] ?? 0} reviews)',
                       style: AppTextStyles.bodyMedium.copyWith(
                         color: AppColors.textSecondary,
                       ),
@@ -285,15 +363,22 @@ class _Helper21ProfileTabPageState extends State<Helper21ProfileTabPage>
                   ),
                 ),
                 const SizedBox(height: 16),
-                _buildInfoRow('Telephone', '+94 71 234 5678', Icons.phone),
+                _buildInfoRow('Telephone',
+                    _userProfile!['phone'] ?? 'Not provided', Icons.phone),
                 const SizedBox(height: 12),
-                _buildInfoRow('Gender', 'Male', Icons.person),
+                _buildInfoRow('Gender',
+                    _userProfile!['gender'] ?? 'Not specified', Icons.person),
                 const SizedBox(height: 12),
-                _buildInfoRow('Birthday', 'May 15, 1990', Icons.cake),
+                _buildInfoRow('Birthday',
+                    _formatDate(_userProfile!['date_of_birth']), Icons.cake),
                 const SizedBox(height: 12),
-                _buildInfoRow('Location', 'Colombo 07', Icons.location_on),
+                _buildInfoRow(
+                    'Location',
+                    _userProfile!['location_city'] ?? 'Not specified',
+                    Icons.location_on),
                 const SizedBox(height: 12),
-                _buildInfoRow('Email', 'john.smith@email.com', Icons.email),
+                _buildInfoRow('Email', _userProfile!['email'] ?? 'Not provided',
+                    Icons.email),
               ],
             ),
           ),
@@ -327,7 +412,7 @@ class _Helper21ProfileTabPageState extends State<Helper21ProfileTabPage>
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  'Experienced professional helper with 5+ years in household services. Specialized in deep cleaning, organizing, and maintenance work. I take pride in delivering quality service and ensuring customer satisfaction.',
+                  _userProfile!['about_me'] ?? 'No bio available',
                   style: AppTextStyles.bodyMedium.copyWith(
                     color: AppColors.textSecondary,
                     height: 1.5,
@@ -340,37 +425,46 @@ class _Helper21ProfileTabPageState extends State<Helper21ProfileTabPage>
           const SizedBox(height: 20),
 
           // Emergency Contact
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: AppColors.white,
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: const [
-                BoxShadow(
-                  color: AppColors.shadowColorLight,
-                  blurRadius: 8,
-                  offset: Offset(0, 4),
-                ),
-              ],
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Emergency Contact',
-                  style: AppTextStyles.heading3.copyWith(
-                    color: AppColors.primaryGreen,
-                    fontWeight: FontWeight.w700,
+          if (_userProfile!['emergency_contact_name'] != null ||
+              _userProfile!['emergency_contact_phone'] != null)
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: AppColors.white,
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: const [
+                  BoxShadow(
+                    color: AppColors.shadowColorLight,
+                    blurRadius: 8,
+                    offset: Offset(0, 4),
                   ),
-                ),
-                const SizedBox(height: 16),
-                _buildInfoRow('Name', 'Jane Smith', Icons.person),
-                const SizedBox(height: 12),
-                _buildInfoRow('Telephone', '+94 71 234 5679', Icons.phone),
-              ],
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Emergency Contact',
+                    style: AppTextStyles.heading3.copyWith(
+                      color: AppColors.primaryGreen,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  _buildInfoRow(
+                      'Name',
+                      _userProfile!['emergency_contact_name'] ?? 'Not provided',
+                      Icons.person),
+                  const SizedBox(height: 12),
+                  _buildInfoRow(
+                      'Telephone',
+                      _userProfile!['emergency_contact_phone'] ??
+                          'Not provided',
+                      Icons.phone),
+                ],
+              ),
             ),
-          ),
         ],
       ),
     );
@@ -382,139 +476,119 @@ class _Helper21ProfileTabPageState extends State<Helper21ProfileTabPage>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Selected Job Types Header
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: AppColors.primaryGreen.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(12),
-              border:
-                  Border.all(color: AppColors.primaryGreen.withOpacity(0.3)),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Selected Job Types',
-                      style: AppTextStyles.heading3.copyWith(
-                        color: AppColors.primaryGreen,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      '${_selectedJobTypes.length} job types selected',
-                      style: AppTextStyles.bodyMedium.copyWith(
-                        color: AppColors.textSecondary,
-                      ),
-                    ),
-                  ],
-                ),
-                ElevatedButton.icon(
-                  onPressed: () {
-                    context.push('/helper/profile/jobs/edit');
-                  },
-                  icon: const Icon(Icons.edit, size: 16),
-                  label: const Text('Edit'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primaryGreen,
-                    foregroundColor: AppColors.white,
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          // Job Types List
+          if (_helperJobTypes.isEmpty)
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(40),
+              decoration: BoxDecoration(
+                color: AppColors.white,
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: const [
+                  BoxShadow(
+                    color: AppColors.shadowColorLight,
+                    blurRadius: 4,
+                    offset: Offset(0, 2),
                   ),
-                ),
-              ],
-            ),
-          ),
-
-          const SizedBox(height: 20),
-
-          // Job Types List as Vertical Tiles
-          ListView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: _selectedJobTypes.length,
-            itemBuilder: (context, index) {
-              return Container(
-                margin: const EdgeInsets.only(bottom: 12),
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: AppColors.white,
-                  borderRadius: BorderRadius.circular(12),
-                  boxShadow: const [
-                    BoxShadow(
-                      color: AppColors.shadowColorLight,
-                      blurRadius: 4,
-                      offset: Offset(0, 2),
+                ],
+              ),
+              child: Column(
+                children: [
+                  Icon(
+                    Icons.work_off,
+                    size: 64,
+                    color: AppColors.textSecondary.withOpacity(0.5),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'No Job Types Selected',
+                    style: AppTextStyles.heading3.copyWith(
+                      color: AppColors.textSecondary,
                     ),
-                  ],
-                ),
-                child: Row(
-                  children: [
-                    // Job Icon
-                    Container(
-                      width: 48,
-                      height: 48,
-                      decoration: BoxDecoration(
-                        color: AppColors.primaryGreen.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(12),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Add job types to show your skills',
+                    style: AppTextStyles.bodyMedium.copyWith(
+                      color: AppColors.textSecondary,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
+            )
+          else
+            // Job Types Grid
+            GridView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                crossAxisSpacing: 12,
+                mainAxisSpacing: 12,
+                childAspectRatio: 1.2,
+              ),
+              itemCount: _helperJobTypes.length,
+              itemBuilder: (context, index) {
+                final jobType = _helperJobTypes[index];
+                final categoryName =
+                    jobType['job_categories']['name'] ?? 'Unknown';
+                final hourlyRate = (jobType['hourly_rate'] ?? 0).toDouble();
+                final experienceLevel =
+                    jobType['experience_level'] ?? 'beginner';
+
+                return Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: AppColors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: const [
+                      BoxShadow(
+                        color: AppColors.shadowColorLight,
+                        blurRadius: 4,
+                        offset: Offset(0, 2),
                       ),
-                      child: Icon(
-                        _getJobIcon(_selectedJobTypes[index]),
+                    ],
+                  ),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.work,
                         color: AppColors.primaryGreen,
-                        size: 24,
+                        size: 32,
                       ),
-                    ),
-                    const SizedBox(width: 16),
-
-                    // Job Details
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            _selectedJobTypes[index],
-                            style: AppTextStyles.bodyLarge.copyWith(
-                              color: AppColors.textPrimary,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            'Available for bookings',
-                            style: AppTextStyles.bodySmall.copyWith(
-                              color: AppColors.success,
-                            ),
-                          ),
-                        ],
+                      const SizedBox(height: 8),
+                      Text(
+                        categoryName,
+                        style: AppTextStyles.bodyMedium.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.textPrimary,
+                        ),
+                        textAlign: TextAlign.center,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                    ),
-
-                    // Status Indicator
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: AppColors.success.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Text(
-                        'Active',
+                      const SizedBox(height: 4),
+                      Text(
+                        'LKR ${hourlyRate.toStringAsFixed(0)}/hr',
                         style: AppTextStyles.bodySmall.copyWith(
-                          color: AppColors.success,
+                          color: AppColors.primaryGreen,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
-                    ),
-                  ],
-                ),
-              );
-            },
-          ),
+                      Text(
+                        experienceLevel.toUpperCase(),
+                        style: AppTextStyles.bodySmall.copyWith(
+                          color: AppColors.textSecondary,
+                          fontSize: 10,
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
         ],
       ),
     );
@@ -526,154 +600,142 @@ class _Helper21ProfileTabPageState extends State<Helper21ProfileTabPage>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Resume Attachments Header
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: AppColors.primaryGreen.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(12),
-              border:
-                  Border.all(color: AppColors.primaryGreen.withOpacity(0.3)),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Resume Attachments',
-                      style: AppTextStyles.heading3.copyWith(
-                        color: AppColors.primaryGreen,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      '${_attachments.length} files attached',
-                      style: AppTextStyles.bodyMedium.copyWith(
-                        color: AppColors.textSecondary,
-                      ),
-                    ),
-                  ],
-                ),
-                ElevatedButton.icon(
-                  onPressed: () {
-                    context.push('/helper/profile/resume/edit');
-                  },
-                  icon: const Icon(Icons.edit, size: 16),
-                  label: const Text('Edit'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primaryGreen,
-                    foregroundColor: AppColors.white,
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          // Documents Grid
+          if (_helperDocuments.isEmpty)
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(40),
+              decoration: BoxDecoration(
+                color: AppColors.white,
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: const [
+                  BoxShadow(
+                    color: AppColors.shadowColorLight,
+                    blurRadius: 4,
+                    offset: Offset(0, 2),
                   ),
-                ),
-              ],
-            ),
-          ),
-
-          const SizedBox(height: 20),
-
-          // Attachments Grid
-          GridView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
-              crossAxisSpacing: 12,
-              mainAxisSpacing: 12,
-              childAspectRatio: 0.85,
-            ),
-            itemCount: _attachments.length,
-            itemBuilder: (context, index) {
-              final attachment = _attachments[index];
-              final isImage = attachment['type'] == 'image';
-
-              return Container(
-                decoration: BoxDecoration(
-                  color: AppColors.white,
-                  borderRadius: BorderRadius.circular(12),
-                  boxShadow: const [
-                    BoxShadow(
-                      color: AppColors.shadowColorLight,
-                      blurRadius: 4,
-                      offset: Offset(0, 2),
+                ],
+              ),
+              child: Column(
+                children: [
+                  Icon(
+                    Icons.folder_open,
+                    size: 64,
+                    color: AppColors.textSecondary.withOpacity(0.5),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'No Documents Uploaded',
+                    style: AppTextStyles.heading3.copyWith(
+                      color: AppColors.textSecondary,
                     ),
-                  ],
-                ),
-                child: Column(
-                  children: [
-                    // File Preview
-                    Expanded(
-                      child: Container(
-                        width: double.infinity,
-                        margin: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: isImage
-                              ? AppColors.lightGrey
-                              : AppColors.primaryGreen.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Center(
-                          child: isImage
-                              ? ClipRRect(
-                                  borderRadius: BorderRadius.circular(8),
-                                  child: Image.asset(
-                                    'assets/images/work_sample.jpg',
-                                    fit: BoxFit.cover,
-                                    width: double.infinity,
-                                    height: double.infinity,
-                                    errorBuilder:
-                                        (context, error, stackTrace) =>
-                                            const Icon(
-                                      Icons.image,
-                                      size: 40,
-                                      color: AppColors.textSecondary,
-                                    ),
-                                  ),
-                                )
-                              : const Icon(
-                                  Icons.description,
-                                  size: 40,
-                                  color: AppColors.primaryGreen,
-                                ),
-                        ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Upload certificates and work samples\nto showcase your qualifications',
+                    style: AppTextStyles.bodyMedium.copyWith(
+                      color: AppColors.textSecondary,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
+            )
+          else
+            // Documents Grid
+            GridView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                crossAxisSpacing: 12,
+                mainAxisSpacing: 12,
+                childAspectRatio: 0.8,
+              ),
+              itemCount: _helperDocuments.length,
+              itemBuilder: (context, index) {
+                final document = _helperDocuments[index];
+                final fileName = document['document_name'] ?? 'Unknown File';
+                final fileType = document['file_type'] ?? '';
+                final isImage =
+                    ['jpg', 'jpeg', 'png'].contains(fileType.toLowerCase());
+                final fileSize = _formatFileSize(document['file_size_bytes']);
+                final uploadDate = _formatDate(document['created_at']);
+
+                return Container(
+                  decoration: BoxDecoration(
+                    color: AppColors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: const [
+                      BoxShadow(
+                        color: AppColors.shadowColorLight,
+                        blurRadius: 4,
+                        offset: Offset(0, 2),
                       ),
-                    ),
-
-                    // File Info
-                    Padding(
-                      padding: const EdgeInsets.all(12),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            attachment['name']!,
-                            style: AppTextStyles.bodyMedium.copyWith(
-                              color: AppColors.textPrimary,
-                              fontWeight: FontWeight.w600,
-                            ),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
+                    ],
+                  ),
+                  child: Column(
+                    children: [
+                      // File Preview
+                      Expanded(
+                        child: Container(
+                          width: double.infinity,
+                          margin: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: isImage
+                                ? AppColors.lightGrey
+                                : AppColors.primaryGreen.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(8),
                           ),
-                          const SizedBox(height: 4),
-                          Text(
-                            '${attachment['size']} • ${attachment['date']}',
-                            style: AppTextStyles.bodySmall.copyWith(
-                              color: AppColors.textSecondary,
+                          child: Center(
+                            child: Icon(
+                              isImage ? Icons.image : Icons.description,
+                              size: 40,
+                              color: isImage
+                                  ? AppColors.textSecondary
+                                  : AppColors.primaryGreen,
                             ),
                           ),
-                        ],
+                        ),
                       ),
-                    ),
-                  ],
-                ),
-              );
-            },
-          ),
+
+                      // File Info
+                      Padding(
+                        padding: const EdgeInsets.all(12),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              fileName,
+                              style: AppTextStyles.bodyMedium.copyWith(
+                                color: AppColors.textPrimary,
+                                fontWeight: FontWeight.w600,
+                              ),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              fileSize,
+                              style: AppTextStyles.bodySmall.copyWith(
+                                color: AppColors.textSecondary,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              uploadDate,
+                              style: AppTextStyles.bodySmall.copyWith(
+                                color: AppColors.textSecondary,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
         ],
       ),
     );
@@ -688,22 +750,26 @@ class _Helper21ProfileTabPageState extends State<Helper21ProfileTabPage>
           color: AppColors.primaryGreen,
         ),
         const SizedBox(width: 12),
-        SizedBox(
-          width: 100,
-          child: Text(
-            label,
-            style: AppTextStyles.bodyMedium.copyWith(
-              fontWeight: FontWeight.w600,
-              color: AppColors.textPrimary,
-            ),
-          ),
-        ),
         Expanded(
-          child: Text(
-            value,
-            style: AppTextStyles.bodyMedium.copyWith(
-              color: AppColors.textSecondary,
-            ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: AppTextStyles.bodySmall.copyWith(
+                  color: AppColors.textSecondary,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                value,
+                style: AppTextStyles.bodyMedium.copyWith(
+                  color: AppColors.textPrimary,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
           ),
         ),
       ],
@@ -714,18 +780,107 @@ class _Helper21ProfileTabPageState extends State<Helper21ProfileTabPage>
     switch (jobType.toLowerCase()) {
       case 'house cleaning':
       case 'deep cleaning':
-      case 'kitchen cleaning':
         return Icons.cleaning_services;
+      case 'gardening':
+        return Icons.yard;
+      case 'pet care':
+        return Icons.pets;
+      case 'cooking':
+        return Icons.restaurant;
+      case 'elderly care':
+        return Icons.elderly;
       case 'laundry service':
         return Icons.local_laundry_service;
       case 'organizing':
-        return Icons.inventory_2;
-      case 'gardening':
-        return Icons.grass;
-      case 'pet care':
-        return Icons.pets;
+        return Icons.inventory;
       default:
         return Icons.work;
     }
+  }
+
+  IconData _getDocumentIcon(String fileType) {
+    switch (fileType.toLowerCase()) {
+      case 'pdf':
+        return Icons.picture_as_pdf;
+      case 'jpg':
+      case 'jpeg':
+      case 'png':
+        return Icons.image;
+      case 'doc':
+      case 'docx':
+        return Icons.description;
+      default:
+        return Icons.attach_file;
+    }
+  }
+
+  Color _getVerificationColor(String? status) {
+    switch (status?.toLowerCase()) {
+      case 'verified':
+        return AppColors.success;
+      case 'rejected':
+        return AppColors.error;
+      case 'pending':
+      default:
+        return AppColors.warning;
+    }
+  }
+
+  String _formatDate(String? dateString) {
+    if (dateString == null) return 'Unknown date';
+    try {
+      final date = DateTime.parse(dateString);
+      return '${date.day}/${date.month}/${date.year}';
+    } catch (e) {
+      return 'Unknown date';
+    }
+  }
+
+  String _formatFileSize(int? bytes) {
+    if (bytes == null || bytes == 0) return '0 KB';
+
+    if (bytes < 1024) return '$bytes B';
+    if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(1)} KB';
+    return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
+  }
+
+  Widget _buildEditButtonForCurrentTab() {
+    return Container(
+      width: 40,
+      height: 40,
+      decoration: BoxDecoration(
+        color: AppColors.primaryGreen,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primaryGreen.withOpacity(0.3),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: IconButton(
+        onPressed: () {
+          // Navigate based on current tab
+          switch (_tabController.index) {
+            case 0: // Profile tab
+              context.push('/helper/profile/edit');
+              break;
+            case 1: // Jobs tab
+              context.push('/helper/profile/jobs/edit');
+              break;
+            case 2: // Resume tab
+              context.push('/helper/profile/resume/edit');
+              break;
+          }
+        },
+        icon: const Icon(
+          Icons.edit,
+          color: Colors.white,
+          size: 20,
+        ),
+        padding: EdgeInsets.zero,
+      ),
+    );
   }
 }

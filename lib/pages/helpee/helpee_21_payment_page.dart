@@ -14,10 +14,10 @@ class Helpee21PaymentPage extends StatefulWidget {
 
 class _Helpee21PaymentPageState extends State<Helpee21PaymentPage> {
   String _selectedPaymentMethod = 'card';
-  
+
   @override
   Widget build(BuildContext context) {
-    final jobData = GoRouterState.of(context).extra as Map<String, dynamic>? ?? 
+    final jobData = GoRouterState.of(context).extra as Map<String, dynamic>? ??
         {'jobId': 'JOB1001', 'amount': 'LKR 2,500', 'helper': 'Saman Perera'};
 
     return Scaffold(
@@ -30,7 +30,7 @@ class _Helpee21PaymentPageState extends State<Helpee21PaymentPage> {
             showMenuButton: false,
             showNotificationButton: false,
           ),
-          
+
           // Body Content
           Expanded(
             child: Container(
@@ -75,11 +75,14 @@ class _Helpee21PaymentPageState extends State<Helpee21PaymentPage> {
                               ),
                             ),
                             const SizedBox(height: 16),
-                            _buildSummaryRow('Job ID', jobData['jobId'] as String),
-                            _buildSummaryRow('Helper', jobData['helper'] as String),
+                            _buildSummaryRow(
+                                'Job ID', jobData['jobId'] as String),
+                            _buildSummaryRow(
+                                'Helper', jobData['helper'] as String),
                             _buildSummaryRow('Service', 'House Cleaning'),
                             const Divider(height: 32),
-                            _buildSummaryRow('Subtotal', jobData['amount'] as String),
+                            _buildSummaryRow(
+                                'Subtotal', jobData['amount'] as String),
                             _buildSummaryRow('Service Fee', 'LKR 125'),
                             _buildSummaryRow('Platform Fee', 'LKR 75'),
                             const Divider(height: 32),
@@ -106,9 +109,9 @@ class _Helpee21PaymentPageState extends State<Helpee21PaymentPage> {
                           ],
                         ),
                       ),
-                      
+
                       const SizedBox(height: 20),
-                      
+
                       // Payment Methods
                       Container(
                         width: double.infinity,
@@ -135,7 +138,7 @@ class _Helpee21PaymentPageState extends State<Helpee21PaymentPage> {
                               ),
                             ),
                             const SizedBox(height: 16),
-                            
+
                             // Credit/Debit Card
                             _buildPaymentOption(
                               'card',
@@ -143,9 +146,19 @@ class _Helpee21PaymentPageState extends State<Helpee21PaymentPage> {
                               Icons.credit_card,
                               'Visa, Mastercard, Amex',
                             ),
-                            
+
                             const SizedBox(height: 12),
-                            
+
+                            // Cash Payment
+                            _buildPaymentOption(
+                              'cash',
+                              'Cash Payment',
+                              Icons.money,
+                              'Pay cash when helper arrives',
+                            ),
+
+                            const SizedBox(height: 12),
+
                             // Digital Wallet
                             _buildPaymentOption(
                               'wallet',
@@ -153,9 +166,9 @@ class _Helpee21PaymentPageState extends State<Helpee21PaymentPage> {
                               Icons.account_balance_wallet,
                               'PayPal, Google Pay, Apple Pay',
                             ),
-                            
+
                             const SizedBox(height: 12),
-                            
+
                             // Bank Transfer
                             _buildPaymentOption(
                               'bank',
@@ -166,9 +179,9 @@ class _Helpee21PaymentPageState extends State<Helpee21PaymentPage> {
                           ],
                         ),
                       ),
-                      
+
                       const SizedBox(height: 20),
-                      
+
                       // Selected Payment Details
                       if (_selectedPaymentMethod == 'card')
                         Container(
@@ -189,7 +202,8 @@ class _Helpee21PaymentPageState extends State<Helpee21PaymentPage> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
                                 children: [
                                   const Text(
                                     'Saved Cards',
@@ -223,9 +237,9 @@ class _Helpee21PaymentPageState extends State<Helpee21PaymentPage> {
                             ],
                           ),
                         ),
-                      
+
                       const SizedBox(height: 20),
-                      
+
                       // Security Notice
                       Container(
                         width: double.infinity,
@@ -233,7 +247,8 @@ class _Helpee21PaymentPageState extends State<Helpee21PaymentPage> {
                         decoration: BoxDecoration(
                           color: AppColors.success.withOpacity(0.1),
                           borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: AppColors.success.withOpacity(0.3)),
+                          border: Border.all(
+                              color: AppColors.success.withOpacity(0.3)),
                         ),
                         child: const Row(
                           children: [
@@ -251,9 +266,9 @@ class _Helpee21PaymentPageState extends State<Helpee21PaymentPage> {
                           ],
                         ),
                       ),
-                      
+
                       const SizedBox(height: 32),
-                      
+
                       // Pay Button
                       SizedBox(
                         width: double.infinity,
@@ -276,7 +291,7 @@ class _Helpee21PaymentPageState extends State<Helpee21PaymentPage> {
                           ),
                         ),
                       ),
-                      
+
                       const SizedBox(height: 20),
                     ],
                   ),
@@ -284,7 +299,7 @@ class _Helpee21PaymentPageState extends State<Helpee21PaymentPage> {
               ),
             ),
           ),
-          
+
           // Navigation Bar
           const AppNavigationBar(
             currentTab: NavigationTab.home,
@@ -327,7 +342,7 @@ class _Helpee21PaymentPageState extends State<Helpee21PaymentPage> {
     String subtitle,
   ) {
     final isSelected = _selectedPaymentMethod == value;
-    
+
     return GestureDetector(
       onTap: () {
         setState(() {
@@ -337,7 +352,9 @@ class _Helpee21PaymentPageState extends State<Helpee21PaymentPage> {
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: isSelected ? AppColors.primaryGreen.withOpacity(0.1) : AppColors.backgroundLight,
+          color: isSelected
+              ? AppColors.primaryGreen.withOpacity(0.1)
+              : AppColors.backgroundLight,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: isSelected ? AppColors.primaryGreen : AppColors.lightGrey,
@@ -349,7 +366,8 @@ class _Helpee21PaymentPageState extends State<Helpee21PaymentPage> {
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: isSelected ? AppColors.primaryGreen : AppColors.lightGrey,
+                color:
+                    isSelected ? AppColors.primaryGreen : AppColors.lightGrey,
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Icon(
@@ -368,7 +386,9 @@ class _Helpee21PaymentPageState extends State<Helpee21PaymentPage> {
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
-                      color: isSelected ? AppColors.primaryGreen : AppColors.textPrimary,
+                      color: isSelected
+                          ? AppColors.primaryGreen
+                          : AppColors.textPrimary,
                     ),
                   ),
                   const SizedBox(height: 4),
@@ -407,7 +427,9 @@ class _Helpee21PaymentPageState extends State<Helpee21PaymentPage> {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: isSelected ? AppColors.primaryGreen.withOpacity(0.1) : AppColors.backgroundLight,
+        color: isSelected
+            ? AppColors.primaryGreen.withOpacity(0.1)
+            : AppColors.backgroundLight,
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
           color: isSelected ? AppColors.primaryGreen : AppColors.lightGrey,
@@ -417,7 +439,8 @@ class _Helpee21PaymentPageState extends State<Helpee21PaymentPage> {
         children: [
           Icon(
             cardType == 'Visa' ? Icons.credit_card : Icons.credit_card,
-            color: isSelected ? AppColors.primaryGreen : AppColors.textSecondary,
+            color:
+                isSelected ? AppColors.primaryGreen : AppColors.textSecondary,
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -458,7 +481,8 @@ class _Helpee21PaymentPageState extends State<Helpee21PaymentPage> {
       builder: (BuildContext context) {
         return AlertDialog(
           title: const Text('Confirm Payment'),
-          content: const Text('Are you sure you want to proceed with the payment of LKR 2,700?'),
+          content: const Text(
+              'Are you sure you want to proceed with the payment of LKR 2,700?'),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
@@ -482,4 +506,4 @@ class _Helpee21PaymentPageState extends State<Helpee21PaymentPage> {
       },
     );
   }
-} 
+}

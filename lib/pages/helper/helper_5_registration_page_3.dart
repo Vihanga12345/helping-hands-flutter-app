@@ -2,9 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../utils/app_colors.dart';
 import '../../utils/app_text_styles.dart';
+import '../../services/custom_auth_service.dart';
 
 class Helper5RegistrationPage3 extends StatefulWidget {
-  const Helper5RegistrationPage3({super.key});
+  final Map<String, dynamic>? registrationData;
+
+  const Helper5RegistrationPage3({super.key, this.registrationData});
 
   @override
   State<Helper5RegistrationPage3> createState() =>
@@ -12,62 +15,22 @@ class Helper5RegistrationPage3 extends StatefulWidget {
 }
 
 class _Helper5RegistrationPage3State extends State<Helper5RegistrationPage3> {
-  final List<Map<String, dynamic>> _documents = [
-    {
-      'title': 'National Identity Card',
-      'description': 'Clear photo of both sides of your NIC',
-      'required': true,
-      'uploaded': false,
-      'icon': Icons.credit_card,
-    },
-    {
-      'title': 'Police Clearance Certificate',
-      'description': 'Valid police clearance (not older than 6 months)',
-      'required': true,
-      'uploaded': false,
-      'icon': Icons.security,
-    },
-    {
-      'title': 'Professional Certificates',
-      'description': 'Relevant training or certification documents',
-      'required': false,
-      'uploaded': false,
-      'icon': Icons.school,
-    },
-    {
-      'title': 'Bank Account Details',
-      'description': 'Bank statement or account verification',
-      'required': true,
-      'uploaded': false,
-      'icon': Icons.account_balance,
-    },
-    {
-      'title': 'Profile Photo',
-      'description': 'Professional headshot for your profile',
-      'required': true,
-      'uploaded': false,
-      'icon': Icons.person,
-    },
-  ];
+  bool _isLoading = false;
+  bool _idFrontUploaded = false;
+  bool _idBackUploaded = false;
 
   @override
   Widget build(BuildContext context) {
-    final requiredDocuments = _documents.where((doc) => doc['required']).length;
-    final uploadedRequired =
-        _documents.where((doc) => doc['required'] && doc['uploaded']).length;
+    final canComplete = _idFrontUploaded && _idBackUploaded;
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Document Upload'),
+        title: const Text('Upload ID Documents'),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: () {
-            if (context.canPop()) {
-              context.pop();
-            } else {
-              context.go('/');
-            }
-          },
+          onPressed: () => context.pop(),
         ),
       ),
       body: Container(
@@ -83,29 +46,68 @@ class _Helper5RegistrationPage3State extends State<Helper5RegistrationPage3> {
         child: SafeArea(
           child: Column(
             children: [
-              // Progress Header
+              // Progress Indicator
               Container(
                 padding: const EdgeInsets.all(20),
                 child: Column(
                   children: [
                     Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Container(
-                          width: 32,
-                          height: 32,
-                          decoration: const BoxDecoration(
-                            color: AppColors.primaryGreen,
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Center(
-                            child: Text(
-                              '3',
+                        _buildProgressBubble(true, 1),
+                        _buildProgressLine(true),
+                        _buildProgressBubble(true, 2),
+                        _buildProgressLine(true),
+                        _buildProgressBubble(true, 3), // Current page
+                        _buildProgressLine(false),
+                        _buildProgressBubble(false, 4),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Step 3 of 4: Upload ID Documents',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Upload clear photos of your National Identity Card',
                               style: TextStyle(
-                                color: AppColors.white,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
+                        fontSize: 14,
+                        color: AppColors.textSecondary,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ),
+              ),
+
+              // Main Content
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: Column(
+                    children: [
+                      // Security Notice
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: AppColors.primaryGreen.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: AppColors.primaryGreen.withOpacity(0.3),
                           ),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.security,
+                              color: AppColors.primaryGreen,
+                              size: 24,
                         ),
                         const SizedBox(width: 12),
                         Expanded(
@@ -113,52 +115,319 @@ class _Helper5RegistrationPage3State extends State<Helper5RegistrationPage3> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                'Step 3 of 4',
-                                style: TextStyle().copyWith(
+                                    'Secure & Confidential',
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w600,
+                                      color: AppColors.primaryGreen,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    'Your ID documents are encrypted and used only for verification purposes.',
+                                    style: TextStyle(
+                                      fontSize: 12,
                                   color: AppColors.textSecondary,
                                 ),
                               ),
-                              Text(
-                                'Upload Documents',
-                                style: TextStyle(),
+                                ],
+                              ),
                               ),
                             ],
                           ),
+                      ),
+
+                      const SizedBox(height: 24),
+
+                      // ID Front Upload
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          color: AppColors.white,
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: const [
+                            BoxShadow(
+                              color: AppColors.shadowColorLight,
+                              blurRadius: 8,
+                              offset: Offset(0, 4),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 16),
-                    LinearProgressIndicator(
-                      value: 0.75,
-                      backgroundColor: AppColors.lightGrey,
-                      valueColor: const AlwaysStoppedAnimation<Color>(
-                          AppColors.primaryGreen),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(12),
+                                  decoration: BoxDecoration(
+                                    color: _idFrontUploaded
+                                        ? AppColors.success.withOpacity(0.1)
+                                        : AppColors.primaryGreen
+                                            .withOpacity(0.1),
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                  child: Icon(
+                                    _idFrontUploaded
+                                        ? Icons.check_circle
+                                        : Icons.credit_card,
+                                    color: _idFrontUploaded
+                                        ? AppColors.success
+                                        : AppColors.primaryGreen,
+                                    size: 24,
+                                  ),
+                                ),
+                                const SizedBox(width: 16),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        'ID Card Front Side',
+                                        style: TextStyle(
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.w600,
+                                          color: AppColors.textPrimary,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        'Upload a clear photo of the front of your National ID',
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          color: AppColors.textSecondary,
+                                        ),
                     ),
                   ],
                 ),
               ),
-
-              // Progress Summary
               Container(
-                margin: const EdgeInsets.symmetric(horizontal: 20),
-                padding: const EdgeInsets.all(16),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 4,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.error.withOpacity(0.1),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Text(
+                                    'Required',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600,
+                                      color: AppColors.error,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 20),
+
+                            // Upload area for front
+                            GestureDetector(
+                              onTap: () => _uploadIdFront(),
+                              child: Container(
+                                width: double.infinity,
+                                height: 120,
                 decoration: BoxDecoration(
-                  color: AppColors.primaryGreen.withOpacity(0.1),
+                                  color: _idFrontUploaded
+                                      ? AppColors.success.withOpacity(0.1)
+                                      : AppColors.lightGrey.withOpacity(0.3),
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                      color: AppColors.primaryGreen.withOpacity(0.3)),
-                ),
-                child: Row(
+                                    color: _idFrontUploaded
+                                        ? AppColors.success
+                                        : AppColors.lightGrey,
+                                    style: BorderStyle.solid,
+                                  ),
+                                ),
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Icon(Icons.upload_file,
-                        color: AppColors.primaryGreen),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        'Documents uploaded: $uploadedRequired/$requiredDocuments required',
-                        style: TextStyle().copyWith(
-                          color: AppColors.primaryGreen,
-                          fontWeight: FontWeight.w600,
+                                    Icon(
+                                      _idFrontUploaded
+                                          ? Icons.check_circle
+                                          : Icons.camera_alt,
+                                      size: 32,
+                                      color: _idFrontUploaded
+                                          ? AppColors.success
+                                          : AppColors.textSecondary,
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      _idFrontUploaded
+                                          ? 'ID Front Uploaded Successfully'
+                                          : 'Tap to upload ID front photo',
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w500,
+                                        color: _idFrontUploaded
+                                            ? AppColors.success
+                                            : AppColors.textSecondary,
+                                      ),
+                                    ),
+                                    if (!_idFrontUploaded) ...[
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        'Camera or Gallery',
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          color: AppColors.textSecondary,
+                                        ),
+                                      ),
+                                    ],
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+
+                      const SizedBox(height: 24),
+
+                      // ID Back Upload
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          color: AppColors.white,
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: const [
+                            BoxShadow(
+                              color: AppColors.shadowColorLight,
+                              blurRadius: 8,
+                              offset: Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(12),
+                                  decoration: BoxDecoration(
+                                    color: _idBackUploaded
+                                        ? AppColors.success.withOpacity(0.1)
+                                        : AppColors.primaryGreen
+                                            .withOpacity(0.1),
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                  child: Icon(
+                                    _idBackUploaded
+                                        ? Icons.check_circle
+                                        : Icons.credit_card,
+                                    color: _idBackUploaded
+                                        ? AppColors.success
+                                        : AppColors.primaryGreen,
+                                    size: 24,
+                                  ),
+                                ),
+                                const SizedBox(width: 16),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        'ID Card Back Side',
+                                        style: TextStyle(
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.w600,
+                                          color: AppColors.textPrimary,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        'Upload a clear photo of the back of your National ID',
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          color: AppColors.textSecondary,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 4,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.error.withOpacity(0.1),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Text(
+                                    'Required',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600,
+                                      color: AppColors.error,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 20),
+
+                            // Upload area for back
+                            GestureDetector(
+                              onTap: () => _uploadIdBack(),
+                              child: Container(
+                                width: double.infinity,
+                                height: 120,
+                                decoration: BoxDecoration(
+                                  color: _idBackUploaded
+                                      ? AppColors.success.withOpacity(0.1)
+                                      : AppColors.lightGrey.withOpacity(0.3),
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                    color: _idBackUploaded
+                                        ? AppColors.success
+                                        : AppColors.lightGrey,
+                                    style: BorderStyle.solid,
+                                  ),
+                                ),
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(
+                                      _idBackUploaded
+                                          ? Icons.check_circle
+                                          : Icons.camera_alt,
+                                      size: 32,
+                                      color: _idBackUploaded
+                                          ? AppColors.success
+                                          : AppColors.textSecondary,
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      _idBackUploaded
+                                          ? 'ID Back Uploaded Successfully'
+                                          : 'Tap to upload ID back photo',
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w500,
+                                        color: _idBackUploaded
+                                            ? AppColors.success
+                                            : AppColors.textSecondary,
+                                      ),
+                                    ),
+                                    if (!_idBackUploaded) ...[
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        'Camera or Gallery',
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          color: AppColors.textSecondary,
+                                        ),
+                                      ),
+                                    ],
+                                  ],
                         ),
                       ),
                     ),
@@ -166,24 +435,18 @@ class _Helper5RegistrationPage3State extends State<Helper5RegistrationPage3> {
                 ),
               ),
 
-              // Documents List
-              Expanded(
-                child: ListView.builder(
-                  padding: const EdgeInsets.all(20),
-                  itemCount: _documents.length,
-                  itemBuilder: (context, index) {
-                    final document = _documents[index];
-                    return _buildDocumentCard(document, index);
-                  },
+                      const SizedBox(height: 40),
+                    ],
+                  ),
                 ),
               ),
 
               // Bottom Actions
               Container(
                 padding: const EdgeInsets.all(20),
-                decoration: const BoxDecoration(
+                decoration: BoxDecoration(
                   color: AppColors.white,
-                  boxShadow: [
+                  boxShadow: const [
                     BoxShadow(
                       color: AppColors.shadowColorLight,
                       blurRadius: 8,
@@ -197,26 +460,42 @@ class _Helper5RegistrationPage3State extends State<Helper5RegistrationPage3> {
                       width: double.infinity,
                       height: 56,
                       child: ElevatedButton(
-                        onPressed: uploadedRequired == requiredDocuments
-                            ? () => context.go('/helper-register-4')
+                        onPressed: canComplete && !_isLoading
+                            ? _completeRegistration
                             : null,
-                        child: Text(
-                          uploadedRequired == requiredDocuments
-                              ? 'Continue to Verification'
-                              : 'Upload Required Documents',
-                          style: TextStyle(),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primaryGreen,
+                          foregroundColor: AppColors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          elevation: 2,
+                        ),
+                        child: _isLoading
+                            ? const CircularProgressIndicator(
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                    AppColors.white),
+                              )
+                            : Text(
+                                canComplete
+                                    ? 'Complete Registration'
+                                    : 'Upload both ID photos to continue',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                ),
                         ),
                       ),
                     ),
                     const SizedBox(height: 12),
                     TextButton(
-                      onPressed: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                              content: Text('Registration progress saved')),
-                        );
-                      },
-                      child: const Text('Save and Continue Later'),
+                      onPressed: () => context.pop(),
+                      child: const Text(
+                        'Back to Previous Step',
+                        style: TextStyle(
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
                     ),
                   ],
                 ),
@@ -228,167 +507,127 @@ class _Helper5RegistrationPage3State extends State<Helper5RegistrationPage3> {
     );
   }
 
-  Widget _buildDocumentCard(Map<String, dynamic> document, int index) {
+  Widget _buildProgressBubble(bool isActive, int step) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 16),
+      width: 32,
+      height: 32,
       decoration: BoxDecoration(
-        color: AppColors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: document['uploaded']
-            ? Border.all(color: AppColors.success, width: 2)
-            : null,
-        boxShadow: const [
-          BoxShadow(
-            color: AppColors.shadowColorLight,
-            blurRadius: 8,
-            offset: Offset(0, 4),
-          ),
-        ],
+        shape: BoxShape.circle,
+        color: isActive ? AppColors.primaryGreen : AppColors.lightGrey,
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: document['uploaded']
-                        ? AppColors.success.withOpacity(0.1)
-                        : AppColors.primaryGreen.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Icon(
-                    document['uploaded']
-                        ? Icons.check_circle
-                        : document['icon'],
-                    color: document['uploaded']
-                        ? AppColors.success
-                        : AppColors.primaryGreen,
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Text(
-                            document['title'],
-                            style: TextStyle().copyWith(
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          if (document['required'])
-                            Container(
-                              margin: const EdgeInsets.only(left: 8),
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 8, vertical: 2),
-                              decoration: BoxDecoration(
-                                color: AppColors.error.withOpacity(0.1),
-                                borderRadius: BorderRadius.circular(12),
-                              ),
+      child: Center(
                               child: Text(
-                                'Required',
-                                style: TextStyle().copyWith(
-                                  color: AppColors.error,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ),
-                        ],
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        document['description'],
-                        style: TextStyle().copyWith(
-                          color: AppColors.textSecondary,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            if (document['uploaded'])
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: AppColors.success.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(Icons.check_circle,
-                        color: AppColors.success, size: 20),
-                    const SizedBox(width: 8),
-                    const Expanded(
-                      child: Text(
-                        'Document uploaded successfully',
+          step.toString(),
                         style: TextStyle(
-                          color: AppColors.success,
+            color: isActive ? AppColors.white : AppColors.textSecondary,
                           fontWeight: FontWeight.w600,
                         ),
-                      ),
-                    ),
-                    TextButton(
-                      onPressed: () => _replaceDocument(index),
-                      child: const Text('Replace'),
-                    ),
-                  ],
-                ),
-              )
-            else
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: () => _uploadDocument(index),
-                      icon: const Icon(Icons.camera_alt, size: 18),
-                      label: const Text('Take Photo'),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: ElevatedButton.icon(
-                      onPressed: () => _uploadDocument(index),
-                      icon: const Icon(Icons.upload_file, size: 18),
-                      label: const Text('Upload File'),
-                    ),
-                  ),
-                ],
-              ),
-          ],
         ),
       ),
     );
   }
 
-  void _uploadDocument(int index) {
+  Widget _buildProgressLine(bool isActive) {
+    return Container(
+      width: 40,
+      height: 2,
+      color: isActive ? AppColors.primaryGreen : AppColors.lightGrey,
+    );
+  }
+
+  void _uploadIdFront() {
     setState(() {
-      _documents[index]['uploaded'] = true;
+      _idFrontUploaded = true;
     });
+
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('${_documents[index]['title']} uploaded successfully!'),
+      const SnackBar(
+        content: Text('ID front photo uploaded successfully!'),
         backgroundColor: AppColors.success,
       ),
     );
   }
 
-  void _replaceDocument(int index) {
+  void _uploadIdBack() {
     setState(() {
-      _documents[index]['uploaded'] = false;
+      _idBackUploaded = true;
     });
+
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content:
-            Text('${_documents[index]['title']} removed. Please upload again.'),
+      const SnackBar(
+        content: Text('ID back photo uploaded successfully!'),
+        backgroundColor: AppColors.success,
       ),
     );
+  }
+
+  Future<void> _completeRegistration() async {
+    if (!_idFrontUploaded || !_idBackUploaded) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please upload both ID photos'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      // Complete registration with all collected data
+      final registrationData = widget.registrationData ?? {};
+
+      final result = await CustomAuthService().register(
+        username: registrationData['username'] ?? '',
+        email: registrationData['email'] ?? '',
+        password: registrationData['password'] ?? '',
+        userType: 'helper',
+        firstName: registrationData['firstName'] ?? '',
+        lastName: registrationData['lastName'] ?? '',
+        phone: registrationData['phone'] ?? '',
+      );
+
+      if (result['success']) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                  'Registration completed successfully! Welcome to Helping Hands!'),
+              backgroundColor: AppColors.success,
+            ),
+          );
+
+          // Navigate to helper home page
+          context.go('/helper/home');
+        }
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(result['error'] ?? 'Registration failed'),
+              backgroundColor: AppColors.error,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Registration error: $e'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
   }
 }

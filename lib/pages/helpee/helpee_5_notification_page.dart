@@ -4,9 +4,48 @@ import '../../utils/app_colors.dart';
 import '../../utils/app_text_styles.dart';
 import '../../widgets/common/app_header.dart';
 import '../../widgets/common/app_navigation_bar.dart';
+import '../../services/custom_auth_service.dart';
 
-class Helpee5NotificationPage extends StatelessWidget {
+class Helpee5NotificationPage extends StatefulWidget {
   const Helpee5NotificationPage({super.key});
+
+  @override
+  State<Helpee5NotificationPage> createState() =>
+      _Helpee5NotificationPageState();
+}
+
+class _Helpee5NotificationPageState extends State<Helpee5NotificationPage> {
+  final CustomAuthService _authService = CustomAuthService();
+  List<Map<String, dynamic>> _notifications = [];
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadNotifications();
+  }
+
+  Future<void> _loadNotifications() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      // TODO: Replace with actual notification service
+      // For now, show empty state since user wants hardcoded data removed
+      await Future.delayed(
+          const Duration(milliseconds: 500)); // Simulate loading
+
+      setState(() {
+        _notifications = []; // Empty list - no hardcoded data
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -20,7 +59,7 @@ class Helpee5NotificationPage extends StatelessWidget {
             showMenuButton: false,
             showNotificationButton: false,
           ),
-          
+
           // Body Content
           Expanded(
             child: Container(
@@ -41,17 +80,27 @@ class Helpee5NotificationPage extends StatelessWidget {
                     children: [
                       // Notification List
                       Expanded(
-                        child: ListView.builder(
-                          itemCount: 5, // Demo notifications
-                          itemBuilder: (context, index) {
-                            return _buildNotificationCard(
-                              title: 'Notification ${index + 1}',
-                              message: 'This is a sample notification message for testing purposes.',
-                              time: '${index + 1}h ago',
-                              isRead: index % 2 == 0,
-                            );
-                          },
-                        ),
+                        child: _isLoading
+                            ? const Center(child: CircularProgressIndicator())
+                            : _notifications.isEmpty
+                                ? _buildEmptyState()
+                                : ListView.builder(
+                                    itemCount: _notifications.length,
+                                    itemBuilder: (context, index) {
+                                      final notification =
+                                          _notifications[index];
+                                      return _buildNotificationCard(
+                                        title: notification['title'] ??
+                                            'Notification',
+                                        message: notification['message'] ??
+                                            'No message',
+                                        time: notification['time'] ??
+                                            'Unknown time',
+                                        isRead:
+                                            notification['is_read'] ?? false,
+                                      );
+                                    },
+                                  ),
                       ),
                     ],
                   ),
@@ -59,11 +108,50 @@ class Helpee5NotificationPage extends StatelessWidget {
               ),
             ),
           ),
-          
-          // Navigation Bar - Default to home since this is a secondary page
+
+          // Navigation Bar
           const AppNavigationBar(
             currentTab: NavigationTab.home,
             userType: UserType.helpee,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Icon(
+            Icons.notifications_off,
+            size: 64,
+            color: AppColors.lightGrey,
+          ),
+          const SizedBox(height: 16),
+          const Text(
+            'No Notifications',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textSecondary,
+            ),
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            'You don\'t have any notifications yet.',
+            style: TextStyle(color: AppColors.textSecondary),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 16),
+          ElevatedButton(
+            onPressed: _loadNotifications,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primaryGreen,
+              foregroundColor: AppColors.white,
+            ),
+            child: const Text('Refresh'),
           ),
         ],
       ),
@@ -128,4 +216,4 @@ class Helpee5NotificationPage extends StatelessWidget {
       ),
     );
   }
-} 
+}

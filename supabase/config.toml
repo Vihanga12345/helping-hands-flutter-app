@@ -17,12 +17,8 @@ max_rows = 1000
 [db]
 # Port to use for the local database URL.
 port = 54322
-# External port is the port that the database is accessible from outside the container.
-external_port = 54322
 # The database major version to use.
 major_version = 15
-# List of the initial schemas to be created.
-schemas = ["public", "storage", "vault"]
 
 [db.pooler]
 enabled = false
@@ -106,7 +102,8 @@ enable_signup = true
 # If enabled, users need to confirm their phone number before signing in.
 enable_confirmations = false
 # Template for sending a confirmation message
-test_otp = "123456"
+[auth.sms.test_otp]
+otp = "123456"
 
 # Configure one of the supported SMS providers: `twilio`, `twilio_verify`, `messagebird`, `textlocal`, `vonage`.
 [auth.sms.twilio]

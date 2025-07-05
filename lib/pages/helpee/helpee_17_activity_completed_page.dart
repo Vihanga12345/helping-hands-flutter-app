@@ -20,7 +20,7 @@ class Helpee17ActivityCompletedPage extends StatelessWidget {
             showMenuButton: true,
             showNotificationButton: true,
           ),
-          
+
           // Body Content
           Expanded(
             child: Container(
@@ -55,9 +55,11 @@ class Helpee17ActivityCompletedPage extends StatelessWidget {
                         children: [
                           Expanded(
                             child: GestureDetector(
-                              onTap: () => context.go('/helpee/activity/pending'),
+                              onTap: () =>
+                                  context.go('/helpee/activity/pending'),
                               child: Container(
-                                padding: const EdgeInsets.symmetric(vertical: 12),
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 12),
                                 child: const Text(
                                   'Pending',
                                   textAlign: TextAlign.center,
@@ -71,9 +73,11 @@ class Helpee17ActivityCompletedPage extends StatelessWidget {
                           ),
                           Expanded(
                             child: GestureDetector(
-                              onTap: () => context.go('/helpee/activity/ongoing'),
+                              onTap: () =>
+                                  context.go('/helpee/activity/ongoing'),
                               child: Container(
-                                padding: const EdgeInsets.symmetric(vertical: 12),
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 12),
                                 child: const Text(
                                   'Ongoing',
                                   textAlign: TextAlign.center,
@@ -105,7 +109,7 @@ class Helpee17ActivityCompletedPage extends StatelessWidget {
                         ],
                       ),
                     ),
-                    
+
                     // Completed Jobs List
                     Expanded(
                       child: ListView.builder(
@@ -116,7 +120,8 @@ class Helpee17ActivityCompletedPage extends StatelessWidget {
                             context,
                             jobId: 'JOB${1010 + index}',
                             title: 'House Cleaning ${index + 1}',
-                            helper: index % 2 == 0 ? 'Saman Perera' : 'Kasun Silva',
+                            helper:
+                                index % 2 == 0 ? 'Saman Perera' : 'Kasun Silva',
                             completedDate: 'Dec ${15 + index}, 2024',
                             duration: '${2 + index} hours',
                             price: 'LKR ${(index + 15) * 100}',
@@ -131,7 +136,7 @@ class Helpee17ActivityCompletedPage extends StatelessWidget {
               ),
             ),
           ),
-          
+
           // Navigation Bar - Activity tab active
           const AppNavigationBar(
             currentTab: NavigationTab.activity,
@@ -187,7 +192,8 @@ class Helpee17ActivityCompletedPage extends StatelessWidget {
                 ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                 decoration: BoxDecoration(
                   color: AppColors.success,
                   borderRadius: BorderRadius.circular(20),
@@ -203,9 +209,9 @@ class Helpee17ActivityCompletedPage extends StatelessWidget {
               ),
             ],
           ),
-          
+
           const SizedBox(height: 12),
-          
+
           // Job Details
           Text(
             title,
@@ -228,9 +234,9 @@ class Helpee17ActivityCompletedPage extends StatelessWidget {
               ),
             ],
           ),
-          
+
           const SizedBox(height: 12),
-          
+
           // Rating Section
           if (hasRated)
             Row(
@@ -267,9 +273,9 @@ class Helpee17ActivityCompletedPage extends StatelessWidget {
                 ),
               ),
             ),
-          
+
           const SizedBox(height: 12),
-          
+
           // Bottom Info
           Row(
             children: [
@@ -339,16 +345,53 @@ class Helpee17ActivityCompletedPage extends StatelessWidget {
               ),
             ],
           ),
-          
+
           const SizedBox(height: 16),
-          
+
           // Action Buttons
           Row(
             children: [
               Expanded(
                 child: OutlinedButton(
                   onPressed: () {
-                    context.go('/helpee/job/completed', extra: jobId);
+                    // Navigate to job detail page using SAME LOGIC as calendar and activity - determine route by status
+                    String status =
+                        'completed'; // This is always completed from this page
+
+                    String route;
+                    switch (status) {
+                      case 'pending':
+                        route = '/helpee/job-detail/pending';
+                        break;
+                      case 'accepted':
+                      case 'started':
+                      case 'paused':
+                      case 'confirmed':
+                      case 'ongoing':
+                        route = '/helpee/job-detail/ongoing';
+                        break;
+                      case 'completed':
+                        route = '/helpee/job-detail/completed';
+                        break;
+                      default:
+                        route =
+                            '/helpee/job-detail/completed'; // Default for completed page
+                    }
+
+                    context.push(route, extra: {
+                      'jobId': jobId,
+                      'jobData': {
+                        'id': jobId,
+                        'title': title,
+                        'helper': helper,
+                        'status': status,
+                        'price': price,
+                        'completedDate': completedDate,
+                        'duration': duration,
+                        'rating': rating,
+                        'hasRated': hasRated,
+                      }
+                    });
                   },
                   style: OutlinedButton.styleFrom(
                     side: const BorderSide(color: AppColors.primaryGreen),
@@ -369,7 +412,8 @@ class Helpee17ActivityCompletedPage extends StatelessWidget {
                 Expanded(
                   child: ElevatedButton(
                     onPressed: () {
-                      context.go('/helpee/rating', extra: {'jobId': jobId, 'helper': helper});
+                      context.go('/helpee/rating',
+                          extra: {'jobId': jobId, 'helper': helper});
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.warning,
@@ -428,4 +472,4 @@ class Helpee17ActivityCompletedPage extends StatelessWidget {
       },
     );
   }
-} 
+}

@@ -4,12 +4,246 @@ import '../../utils/app_colors.dart';
 import '../../utils/app_text_styles.dart';
 import '../../widgets/common/app_header.dart';
 import '../../widgets/common/app_navigation_bar.dart';
+import '../../services/helper_data_service.dart';
 
-class HelperHelpeeProfilePage extends StatelessWidget {
-  const HelperHelpeeProfilePage({super.key});
+class HelperHelpeeProfilePage extends StatefulWidget {
+  final Map<String, dynamic>? helpeeData;
+  final Map<String, dynamic>? helpeeStats;
+  final String? helpeeId;
+
+  const HelperHelpeeProfilePage({
+    super.key,
+    this.helpeeData,
+    this.helpeeStats,
+    this.helpeeId,
+  });
+
+  @override
+  State<HelperHelpeeProfilePage> createState() =>
+      _HelperHelpeeProfilePageState();
+}
+
+class _HelperHelpeeProfilePageState extends State<HelperHelpeeProfilePage> {
+  final HelperDataService _helperDataService = HelperDataService();
+
+  Map<String, dynamic>? _helpeeProfile;
+  Map<String, dynamic>? _helpeeStatistics;
+  List<Map<String, dynamic>>? _helpeeReviews;
+  bool _isLoading = true;
+  String? _error;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_isLoading) {
+      _loadHelpeeData();
+    }
+  }
+
+  Future<void> _loadHelpeeData() async {
+    try {
+      setState(() {
+        _isLoading = true;
+        _error = null;
+      });
+
+      // Extract helpee ID from navigation or widget params
+      final extra =
+          ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+      final helpeeId = widget.helpeeId ??
+          extra?['helpeeId'] ??
+          widget.helpeeData?['id'] ??
+          (context.mounted
+              ? GoRouter.of(context).routerDelegate.currentConfiguration.extra
+                  as Map<String, dynamic>?
+              : null)?['helpeeId'];
+
+      if (helpeeId == null) {
+        throw Exception('Helpee ID not found');
+      }
+
+      print('🔍 Loading helpee data for ID: $helpeeId');
+
+      // Load all helpee data in parallel
+      final results = await Future.wait([
+        _helperDataService.getHelpeeProfileForHelper(helpeeId),
+        _helperDataService.getHelpeeJobStatistics(helpeeId),
+        _helperDataService.getHelpeeRatingsAndReviews(helpeeId),
+      ]);
+
+      setState(() {
+        _helpeeProfile = results[0] as Map<String, dynamic>?;
+        _helpeeStatistics = results[1] as Map<String, dynamic>;
+        _helpeeReviews = results[2] as List<Map<String, dynamic>>;
+        _isLoading = false;
+      });
+
+      print('✅ Helpee data loaded successfully');
+    } catch (e) {
+      print('❌ Error loading helpee data: $e');
+      setState(() {
+        _error = e.toString();
+        _isLoading = false;
+      });
+    }
+  }
+
+  Widget _buildLoadingState() {
+    return Scaffold(
+      body: Container(
+        width: double.infinity,
+        height: double.infinity,
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment(0.50, 0.00),
+            end: Alignment(0.50, 1.00),
+            colors: AppColors.backgroundGradient,
+          ),
+        ),
+        child: const Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              CircularProgressIndicator(
+                color: AppColors.primaryGreen,
+              ),
+              SizedBox(height: 16),
+              Text(
+                'Loading helpee profile...',
+                style: TextStyle(
+                  color: AppColors.textSecondary,
+                  fontSize: 16,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildErrorState() {
+    return Scaffold(
+      body: Container(
+        width: double.infinity,
+        height: double.infinity,
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment(0.50, 0.00),
+            end: Alignment(0.50, 1.00),
+            colors: AppColors.backgroundGradient,
+          ),
+        ),
+        child: SafeArea(
+          child: Column(
+            children: [
+              AppHeader(
+                title: 'Helpee Profile',
+                showBackButton: true,
+                onBackPressed: () => context.pop(),
+              ),
+              Expanded(
+                child: Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(
+                        Icons.error_outline,
+                        size: 64,
+                        color: AppColors.error,
+                      ),
+                      const SizedBox(height: 16),
+                      const Text(
+                        'Failed to load helpee profile',
+                        style: TextStyle(
+                          color: AppColors.textPrimary,
+                          fontSize: 18,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        _error ?? 'Please try again later',
+                        style: const TextStyle(
+                          color: AppColors.textSecondary,
+                          fontSize: 14,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 24),
+                      ElevatedButton(
+                        onPressed: _loadHelpeeData,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primaryGreen,
+                        ),
+                        child: const Text(
+                          'Retry',
+                          style: TextStyle(color: AppColors.white),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  String _formatReviewDate(String? dateString) {
+    if (dateString == null) return 'Recently';
+
+    try {
+      final date = DateTime.parse(dateString);
+      final now = DateTime.now();
+      final difference = now.difference(date);
+
+      if (difference.inDays < 1) {
+        return 'Today';
+      } else if (difference.inDays < 7) {
+        return '${difference.inDays} day${difference.inDays == 1 ? '' : 's'} ago';
+      } else if (difference.inDays < 30) {
+        final weeks = (difference.inDays / 7).floor();
+        return '$weeks week${weeks == 1 ? '' : 's'} ago';
+      } else if (difference.inDays < 365) {
+        final months = (difference.inDays / 30).floor();
+        return '$months month${months == 1 ? '' : 's'} ago';
+      } else {
+        final years = (difference.inDays / 365).floor();
+        return '$years year${years == 1 ? '' : 's'} ago';
+      }
+    } catch (e) {
+      return 'Recently';
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return _buildLoadingState();
+    }
+
+    if (_error != null || _helpeeProfile == null) {
+      return _buildErrorState();
+    }
+
+    // Extract real helpee data
+    final firstName = _helpeeProfile!['first_name'] ?? 'Unknown';
+    final lastName = _helpeeProfile!['last_name'] ?? 'User';
+    final fullName = '$firstName $lastName'.trim();
+    final rating = (_helpeeStatistics!['average_rating'] ?? 0.0).toDouble();
+    final totalJobs = _helpeeStatistics!['total_jobs'] ?? 0;
+    final completedJobs = _helpeeStatistics!['completed_jobs'] ?? 0;
+    final profileImage = _helpeeProfile!['profile_image_url'];
+    final location =
+        _helpeeProfile!['location_city'] ?? 'Location not specified';
+    final memberSince = _helpeeStatistics!['member_since'] ?? 'Recently joined';
+    final aboutMe = _helpeeProfile!['about_me'] ?? 'No description provided.';
+    final responseRate =
+        (_helpeeStatistics!['response_rate'] ?? 0.0).toDouble();
+    final totalReviews = _helpeeStatistics!['total_reviews'] ?? 0;
     return Scaffold(
       body: Container(
         width: double.infinity,
@@ -65,18 +299,28 @@ class HelperHelpeeProfilePage extends StatelessWidget {
                               width: 100,
                               height: 100,
                               decoration: BoxDecoration(
-                                color: AppColors.primaryGreen.withOpacity(0.1),
                                 borderRadius: BorderRadius.circular(50),
+                                image: profileImage != null
+                                    ? DecorationImage(
+                                        image: NetworkImage(profileImage),
+                                        fit: BoxFit.cover,
+                                      )
+                                    : null,
+                                color: profileImage == null
+                                    ? AppColors.primaryGreen.withOpacity(0.1)
+                                    : null,
                               ),
-                              child: const Icon(
+                              child: profileImage == null
+                                  ? const Icon(
                                 Icons.person,
                                 size: 50,
                                 color: AppColors.primaryGreen,
-                              ),
+                                    )
+                                  : null,
                             ),
                             const SizedBox(height: 16),
                             Text(
-                              'Sarah Johnson',
+                              fullName,
                               style: AppTextStyles.heading3.copyWith(
                                 color: AppColors.textPrimary,
                               ),
@@ -89,14 +333,14 @@ class HelperHelpeeProfilePage extends StatelessWidget {
                                     color: AppColors.warning, size: 20),
                                 const SizedBox(width: 4),
                                 Text(
-                                  '4.9',
+                                  rating.toStringAsFixed(1),
                                   style: AppTextStyles.bodyLarge.copyWith(
                                     fontWeight: FontWeight.w600,
                                   ),
                                 ),
                                 const SizedBox(width: 8),
                                 Text(
-                                  '(42 jobs completed)',
+                                  '($totalJobs jobs completed)',
                                   style: AppTextStyles.bodyMedium.copyWith(
                                     color: AppColors.textSecondary,
                                   ),
@@ -131,7 +375,7 @@ class HelperHelpeeProfilePage extends StatelessWidget {
                                     borderRadius: BorderRadius.circular(20),
                                   ),
                                   child: Text(
-                                    'Member since 2023',
+                                    'Member since $memberSince',
                                     style: AppTextStyles.bodySmall.copyWith(
                                       color: AppColors.info,
                                       fontWeight: FontWeight.w600,
@@ -171,14 +415,14 @@ class HelperHelpeeProfilePage extends StatelessWidget {
                               ),
                             ),
                             const SizedBox(height: 16),
-                            _buildInfoRow(Icons.location_on, 'Location',
-                                'Colombo 07, Sri Lanka'),
-                            _buildInfoRow(Icons.language, 'Languages',
-                                'English, Sinhala'),
                             _buildInfoRow(
-                                Icons.access_time, 'Joined', 'December 2023'),
-                            _buildInfoRow(Icons.work, 'Job Preference',
-                                'Home cleaning, Office cleaning'),
+                                Icons.location_on, 'Location', location),
+                            _buildInfoRow(Icons.phone, 'Phone',
+                                _helpeeProfile!['phone'] ?? 'Not provided'),
+                            _buildInfoRow(Icons.email, 'Email',
+                                _helpeeProfile!['email'] ?? 'Not provided'),
+                            _buildInfoRow(
+                                Icons.access_time, 'Joined', memberSince),
                           ],
                         ),
                       ),
@@ -213,24 +457,28 @@ class HelperHelpeeProfilePage extends StatelessWidget {
                             Row(
                               children: [
                                 Expanded(
-                                    child: _buildStatCard('42', 'Jobs Posted',
-                                        AppColors.primaryGreen)),
+                                    child: _buildStatCard('$totalJobs',
+                                        'Jobs Posted', AppColors.primaryGreen)),
                                 const SizedBox(width: 12),
                                 Expanded(
-                                    child: _buildStatCard(
-                                        '40', 'Completed', AppColors.success)),
+                                    child: _buildStatCard('$completedJobs',
+                                        'Completed', AppColors.success)),
                               ],
                             ),
                             const SizedBox(height: 12),
                             Row(
                               children: [
                                 Expanded(
-                                    child: _buildStatCard('4.9★',
-                                        'Average Rating', AppColors.warning)),
+                                    child: _buildStatCard(
+                                        '${rating.toStringAsFixed(1)}★',
+                                        'Average Rating',
+                                        AppColors.warning)),
                                 const SizedBox(width: 12),
                                 Expanded(
-                                    child: _buildStatCard('95%',
-                                        'Response Rate', AppColors.info)),
+                                    child: _buildStatCard(
+                                        '${responseRate.toStringAsFixed(0)}%',
+                                        'Response Rate',
+                                        AppColors.info)),
                               ],
                             ),
                           ],
@@ -265,7 +513,7 @@ class HelperHelpeeProfilePage extends StatelessWidget {
                             ),
                             const SizedBox(height: 16),
                             Text(
-                              'I am a homeowner in Colombo who regularly needs help with house cleaning and occasional childcare. I believe in treating helpers with respect and providing fair compensation for quality work. I am detail-oriented and appreciate thorough, professional service.',
+                              aboutMe,
                               style: AppTextStyles.bodyMedium.copyWith(
                                 color: AppColors.textSecondary,
                                 height: 1.5,
@@ -305,7 +553,7 @@ class HelperHelpeeProfilePage extends StatelessWidget {
                                 ),
                                 const Spacer(),
                                 Text(
-                                  '42 reviews',
+                                  '$totalReviews reviews',
                                   style: AppTextStyles.bodySmall.copyWith(
                                     color: AppColors.textSecondary,
                                   ),
@@ -313,23 +561,29 @@ class HelperHelpeeProfilePage extends StatelessWidget {
                               ],
                             ),
                             const SizedBox(height: 16),
-                            _buildReviewItem(
-                              'John D.',
-                              'Very pleasant to work with. Clear instructions and fair payment. Highly recommend!',
-                              5,
-                              '1 week ago',
-                            ),
-                            _buildReviewItem(
-                              'Maria S.',
-                              'Professional and respectful client. Always pays on time and provides a clean work environment.',
-                              5,
-                              '2 weeks ago',
-                            ),
-                            _buildReviewItem(
-                              'David K.',
-                              'Great communication and reasonable expectations. Would work for her again.',
-                              4,
-                              '1 month ago',
+                            ...(_helpeeReviews
+                                    ?.map((review) => _buildReviewItem(
+                                          '${review['helper']['first_name']} ${review['helper']['last_name'].substring(0, 1)}.',
+                                          review['review_text'] ??
+                                              'No review text provided',
+                                          review['rating'] ?? 0,
+                                          _formatReviewDate(
+                                              review['created_at']),
+                                        ))
+                                    .toList() ??
+                                []),
+                            if (_helpeeReviews?.isEmpty ?? true)
+                              Padding(
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 20),
+                                child: Center(
+                                  child: Text(
+                                    'No reviews yet',
+                                    style: AppTextStyles.bodyMedium.copyWith(
+                                      color: AppColors.textSecondary,
+                                    ),
+                                  ),
+                                ),
                             ),
                           ],
                         ),

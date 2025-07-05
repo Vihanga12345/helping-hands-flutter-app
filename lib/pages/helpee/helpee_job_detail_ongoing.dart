@@ -1,20 +1,150 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'dart:async';
 import '../../utils/app_colors.dart';
 import '../../utils/app_text_styles.dart';
 import '../../widgets/common/app_header.dart';
 import '../../widgets/common/app_navigation_bar.dart';
 import '../../widgets/ui_elements/helper_profile_bar.dart';
+import '../../services/job_data_service.dart';
+import '../../services/custom_auth_service.dart';
+import '../../services/helper_data_service.dart';
+import '../../services/job_detail_service.dart';
 
 enum OngoingJobState { acceptedNotStarted, inProgress, paused }
 
-class HelpeeJobDetailOngoingPage extends StatelessWidget {
+class HelpeeJobDetailOngoingPage extends StatefulWidget {
   final OngoingJobState jobState;
+  final String? jobId;
+  final Map<String, dynamic>? jobData;
 
   const HelpeeJobDetailOngoingPage({
     super.key,
     this.jobState = OngoingJobState.acceptedNotStarted,
+    this.jobId,
+    this.jobData,
   });
+
+  @override
+  State<HelpeeJobDetailOngoingPage> createState() =>
+      _HelpeeJobDetailOngoingPageState();
+}
+
+class _HelpeeJobDetailOngoingPageState
+    extends State<HelpeeJobDetailOngoingPage> {
+  final JobDataService _jobDataService = JobDataService();
+  final CustomAuthService _authService = CustomAuthService();
+  final JobDetailService _jobDetailService = JobDetailService();
+
+  Map<String, dynamic>? _jobDetails;
+  bool _isLoading = true;
+  String? _error;
+  Timer? _timerUpdater;
+  int _elapsedSeconds = 0;
+  String _timerStatus = 'not_started';
+  Duration _currentDuration = Duration.zero;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadJobDetails();
+  }
+
+  @override
+  void dispose() {
+    _timerUpdater?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _loadJobDetails() async {
+    if (widget.jobId != null) {
+      setState(() {
+        _isLoading = true;
+        _error = null;
+      });
+
+      try {
+        final jobDetails =
+            await _jobDataService.getJobDetailsWithQuestions(widget.jobId!);
+        setState(() {
+          _jobDetails = jobDetails;
+          _isLoading = false;
+        });
+
+        // Start timer if job is in progress
+        _initializeTimer();
+      } catch (e) {
+        setState(() {
+          _error = 'Failed to load job details: $e';
+          _isLoading = false;
+        });
+      }
+    } else if (widget.jobData != null) {
+      setState(() {
+        _jobDetails = widget.jobData;
+        _isLoading = false;
+      });
+      _initializeTimer();
+    } else {
+      setState(() {
+        _error = 'No job ID or data provided';
+        _isLoading = false;
+      });
+    }
+  }
+
+  void _initializeTimer() {
+    if (_jobDetails == null) return;
+
+    final status = _jobDetails!['status']?.toLowerCase() ?? '';
+    _timerStatus = _jobDetails!['timer_status']?.toLowerCase() ?? 'not_started';
+
+    // Calculate elapsed time from database
+    final totalSeconds = _jobDetails!['total_time_seconds'] ?? 0;
+    _elapsedSeconds = totalSeconds;
+
+    // If timer is running, start live updates
+    if (_timerStatus == 'running') {
+      _startLiveTimer();
+    }
+  }
+
+  void _startLiveTimer() {
+    _timerUpdater?.cancel();
+    _timerUpdater = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (mounted && _timerStatus == 'running') {
+        setState(() {
+          _elapsedSeconds++;
+        });
+      } else {
+        timer.cancel();
+      }
+    });
+  }
+
+  void _stopLiveTimer() {
+    _timerUpdater?.cancel();
+  }
+
+  String _formatElapsedTime(int seconds) {
+    final hours = seconds ~/ 3600;
+    final minutes = (seconds % 3600) ~/ 60;
+    final remainingSeconds = seconds % 60;
+    return '${hours.toString().padLeft(2, '0')}:${minutes.toString().padLeft(2, '0')}:${remainingSeconds.toString().padLeft(2, '0')}';
+  }
+
+  String _calculateCurrentCost() {
+    if (_jobDetails == null) return 'LKR 0.00';
+
+    final hourlyRateValue = _jobDetails!['hourly_rate'];
+    final hourlyRate =
+        (hourlyRateValue is num) ? hourlyRateValue.toDouble() : 0.0;
+    final elapsedHours = _elapsedSeconds / 3600.0;
+    final currentCost = (hourlyRate * elapsedHours).toStringAsFixed(2);
+    return 'LKR $currentCost';
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -29,26 +159,74 @@ class HelpeeJobDetailOngoingPage extends StatelessWidget {
               showNotificationButton: true,
             ),
             Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildMainJobDetails(),
-                    const SizedBox(height: 24),
-                    _buildJobStatus(),
-                    const SizedBox(height: 24),
-                    _buildAssignedHelperSection(context),
-                    const SizedBox(height: 24),
-                    _buildOngoingJobActions(context),
-                    const SizedBox(height: 24),
-                  ],
-                ),
-              ),
+              child: _isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : _error != null
+                      ? _buildErrorState()
+                      : SingleChildScrollView(
+                          padding: const EdgeInsets.all(16),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              _buildMainJobDetails(),
+                              const SizedBox(height: 24),
+                              _buildTimerSection(),
+                              const SizedBox(height: 24),
+                              _buildAssignedHelperSection(context),
+                              const SizedBox(height: 24),
+                              _buildOngoingJobActions(context),
+                              const SizedBox(height: 24),
+                            ],
+                          ),
+                        ),
             ),
             const AppNavigationBar(
               currentTab: NavigationTab.activity,
               userType: UserType.helpee,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildErrorState() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.error_outline,
+              size: 64,
+              color: AppColors.error,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Failed to Load Job Details',
+              style: AppTextStyles.heading3.copyWith(
+                color: AppColors.textPrimary,
+                fontWeight: FontWeight.w600,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              _error ?? 'Unknown error occurred',
+              style: AppTextStyles.bodyMedium.copyWith(
+                color: AppColors.textSecondary,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 24),
+            ElevatedButton.icon(
+              onPressed: _loadJobDetails,
+              icon: const Icon(Icons.refresh),
+              label: const Text('Retry'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primaryGreen,
+              ),
             ),
           ],
         ),
@@ -102,99 +280,552 @@ class HelpeeJobDetailOngoingPage extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 16),
-          _buildDetailRow('Job Type', 'General House Cleaning'),
+          _buildDetailRow(
+              'Job Type', _jobDetails?['category_name'] ?? 'General Service'),
           const SizedBox(height: 12),
-          _buildDetailRow('Hourly Rate', 'LKR 2,500 / Hour'),
+          _buildDetailRow(
+              'Hourly Rate', 'LKR ${_jobDetails?['hourly_rate'] ?? 0} / Hour'),
           const SizedBox(height: 12),
-          _buildDetailRow('Date', '21st May 2024'),
+          _buildDetailRow('Date', _jobDetails?['scheduled_date'] ?? 'Not set'),
           const SizedBox(height: 12),
-          _buildDetailRow('Time', '2:00 PM - 5:00 PM'),
+          _buildDetailRow('Time', _jobDetails?['scheduled_time'] ?? 'Not set'),
           const SizedBox(height: 12),
-          _buildDetailRow('Location', 'Colombo 03'),
+          _buildDetailRow('Location',
+              _jobDetails?['location_address'] ?? 'Location not provided'),
         ],
       ),
     );
   }
 
-  Widget _buildJobStatus() {
-    String statusText = '';
-    Color statusColor = AppColors.success;
-    IconData statusIcon = Icons.access_time;
+  Widget _buildTimerSection() {
+    if (_jobDetails == null) return const SizedBox.shrink();
 
-    switch (jobState) {
-      case OngoingJobState.acceptedNotStarted:
-        statusText = 'Waiting for Helper to Start';
-        statusColor = AppColors.warning;
-        statusIcon = Icons.schedule;
-        break;
-      case OngoingJobState.inProgress:
-        statusText = 'Job in Progress';
-        statusColor = AppColors.success;
-        statusIcon = Icons.play_circle;
-        break;
-      case OngoingJobState.paused:
-        statusText = 'Job Paused';
-        statusColor = AppColors.warning;
-        statusIcon = Icons.pause_circle;
-        break;
-    }
+    final status = _jobDetails!['status']?.toLowerCase() ?? '';
+    final startTime = _jobDetails!['start_time'];
+    final endTime = _jobDetails!['end_time'];
+    final totalElapsedSeconds = _jobDetails!['total_elapsed_seconds'] ?? 0;
+    final hourlyRate = (_jobDetails!['hourly_rate'] is num)
+        ? (_jobDetails!['hourly_rate'] as num).toDouble()
+        : 0.0;
 
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: AppColors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: const [
-          BoxShadow(
-            color: AppColors.shadowColorLight,
-            blurRadius: 8,
-            offset: Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Job Status',
-            style: AppTextStyles.heading3.copyWith(
-              fontWeight: FontWeight.w700,
-              color: AppColors.textPrimary,
-            ),
-          ),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              Icon(statusIcon, color: statusColor, size: 24),
-              const SizedBox(width: 12),
-              Text(
-                statusText,
-                style: AppTextStyles.bodyLarge.copyWith(
-                  fontWeight: FontWeight.w600,
-                  color: statusColor,
-                ),
+    // Check if helper is assigned
+    final assignedHelperId = _jobDetails!['assigned_helper_id'];
+    final helperFirstName = _jobDetails!['helper_first_name'] ?? '';
+    final helperLastName = _jobDetails!['helper_last_name'] ?? '';
+
+    bool hasHelperAssigned = assignedHelperId != null &&
+        helperFirstName.isNotEmpty &&
+        !helperFirstName.toLowerCase().contains('dummy') &&
+        !helperFirstName.toLowerCase().contains('waiting');
+
+    return Column(
+      children: [
+        // Timer/Status Container
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: AppColors.white,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: const [
+              BoxShadow(
+                color: AppColors.shadowColorLight,
+                blurRadius: 8,
+                offset: Offset(0, 4),
               ),
             ],
           ),
-          if (jobState == OngoingJobState.inProgress) ...[
-            const SizedBox(height: 16),
-            Text(
-              'Time Elapsed: 02:30:15',
-              style: AppTextStyles.heading2.copyWith(
-                color: AppColors.textPrimary,
-                fontWeight: FontWeight.w700,
+          child: _buildJobStatusContent(status, startTime, hourlyRate,
+              totalElapsedSeconds, hasHelperAssigned),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildJobStatusContent(String status, dynamic startTime,
+      double hourlyRate, int totalElapsedSeconds, bool hasHelperAssigned) {
+    // Job not started yet - waiting for helper
+    if (startTime == null || startTime.toString().isEmpty) {
+      return _buildWaitingForHelperContent(hasHelperAssigned);
+    }
+
+    // Job started - show live timer
+    if (status == 'started' || status == 'ongoing') {
+      return _buildLiveTimerContent(startTime, hourlyRate, totalElapsedSeconds);
+    }
+
+    // Job paused
+    if (status == 'paused') {
+      return _buildPausedTimerContent(totalElapsedSeconds, hourlyRate);
+    }
+
+    // Default fallback
+    return _buildWaitingForHelperContent(hasHelperAssigned);
+  }
+
+  Widget _buildWaitingForHelperContent(bool hasHelperAssigned) {
+    return Column(
+      children: [
+        Container(
+          width: 80,
+          height: 80,
+          decoration: BoxDecoration(
+            color: AppColors.warning.withOpacity(0.15),
+            borderRadius: BorderRadius.circular(40),
+          ),
+          child: Icon(
+            Icons.schedule,
+            color: AppColors.warning,
+            size: 40,
+          ),
+        ),
+        const SizedBox(height: 20),
+        Text(
+          hasHelperAssigned
+              ? 'Waiting for Helper to Start'
+              : 'Waiting for Helper Assignment',
+          style: AppTextStyles.heading3.copyWith(
+            color: AppColors.warning,
+            fontWeight: FontWeight.w700,
+            fontSize: 20,
+          ),
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: 12),
+        Text(
+          hasHelperAssigned
+              ? 'Your assigned helper will start the job soon. You\'ll see the live timer once they begin.'
+              : 'We\'re still finding a helper for your job. Please wait for assignment.',
+          style: AppTextStyles.bodyMedium.copyWith(
+            color: AppColors.textSecondary,
+            fontSize: 15,
+          ),
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: 20),
+        // Animated waiting indicator
+        TweenAnimationBuilder(
+          duration: const Duration(seconds: 2),
+          tween: Tween<double>(begin: 0, end: 1),
+          builder: (context, double value, child) {
+            return Container(
+              width: double.infinity,
+              height: 6,
+              decoration: BoxDecoration(
+                color: AppColors.lightGrey,
+                borderRadius: BorderRadius.circular(3),
+              ),
+              child: FractionallySizedBox(
+                widthFactor: value,
+                alignment: Alignment.centerLeft,
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: AppColors.warning,
+                    borderRadius: BorderRadius.circular(3),
+                  ),
+                ),
+              ),
+            );
+          },
+          onEnd: () {
+            if (mounted) {
+              setState(() {});
+            }
+          },
+        ),
+      ],
+    );
+  }
+
+  Widget _buildLiveTimerContent(
+      dynamic startTime, double hourlyRate, int totalElapsedSeconds) {
+    return Column(
+      children: [
+        // Live timer icon
+        Container(
+          width: 80,
+          height: 80,
+          decoration: BoxDecoration(
+            color: AppColors.success.withOpacity(0.15),
+            borderRadius: BorderRadius.circular(40),
+          ),
+          child: Icon(
+            Icons.play_circle_fill,
+            color: AppColors.success,
+            size: 40,
+          ),
+        ),
+        const SizedBox(height: 20),
+        Text(
+          'Job in Progress',
+          style: AppTextStyles.heading3.copyWith(
+            color: AppColors.success,
+            fontWeight: FontWeight.w700,
+            fontSize: 20,
+          ),
+        ),
+        const SizedBox(height: 20),
+
+        // Live Timer Display
+        Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: AppColors.success.withOpacity(0.08),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: AppColors.success.withOpacity(0.2)),
+          ),
+          child: Column(
+            children: [
+              Text(
+                'Time Elapsed',
+                style: AppTextStyles.bodyMedium.copyWith(
+                  color: AppColors.textSecondary,
+                  fontSize: 14,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                _formatElapsedTime(_elapsedSeconds),
+                style: AppTextStyles.heading1.copyWith(
+                  color: AppColors.success,
+                  fontWeight: FontWeight.w800,
+                  fontSize: 36,
+                  fontFeatures: [const FontFeature.tabularFigures()],
+                ),
+              ),
+              const SizedBox(height: 12),
+              Divider(color: AppColors.success.withOpacity(0.3)),
+              const SizedBox(height: 12),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Current Cost:',
+                    style: AppTextStyles.bodyMedium.copyWith(
+                      color: AppColors.textSecondary,
+                      fontSize: 16,
+                    ),
+                  ),
+                  Text(
+                    _calculateCurrentCost(),
+                    style: AppTextStyles.heading3.copyWith(
+                      color: AppColors.success,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 18,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+
+        // Live indicator
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 12,
+              height: 12,
+              decoration: BoxDecoration(
+                color: AppColors.error,
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: TweenAnimationBuilder(
+                duration: const Duration(milliseconds: 1000),
+                tween: Tween<double>(begin: 0.3, end: 1.0),
+                builder: (context, double value, child) {
+                  return Opacity(opacity: value, child: child);
+                },
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: AppColors.error,
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                ),
+                onEnd: () {
+                  if (mounted) {
+                    setState(() {});
+                  }
+                },
               ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(width: 8),
             Text(
-              'Current Cost: LKR 6,250.00',
-              style: AppTextStyles.bodyLarge.copyWith(
-                color: AppColors.primaryGreen,
-                fontWeight: FontWeight.w600,
+              'LIVE',
+              style: AppTextStyles.bodySmall.copyWith(
+                color: AppColors.error,
+                fontWeight: FontWeight.w700,
+                fontSize: 12,
               ),
             ),
           ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPausedTimerContent(int totalElapsedSeconds, double hourlyRate) {
+    return Column(
+      children: [
+        Container(
+          width: 80,
+          height: 80,
+          decoration: BoxDecoration(
+            color: AppColors.warning.withOpacity(0.15),
+            borderRadius: BorderRadius.circular(40),
+          ),
+          child: Icon(
+            Icons.pause_circle_filled,
+            color: AppColors.warning,
+            size: 40,
+          ),
+        ),
+        const SizedBox(height: 20),
+        Text(
+          'Job Paused',
+          style: AppTextStyles.heading3.copyWith(
+            color: AppColors.warning,
+            fontWeight: FontWeight.w700,
+            fontSize: 20,
+          ),
+        ),
+        const SizedBox(height: 20),
+
+        // Paused Timer Display
+        Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: AppColors.warning.withOpacity(0.08),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: AppColors.warning.withOpacity(0.2)),
+          ),
+          child: Column(
+            children: [
+              Text(
+                'Time Elapsed (Paused)',
+                style: AppTextStyles.bodyMedium.copyWith(
+                  color: AppColors.textSecondary,
+                  fontSize: 14,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                _formatElapsedTime(totalElapsedSeconds),
+                style: AppTextStyles.heading1.copyWith(
+                  color: AppColors.warning,
+                  fontWeight: FontWeight.w800,
+                  fontSize: 36,
+                  fontFeatures: [const FontFeature.tabularFigures()],
+                ),
+              ),
+              const SizedBox(height: 12),
+              Divider(color: AppColors.warning.withOpacity(0.3)),
+              const SizedBox(height: 12),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Current Cost:',
+                    style: AppTextStyles.bodyMedium.copyWith(
+                      color: AppColors.textSecondary,
+                      fontSize: 16,
+                    ),
+                  ),
+                  Text(
+                    _calculateCurrentCost(),
+                    style: AppTextStyles.heading3.copyWith(
+                      color: AppColors.warning,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 18,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+
+        // Paused indicator
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.pause,
+              color: AppColors.warning,
+              size: 16,
+            ),
+            const SizedBox(width: 8),
+            Text(
+              'PAUSED',
+              style: AppTextStyles.bodySmall.copyWith(
+                color: AppColors.warning,
+                fontWeight: FontWeight.w700,
+                fontSize: 12,
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildHelperProfileBar() {
+    if (_jobDetails == null) return const SizedBox.shrink();
+
+    final helperFirstName = _jobDetails!['helper_first_name'] ?? '';
+    final helperLastName = _jobDetails!['helper_last_name'] ?? '';
+    final helperProfilePic = _jobDetails!['helper_profile_pic'];
+    final helperRating = _jobDetails!['helper_avg_rating'];
+    final helperJobCount = _jobDetails!['helper_completed_jobs'] ?? 0;
+    final helperJobTypes = _jobDetails!['helper_job_types'] ?? 'General Helper';
+    final helperId = _jobDetails!['assigned_helper_id'];
+
+    if (helperFirstName.isEmpty ||
+        helperFirstName.toLowerCase().contains('dummy')) {
+      return const SizedBox.shrink();
+    }
+
+    double rating = 0.0;
+    if (helperRating is num) {
+      rating = helperRating.toDouble();
+    }
+
+    int jobCount = 0;
+    if (helperJobCount is num) {
+      jobCount = helperJobCount.toInt();
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: const [
+          BoxShadow(
+            color: AppColors.shadowColorLight,
+            blurRadius: 6,
+            offset: Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          // Helper profile picture
+          Container(
+            width: 60,
+            height: 60,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(30),
+              color: AppColors.lightGrey,
+            ),
+            child: helperProfilePic != null && helperProfilePic.isNotEmpty
+                ? ClipRRect(
+                    borderRadius: BorderRadius.circular(30),
+                    child: Image.network(
+                      helperProfilePic,
+                      width: 60,
+                      height: 60,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) {
+                        return Icon(
+                          Icons.person,
+                          size: 30,
+                          color: AppColors.textSecondary,
+                        );
+                      },
+                    ),
+                  )
+                : Icon(
+                    Icons.person,
+                    size: 30,
+                    color: AppColors.textSecondary,
+                  ),
+          ),
+          const SizedBox(width: 12),
+
+          // Helper details
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '$helperFirstName $helperLastName',
+                  style: AppTextStyles.heading3.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textPrimary,
+                    fontSize: 16,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    Row(
+                      children: List.generate(5, (index) {
+                        return Icon(
+                          index < rating ? Icons.star : Icons.star_border,
+                          size: 14,
+                          color: AppColors.warning,
+                        );
+                      }),
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      rating.toStringAsFixed(1),
+                      style: AppTextStyles.bodySmall.copyWith(
+                        color: AppColors.textSecondary,
+                        fontSize: 12,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      '• $jobCount jobs',
+                      style: AppTextStyles.bodySmall.copyWith(
+                        color: AppColors.textSecondary,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  helperJobTypes,
+                  style: AppTextStyles.bodySmall.copyWith(
+                    color: AppColors.primaryGreen,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // Arrow button
+          GestureDetector(
+            onTap: () async {
+              if (helperId != null) {
+                // Navigate with helperId; detailed page will fetch full data
+                    context.push('/helpee/helper-profile-detailed', extra: {
+                  'helperId': helperId,
+                });
+              }
+            },
+            child: Container(
+              width: 32,
+              height: 32,
+              decoration: BoxDecoration(
+                color: AppColors.primaryGreen.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Icon(
+                Icons.arrow_forward_ios,
+                size: 16,
+                color: AppColors.primaryGreen,
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -227,12 +858,29 @@ class HelpeeJobDetailOngoingPage extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           HelperProfileBar(
-            name: 'John Smith',
-            rating: 4.9,
-            jobCount: 156,
-            profileImageUrl: 'assets/images/profile_placeholder.png',
-            onTap: () {
-              context.push('/helpee/helper-profile');
+            name: _jobDetails?['helper_first_name'] != null &&
+                    _jobDetails?['helper_last_name'] != null
+                ? '${_jobDetails!['helper_first_name']} ${_jobDetails!['helper_last_name']}'
+                : 'Helper Name',
+            rating: (_jobDetails?['helper_avg_rating'] is num)
+                ? (_jobDetails!['helper_avg_rating'] as num).toDouble()
+                : 0.0,
+            jobCount: (_jobDetails?['helper_completed_jobs'] is num)
+                ? (_jobDetails!['helper_completed_jobs'] as num).toInt()
+                : 0,
+            jobTypes: _jobDetails?['helper_job_types'] != null
+                ? _jobDetails!['helper_job_types'].toString().split(' • ')
+                : ['${_jobDetails?['category_name'] ?? 'General Service'}'],
+            profileImageUrl: _jobDetails?['helper_profile_pic'],
+            helperId: _jobDetails?['assigned_helper_id'],
+            onTap: () async {
+              final helperId = _jobDetails?['assigned_helper_id'];
+              if (helperId != null && helperId.isNotEmpty) {
+                // Navigate with helperId; detailed page will fetch full data
+                    context.push('/helpee/helper-profile-detailed', extra: {
+                  'helperId': helperId,
+                });
+              }
             },
           ),
           const SizedBox(height: 16),
@@ -303,110 +951,183 @@ class HelpeeJobDetailOngoingPage extends StatelessWidget {
   }
 
   Widget _buildActionsForState(BuildContext context) {
-    switch (jobState) {
-      case OngoingJobState.acceptedNotStarted:
-        return Column(
+    if (_jobDetails == null) {
+      return Container(
+        padding: const EdgeInsets.all(16),
+        child: const Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    // Get dynamic action buttons from JobDataService
+    final actionButtons =
+        _jobDataService.getJobActionButtons(_jobDetails!, 'helpee');
+
+    if (actionButtons.isEmpty) {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: AppColors.warning.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
           children: [
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: AppColors.warning.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Row(
-                children: [
-                  Icon(Icons.schedule, color: AppColors.warning),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      'Your helper will start the job shortly. You will be notified when they begin.',
-                      style: AppTextStyles.bodyMedium.copyWith(
-                        color: AppColors.textSecondary,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 16),
-            SizedBox(
-              width: double.infinity,
-              child: OutlinedButton.icon(
-                onPressed: () => _showReportDialog(context),
-                icon: const Icon(Icons.report_problem, size: 18),
-                label: const Text('Report Issue'),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: AppColors.error,
-                  side: const BorderSide(color: AppColors.error),
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(25),
-                  ),
+            Icon(Icons.info, color: AppColors.primaryGreen),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                'No actions available at this time.',
+                style: AppTextStyles.bodyMedium.copyWith(
+                  color: AppColors.textSecondary,
                 ),
               ),
             ),
           ],
-        );
+        ),
+      );
+    }
 
-      case OngoingJobState.inProgress:
-      case OngoingJobState.paused:
-        return Column(
-          children: [
-            Row(
+    return Column(
+      children: [
+        // Helper status message for waiting states
+        if (_timerStatus == 'not_started' ||
+            _jobDetails!['status']?.toLowerCase() == 'accepted') ...[
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: AppColors.warning.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
               children: [
+                Icon(Icons.schedule, color: AppColors.warning),
+                const SizedBox(width: 12),
                 Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: () {},
-                    icon: const Icon(Icons.track_changes, size: 18),
-                    label: const Text('Track Progress'),
-                    style: OutlinedButton.styleFrom(
-                      side: const BorderSide(color: AppColors.primaryGreen),
-                      foregroundColor: AppColors.primaryGreen,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(25),
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: ElevatedButton.icon(
-                    onPressed: () {},
-                    icon: const Icon(Icons.message, size: 18),
-                    label: const Text('Message Helper'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primaryGreen,
-                      foregroundColor: AppColors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(25),
-                      ),
+                  child: Text(
+                    'Your helper will start the job shortly. You will be notified when they begin.',
+                    style: AppTextStyles.bodyMedium.copyWith(
+                      color: AppColors.textSecondary,
                     ),
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 16),
-            SizedBox(
-              width: double.infinity,
-              child: OutlinedButton.icon(
-                onPressed: () => _showReportDialog(context),
-                icon: const Icon(Icons.report_problem, size: 18),
-                label: const Text('Report Issue'),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: AppColors.error,
-                  side: const BorderSide(color: AppColors.error),
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(25),
+          ),
+          const SizedBox(height: 16),
+        ],
+
+        // Dynamic action buttons
+        ...actionButtons
+            .map((button) => Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: SizedBox(
+                    width: double.infinity,
+                    child: _buildActionButton(context, button),
                   ),
-                ),
-              ),
-            ),
-          ],
+                ))
+            .toList(),
+      ],
+    );
+  }
+
+  Widget _buildActionButton(BuildContext context, Map<String, dynamic> button) {
+    final String text = button['text'] ?? '';
+    final String action = button['action'] ?? '';
+    final String colorType = button['color'] ?? 'primary';
+    final String? icon = button['icon'];
+
+    Color buttonColor;
+    Color textColor;
+    bool isOutlined = false;
+
+    switch (colorType) {
+      case 'primary':
+        buttonColor = AppColors.primaryGreen;
+        textColor = AppColors.white;
+        break;
+      case 'error':
+        buttonColor = AppColors.error;
+        textColor = AppColors.white;
+        isOutlined = true;
+        break;
+      case 'warning':
+        buttonColor = AppColors.warning;
+        textColor = AppColors.white;
+        break;
+      default:
+        buttonColor = AppColors.primaryGreen;
+        textColor = AppColors.white;
+    }
+
+    if (isOutlined) {
+      return OutlinedButton.icon(
+        onPressed: () => _handleActionButton(action),
+        icon: Icon(_getIconData(icon), size: 18),
+        label: Text(text),
+        style: OutlinedButton.styleFrom(
+          foregroundColor: buttonColor,
+          side: BorderSide(color: buttonColor),
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(25),
+          ),
+        ),
+      );
+    } else {
+      return ElevatedButton.icon(
+        onPressed: () => _handleActionButton(action),
+        icon: Icon(_getIconData(icon), size: 18),
+        label: Text(text),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: buttonColor,
+          foregroundColor: textColor,
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(25),
+          ),
+        ),
+      );
+    }
+  }
+
+  IconData _getIconData(String? iconName) {
+    switch (iconName) {
+      case 'report_problem':
+        return Icons.report_problem;
+      case 'message':
+        return Icons.message;
+      case 'track_changes':
+        return Icons.track_changes;
+      default:
+        return Icons.touch_app;
+    }
+  }
+
+  Future<void> _handleActionButton(String action) async {
+    if (widget.jobId == null) return;
+
+    try {
+      if (action == 'report') {
+        _showReportDialog(context);
+      } else {
+        await _jobDataService.executeJobAction(action, widget.jobId!, null);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content:
+                Text('${action.toUpperCase()} action completed successfully'),
+            backgroundColor: AppColors.success,
+          ),
         );
+        _loadJobDetails(); // Refresh job details
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to perform action: $e'),
+          backgroundColor: AppColors.error,
+        ),
+      );
     }
   }
 

@@ -81,6 +81,12 @@ CREATE TABLE jobs (
     actual_start_time TIMESTAMP WITH TIME ZONE,
     actual_end_time TIMESTAMP WITH TIME ZONE,
     
+    -- Timer functionality for job tracking
+    total_work_time_minutes INTEGER DEFAULT 0, -- Total time worked in minutes
+    timer_start_time TIMESTAMP WITH TIME ZONE, -- When current timer session started
+    timer_paused_time TIMESTAMP WITH TIME ZONE, -- When timer was paused
+    is_timer_running BOOLEAN DEFAULT FALSE, -- Current timer state
+    
     -- Location
     location_latitude DECIMAL(10, 8) NOT NULL,
     location_longitude DECIMAL(11, 8) NOT NULL,
@@ -94,6 +100,13 @@ CREATE TABLE jobs (
     -- Requirements
     requires_own_supplies BOOLEAN DEFAULT FALSE,
     pet_friendly_required BOOLEAN DEFAULT FALSE,
+    
+    -- Workflow enhancements
+    invited_helper_email VARCHAR(255), -- For private job targeting
+    price_calculated DECIMAL(10, 2), -- Final calculated price
+    payment_requested_at TIMESTAMP WITH TIME ZONE, -- When payment was requested
+    is_rated_by_helpee BOOLEAN DEFAULT FALSE, -- Helpee rating status
+    is_rated_by_helper BOOLEAN DEFAULT FALSE, -- Helper rating status
     
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
@@ -210,7 +223,20 @@ CREATE TABLE user_availability (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- 13. JOB REPORTS TABLE (for reporting issues)
+-- 13. JOB TIMER SESSIONS TABLE (for tracking work time)
+CREATE TABLE job_timer_sessions (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    job_id UUID NOT NULL REFERENCES jobs(id) ON DELETE CASCADE,
+    helper_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    session_start_time TIMESTAMP WITH TIME ZONE NOT NULL,
+    session_end_time TIMESTAMP WITH TIME ZONE,
+    duration_minutes INTEGER, -- Calculated when session ends
+    session_type VARCHAR(20) DEFAULT 'work' CHECK (session_type IN ('work', 'break')),
+    notes TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- 14. JOB REPORTS TABLE (for reporting issues)
 CREATE TABLE job_reports (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     job_id UUID NOT NULL REFERENCES jobs(id) ON DELETE CASCADE,
@@ -253,6 +279,10 @@ CREATE INDEX idx_notifications_is_read ON notifications(is_read);
 
 CREATE INDEX idx_payments_job_id ON payments(job_id);
 CREATE INDEX idx_payments_status ON payments(payment_status);
+
+CREATE INDEX idx_job_timer_sessions_job_id ON job_timer_sessions(job_id);
+CREATE INDEX idx_job_timer_sessions_helper_id ON job_timer_sessions(helper_id);
+CREATE INDEX idx_job_timer_sessions_start_time ON job_timer_sessions(session_start_time);
 
 -- TRIGGERS for updated_at timestamps
 CREATE OR REPLACE FUNCTION update_updated_at_column()

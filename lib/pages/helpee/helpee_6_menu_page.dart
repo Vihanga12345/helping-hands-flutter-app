@@ -4,6 +4,7 @@ import '../../utils/app_colors.dart';
 import '../../utils/app_text_styles.dart';
 import '../../widgets/common/app_header.dart';
 import '../../widgets/common/app_navigation_bar.dart';
+import '../../services/custom_auth_service.dart';
 
 class Helpee6MenuPage extends StatefulWidget {
   const Helpee6MenuPage({super.key});
@@ -15,6 +16,7 @@ class Helpee6MenuPage extends StatefulWidget {
 class _Helpee6MenuPageState extends State<Helpee6MenuPage> {
   bool _isDarkMode = false;
   String _selectedLanguage = 'English';
+  final CustomAuthService _authService = CustomAuthService();
 
   @override
   Widget build(BuildContext context) {
@@ -28,7 +30,7 @@ class _Helpee6MenuPageState extends State<Helpee6MenuPage> {
             showMenuButton: false,
             showNotificationButton: false,
           ),
-          
+
           // Body Content
           Expanded(
             child: Container(
@@ -76,16 +78,19 @@ class _Helpee6MenuPageState extends State<Helpee6MenuPage> {
                             Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                const Text(
-                                  'John Doe',
-                                  style: TextStyle(
+                                Text(
+                                  _authService.currentUser != null
+                                      ? '${_authService.currentUser!['first_name'] ?? ''} ${_authService.currentUser!['last_name'] ?? ''}'
+                                          .trim()
+                                      : 'User',
+                                  style: const TextStyle(
                                     fontSize: 18,
                                     fontWeight: FontWeight.w600,
                                   ),
                                 ),
-                                Text(
+                                const Text(
                                   'Helpee Account',
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     color: AppColors.textSecondary,
                                     fontSize: 14,
                                   ),
@@ -95,9 +100,9 @@ class _Helpee6MenuPageState extends State<Helpee6MenuPage> {
                           ],
                         ),
                       ),
-                      
+
                       const SizedBox(height: 24),
-                      
+
                       // Menu Items
                       Expanded(
                         child: ListView(
@@ -141,7 +146,7 @@ class _Helpee6MenuPageState extends State<Helpee6MenuPage> {
               ),
             ),
           ),
-          
+
           // Navigation Bar
           const AppNavigationBar(
             currentTab: NavigationTab.home,
@@ -289,4 +294,4 @@ class _Helpee6MenuPageState extends State<Helpee6MenuPage> {
       },
     );
   }
-} 
+}

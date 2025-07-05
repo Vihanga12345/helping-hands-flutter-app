@@ -4,6 +4,8 @@ import '../../utils/app_colors.dart';
 import '../../utils/app_text_styles.dart';
 import '../../widgets/common/app_header.dart';
 import '../../widgets/common/app_navigation_bar.dart';
+import '../../services/user_data_service.dart';
+import '../../services/custom_auth_service.dart';
 import '../../widgets/ui_elements/helper_profile_bar.dart';
 
 class Helpee9SearchHelperPage extends StatefulWidget {
@@ -15,30 +17,131 @@ class Helpee9SearchHelperPage extends StatefulWidget {
 }
 
 class _Helpee9SearchHelperPageState extends State<Helpee9SearchHelperPage> {
-  final _searchController = TextEditingController();
-  String _selectedCategory = 'All';
-  final List<String> _categories = [
-    'All',
-    'Gardening',
-    'Housekeeping',
-    'Childcare',
-    'Cooking'
-  ];
+  final TextEditingController _searchController = TextEditingController();
+  final UserDataService _userDataService = UserDataService();
+  final CustomAuthService _authService = CustomAuthService();
+
+  List<Map<String, dynamic>> _allHelpers = [];
+  List<Map<String, dynamic>> _filteredHelpers = [];
+  bool _isLoading = true;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadHelpers();
+  }
+
+  Future<void> _loadHelpers() async {
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+
+    try {
+      // Replace hardcoded sample data with real database query
+      final helpers = await _userDataService.getRegisteredHelpers();
+      print('🔍 Found ${helpers.length} registered helpers in database');
+
+      // If no helpers found in database, return empty list
+      if (helpers.isEmpty) {
+        print('⚠️ No helpers found in database');
+        _allHelpers = [];
+        _filteredHelpers = [];
+      } else {
+        _allHelpers = List.from(helpers);
+        _filteredHelpers = List.from(helpers);
+      }
+
+      setState(() {
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+        _error = 'Failed to load helpers: $e';
+      });
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> _getSampleHelpers() async {
+    // Replace hardcoded sample data with real database query
+    try {
+      // Query real helpers from database instead of returning sample data
+      final helpers = await _userDataService.getRegisteredHelpers();
+      print('🔍 Found ${helpers.length} registered helpers in database');
+
+      // If no helpers found in database, return empty list
+      if (helpers.isEmpty) {
+        print('⚠️ No helpers found in database');
+        return [];
+      }
+
+      // Transform database helper data to match expected structure
+      return helpers.map((helper) {
+        return {
+          'id': helper['id'],
+          'first_name': helper['first_name'] ?? '',
+          'last_name': helper['last_name'] ?? '',
+          'display_name': helper['display_name'] ??
+              '${helper['first_name']} ${helper['last_name']}',
+          'location_city': helper['location_city'] ?? 'Unknown',
+          'rating': helper['average_rating'] ?? 0.0,
+          'total_reviews': helper['total_reviews'] ?? 0,
+          'skills': helper['skills'] ?? [],
+          'hourly_rate': helper['hourly_rate_default'] ?? 0.0,
+          'distance': _calculateDistance(helper), // Calculate based on location
+          'is_available': helper['availability_status'] == 'available',
+          'profile_image_url': helper['profile_image_url'],
+          'total_jobs': helper['total_jobs'] ?? 0,
+        };
+      }).toList();
+    } catch (e) {
+      print('❌ Error fetching real helpers: $e');
+      // Return empty list instead of sample data on error
+      return [];
+    }
+  }
+
+  String _calculateDistance(Map<String, dynamic> helper) {
+    // In a real implementation, calculate actual distance based on coordinates
+    // For now, return a placeholder
+    return 'Distance unknown';
+  }
+
+  void _filterHelpers(String query) {
+    setState(() {
+      if (query.isEmpty) {
+        _filteredHelpers = List.from(_allHelpers);
+      } else {
+        _filteredHelpers = _allHelpers.where((helper) {
+          final name = (helper['display_name'] ?? '').toLowerCase();
+          final skills = (helper['skills'] as List<dynamic>? ?? [])
+              .map((skill) => skill.toString().toLowerCase())
+              .join(' ');
+          final location = (helper['location_city'] ?? '').toLowerCase();
+
+          final searchLower = query.toLowerCase();
+
+          return name.contains(searchLower) ||
+              skills.contains(searchLower) ||
+              location.contains(searchLower);
+        }).toList();
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: Column(
         children: [
-          // Header
-          const AppHeader(
-            title: 'Find Helpers',
+          AppHeader(
+            title: 'Search Helpers',
             showBackButton: true,
             showMenuButton: false,
-            showNotificationButton: false,
+            showNotificationButton: true,
           ),
-
-          // Body Content
           Expanded(
             child: Container(
               width: double.infinity,
@@ -54,101 +157,23 @@ class _Helpee9SearchHelperPageState extends State<Helpee9SearchHelperPage> {
                 top: false,
                 child: Column(
                   children: [
-                    // Search and Filter Section
-                    Container(
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        children: [
-                          // Search Bar
-                          TextField(
-                            controller: _searchController,
-                            decoration: InputDecoration(
-                              hintText: 'Search helpers...',
-                              prefixIcon: const Icon(Icons.search),
-                              suffixIcon: IconButton(
-                                icon: const Icon(Icons.filter_list),
-                                onPressed: () {
-                                  _showFilterDialog();
-                                },
-                              ),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                borderSide: const BorderSide(
-                                    color: AppColors.lightGrey),
-                              ),
-                              filled: true,
-                              fillColor: AppColors.white,
-                            ),
-                            onChanged: (value) {
-                              setState(() {});
-                            },
-                          ),
+                    // Search Bar
+                    _buildSearchBar(),
 
-                          const SizedBox(height: 16),
+                    // Filters
+                    _buildFilters(),
 
-                          // Category Filter
-                          SizedBox(
-                            height: 40,
-                            child: ListView.builder(
-                              scrollDirection: Axis.horizontal,
-                              itemCount: _categories.length,
-                              itemBuilder: (context, index) {
-                                final category = _categories[index];
-                                final isSelected =
-                                    _selectedCategory == category;
-                                return Container(
-                                  margin: const EdgeInsets.only(right: 8),
-                                  child: FilterChip(
-                                    label: Text(category),
-                                    selected: isSelected,
-                                    onSelected: (selected) {
-                                      setState(() {
-                                        _selectedCategory = category;
-                                      });
-                                    },
-                                    backgroundColor: AppColors.white,
-                                    selectedColor: AppColors.primaryGreen,
-                                    labelStyle: TextStyle(
-                                      color: isSelected
-                                          ? AppColors.white
-                                          : AppColors.textPrimary,
-                                    ),
-                                  ),
-                                );
-                              },
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-
-                    // Helper List
+                    // Results
                     Expanded(
-                      child: ListView.builder(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        itemCount: 5, // Demo helpers
-                        itemBuilder: (context, index) {
-                          return _buildHelperSearchResult(
-                            name: 'John Smith ${index + 1}',
-                            category: _categories[(index % 4) + 1],
-                            rating: 4.5 + (index * 0.1),
-                            jobCount: 50 + (index * 10),
-                            experience: '${index + 2} years',
-                            rate: 'LKR ${(index + 15) * 100}/hour',
-                            distance: '${index + 1}.2 km away',
-                          );
-                        },
-                      ),
+                      child: _buildSearchResults(),
                     ),
                   ],
                 ),
               ),
             ),
           ),
-
-          // Navigation Bar
           const AppNavigationBar(
-            currentTab: NavigationTab.home,
+            currentTab: NavigationTab.search,
             userType: UserType.helpee,
           ),
         ],
@@ -156,169 +181,258 @@ class _Helpee9SearchHelperPageState extends State<Helpee9SearchHelperPage> {
     );
   }
 
-  Widget _buildHelperSearchResult({
-    required String name,
-    required String category,
-    required double rating,
-    required int jobCount,
-    required String experience,
-    required String rate,
-    required String distance,
-  }) {
+  Widget _buildSearchBar() {
     return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      child: Column(
-        children: [
-          // Helper Profile Bar
-          HelperProfileBar(
-            name: name,
-            rating: rating,
-            jobCount: jobCount,
-            onTap: () {
-              context.push('/helpee/helper-profile');
-            },
-          ),
-
-          const SizedBox(height: 8),
-
-          // Additional Info and Action Buttons
-          Container(
-      padding: const EdgeInsets.all(16),
+      margin: const EdgeInsets.all(20),
+      padding: const EdgeInsets.symmetric(horizontal: 16),
       decoration: BoxDecoration(
         color: AppColors.white,
-              borderRadius: BorderRadius.circular(12),
-        boxShadow: const [
+        borderRadius: BorderRadius.circular(25),
+        boxShadow: [
           BoxShadow(
-            color: AppColors.shadowColorLight,
-                  blurRadius: 4,
-                  offset: Offset(0, 2),
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
           ),
         ],
       ),
-      child: Column(
+      child: TextField(
+        controller: _searchController,
+        onChanged: _filterHelpers,
+        decoration: const InputDecoration(
+          hintText: 'Search by name, skill, or location...',
+          prefixIcon: Icon(Icons.search, color: AppColors.primaryGreen),
+          border: InputBorder.none,
+          contentPadding: EdgeInsets.symmetric(vertical: 16),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFilters() {
+    return Container(
+      height: 50,
+      margin: const EdgeInsets.symmetric(horizontal: 20),
+      child: ListView(
+        scrollDirection: Axis.horizontal,
         children: [
-                // Additional Info Row
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                    Text(
-                      category,
-                      style: const TextStyle(
-                        color: AppColors.primaryGreen,
-                        fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                      ),
-                        ),
-                        Text(
-                          '$experience experience',
-                          style: const TextStyle(
-                            fontSize: 12,
-                            color: AppColors.textSecondary,
-                          ),
-                        ),
-                      ],
-                    ),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Text(
-                    rate,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.primaryGreen,
-                    ),
-                  ),
-                  Text(
-                    distance,
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-
-          const SizedBox(height: 12),
-
-          // Action Buttons
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton(
-                  onPressed: () {
-                          context.push('/helpee/helper-profile');
-                  },
-                  style: OutlinedButton.styleFrom(
-                    side: const BorderSide(color: AppColors.primaryGreen),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
-                  child: const Text(
-                    'View Profile',
-                    style: TextStyle(
-                      color: AppColors.primaryGreen,
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: ElevatedButton(
-                  onPressed: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Request sent to helper!'),
-                        backgroundColor: AppColors.success,
-                      ),
-                    );
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primaryGreen,
-                    foregroundColor: AppColors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
-                  child: const Text('Request'),
-                ),
-              ),
-            ],
-                ),
-              ],
-            ),
-          ),
+          _buildFilterChip('All', true),
+          _buildFilterChip('Available Now', false),
+          _buildFilterChip('Nearby', false),
+          _buildFilterChip('Top Rated', false),
+          _buildFilterChip('House Cleaning', false),
+          _buildFilterChip('Gardening', false),
+          _buildFilterChip('Cooking', false),
         ],
       ),
     );
   }
 
-  void _showFilterDialog() {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('Filter Helpers'),
-          content: const Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text('Filter options coming soon!'),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Close'),
+  Widget _buildFilterChip(String label, bool isSelected) {
+    return Container(
+      margin: const EdgeInsets.only(right: 8),
+      child: FilterChip(
+        label: Text(label),
+        selected: isSelected,
+        onSelected: (selected) {
+          // Implement filter logic here
+          setState(() {
+            // Update filter state
+          });
+        },
+        selectedColor: AppColors.primaryGreen.withOpacity(0.2),
+        checkmarkColor: AppColors.primaryGreen,
+        labelStyle: TextStyle(
+          color: isSelected ? AppColors.primaryGreen : AppColors.textSecondary,
+          fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSearchResults() {
+    if (_isLoading) {
+      return _buildLoadingState();
+    }
+
+    if (_error != null) {
+      return _buildErrorState();
+    }
+
+    if (_filteredHelpers.isEmpty) {
+      return _buildEmptyState();
+    }
+
+    return ListView.builder(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      itemCount: _filteredHelpers.length,
+      itemBuilder: (context, index) {
+        final helper = _filteredHelpers[index];
+        return _buildHelperCard(helper);
+      },
+    );
+  }
+
+  Widget _buildHelperCard(Map<String, dynamic> helper) {
+    final isAvailable = helper['is_available'] ?? false;
+    final skills = (helper['skills'] as List<dynamic>? ?? [])
+        .map((skill) => skill.toString())
+        .toList();
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      child: HelperProfileBar(
+        name: helper['display_name'] ?? 'Unknown Helper',
+        rating: (helper['rating'] ?? 0.0).toDouble(),
+        jobCount: helper['total_jobs'] ?? 0,
+        jobTypes: skills,
+        profileImageUrl: helper['profile_image_url'],
+        helperId: helper['id'],
+        helperData: {
+          'id': helper['id'],
+          'full_name': helper['display_name'],
+          'average_rating': helper['rating'],
+          'total_reviews': helper['total_reviews'],
+          'job_type_names': skills,
+          'bio': 'Professional helper ready to assist you',
+          'location': helper['location_city'],
+          'phone_number': helper['phone_number'],
+          'email': helper['email'],
+          'is_available': isAvailable,
+          'availability_status': isAvailable ? 'Available Now' : 'Busy',
+        },
+          onTap: () {
+          context.push('/helpee/helper-profile', extra: {
+            'helperId': helper['id'],
+            'helperData': {
+              'id': helper['id'],
+              'full_name': helper['display_name'],
+              'average_rating': helper['rating'],
+              'total_reviews': helper['total_reviews'],
+              'job_type_names': skills,
+              'bio': 'Professional helper ready to assist you',
+              'location': helper['location_city'],
+              'phone_number': helper['phone_number'],
+              'email': helper['email'],
+              'is_available': isAvailable,
+              'availability_status': isAvailable ? 'Available Now' : 'Busy',
+              'response_time': '< 1hr',
+              'total_jobs': helper['total_jobs'] ?? 0,
+              'experience_years': 1,
+              'job_types': [],
+              'documents': [],
+              'reviews': [],
+            },
+          });
+        },
+      ),
+    );
+  }
+
+  Widget _buildLoadingState() {
+    return const Center(
+      child: Padding(
+        padding: EdgeInsets.all(50.0),
+        child: CircularProgressIndicator(
+          color: AppColors.primaryGreen,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildErrorState() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(50.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(
+              Icons.error_outline,
+              size: 64,
+              color: AppColors.error,
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              'Unable to load helpers',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+                color: AppColors.textPrimary,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              _error ?? 'Unknown error',
+              style: const TextStyle(
+                color: AppColors.textSecondary,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: _loadHelpers,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primaryGreen,
+              ),
+              child: const Text(
+                'Retry',
+                style: TextStyle(color: AppColors.white),
+              ),
             ),
           ],
-        );
-      },
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(50.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.search_off,
+              size: 64,
+              color: AppColors.textSecondary.withOpacity(0.5),
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              'No helpers found',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+                color: AppColors.textPrimary,
+              ),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'Try adjusting your search terms or filters to find more helpers.',
+              style: TextStyle(
+                fontSize: 14,
+                color: AppColors.textSecondary,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: () {
+                _searchController.clear();
+                _filterHelpers('');
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primaryGreen,
+              ),
+              child: const Text(
+                'Clear Search',
+                style: TextStyle(color: AppColors.white),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 

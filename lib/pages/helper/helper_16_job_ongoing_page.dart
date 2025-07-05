@@ -614,7 +614,9 @@ class _Helper16JobOngoingPageState extends State<Helper16JobOngoingPage> {
                             // Read Job Info Button
                             GestureDetector(
                               onTap: () {
-                                context.push('/helper/job-detail');
+                                // TODO: Pass actual jobId when implementing dynamic data
+                                context.push(
+                                    '/helper/comprehensive-job-detail/placeholder-job-id');
                               },
                               child: Container(
                                 width: double.infinity,

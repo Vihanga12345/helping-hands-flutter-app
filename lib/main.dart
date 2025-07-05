@@ -1,8 +1,21 @@
 import 'package:flutter/material.dart';
 import 'services/navigation_service.dart';
+import 'services/supabase_service.dart';
 import 'utils/app_colors.dart';
+import 'package:go_router/go_router.dart';
+import 'pages/common/user_5_user_selection_page.dart';
+import 'pages/helpee/helpee_1_auth_page.dart';
+import 'pages/helpee/helpee_7_job_request_page.dart';
+import 'pages/helper/helper_1_auth_page.dart';
+import 'pages/helper/helper_7_home_page.dart';
+import 'pages/helper/helper_8_view_requests_page.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // Initialize Supabase
+  await SupabaseService.initialize();
+
   runApp(const HelpingHandsApp());
 }
 
@@ -18,7 +31,6 @@ class HelpingHandsApp extends StatelessWidget {
         primarySwatch: Colors.green,
         primaryColor: AppColors.primaryGreen,
         scaffoldBackgroundColor: AppColors.backgroundLight,
-        
         appBarTheme: const AppBarTheme(
           backgroundColor: AppColors.primaryGreen,
           foregroundColor: AppColors.white,
@@ -55,4 +67,4 @@ class HelpingHandsApp extends StatelessWidget {
       routerConfig: NavigationService.router,
     );
   }
-} 
+}

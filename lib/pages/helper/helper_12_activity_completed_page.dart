@@ -23,7 +23,8 @@ class _Helper12ActivityCompletedPageState
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(
-          builder: (context) => const HelperActivityPendingPage(initialTabIndex: 2),
+          builder: (context) =>
+              const Helper10ActivityPendingPage(initialTabIndex: 2),
           settings: const RouteSettings(
               arguments: {'initialTab': 2}), // 2 = Completed tab
         ),
@@ -72,4 +73,4 @@ class _Helper12ActivityCompletedPageState
       ),
     );
   }
-} 
+}

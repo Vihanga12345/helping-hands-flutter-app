@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../../utils/app_colors.dart';
+import '../../utils/app_text_styles.dart';
 
 /// Helpee Profile Bar component with contact options
 /// Used for displaying helpee information with communication buttons
@@ -7,6 +9,7 @@ class HelpeeProfileBar extends StatelessWidget {
   final String? profileImageUrl;
   final double rating;
   final int jobCount;
+  final String? serviceType;
   final VoidCallback? onMessage;
   final VoidCallback? onCall;
   final VoidCallback? onTap;
@@ -19,33 +22,31 @@ class HelpeeProfileBar extends StatelessWidget {
     this.profileImageUrl,
     required this.rating,
     required this.jobCount,
+    this.serviceType,
     this.onMessage,
     this.onCall,
     this.onTap,
     this.backgroundColor,
-    this.height = 80,
+    this.height,
   });
 
   @override
   Widget build(BuildContext context) {
-    final effectiveBackgroundColor = backgroundColor ?? const Color(0xFF8FD89F);
+    final effectiveBackgroundColor =
+        backgroundColor ?? AppColors.primaryGreen.withOpacity(0.15);
 
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        height: height,
-        padding: const EdgeInsets.all(12),
-        decoration: ShapeDecoration(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
           color: effectiveBackgroundColor,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(15),
-          ),
-          shadows: const [
+          borderRadius: BorderRadius.circular(15),
+          boxShadow: [
             BoxShadow(
-              color: Color(0x3F000000),
-              blurRadius: 4,
-              offset: Offset(0, 4),
-              spreadRadius: 0,
+              color: Colors.black.withOpacity(0.1),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
             ),
           ],
         ),
@@ -53,163 +54,121 @@ class HelpeeProfileBar extends StatelessWidget {
           children: [
             // Profile Image Section
             Container(
-              width: 56,
-              height: 56,
-              decoration: const ShapeDecoration(
+              width: 50,
+              height: 50,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
                 color: Colors.white,
-                shape: OvalBorder(),
-                shadows: [
+                boxShadow: [
                   BoxShadow(
-                    color: Color(0x3F000000),
-                    blurRadius: 2,
-                    offset: Offset(0, 2),
-                    spreadRadius: 0,
+                    color: Colors.black.withOpacity(0.1),
+                    blurRadius: 4,
+                    offset: const Offset(0, 2),
                   ),
                 ],
               ),
-              child: Center(
+              child: ClipOval(
                 child: profileImageUrl != null && profileImageUrl!.isNotEmpty
-                    ? ClipOval(
-                        child: Image.network(
-                          profileImageUrl!,
-                          width: 50,
-                          height: 50,
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) => Icon(
-                            Icons.person,
-                            size: 30,
-                            color: Colors.grey.shade600,
-                          ),
+                    ? Image.network(
+                        profileImageUrl!,
+                        width: 50,
+                        height: 50,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) => Icon(
+                          Icons.person,
+                          size: 28,
+                          color: AppColors.textSecondary,
                         ),
                       )
                     : Icon(
                         Icons.person,
-                        size: 30,
-                        color: Colors.grey.shade600,
+                        size: 28,
+                        color: AppColors.textSecondary,
                       ),
               ),
             ),
             const SizedBox(width: 12),
-            // Name and Statistics Section
+
+            // Name and Service Section
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   // Name
                   Text(
                     name,
-                    style: const TextStyle(
-                      color: Colors.black,
-                      fontSize: 18,
-                      fontFamily: 'Manjari',
+                    style: AppTextStyles.heading3.copyWith(
+                      color: AppColors.textPrimary,
                       fontWeight: FontWeight.w700,
                     ),
                     overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 4),
-                  // Statistics Row
-                  Row(
-                    children: [
-                      // Rating
-                      const Icon(
-                        Icons.star,
-                        color: Colors.amber,
-                        size: 16,
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        rating.toStringAsFixed(1),
-                        style: const TextStyle(
-                          color: Colors.black,
-                          fontSize: 14,
-                          fontFamily: 'Manjari',
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      // Job Count
-                      const Text(
-                        '#',
-                        style: TextStyle(
-                          color: Colors.black,
-                          fontSize: 14,
-                          fontFamily: 'Manjari',
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        jobCount.toString(),
-                        style: const TextStyle(
-                          color: Colors.black,
-                          fontSize: 14,
-                          fontFamily: 'Manjari',
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
+                  // Service Type
+                  Text(
+                    serviceType ?? 'general services',
+                    style: AppTextStyles.bodyMedium.copyWith(
+                      color: AppColors.textSecondary,
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
                 ],
               ),
             ),
-            const SizedBox(width: 12),
-            // Contact Buttons Section
-            Row(
-              mainAxisSize: MainAxisSize.min,
+
+            // Rating and Job Count Section
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                // Message Button
-                GestureDetector(
-                  onTap: onMessage,
-                  child: Container(
-                    width: 40,
-                    height: 40,
-                    decoration: const ShapeDecoration(
-                      color: Colors.white,
-                      shape: OvalBorder(),
-                      shadows: [
-                        BoxShadow(
-                          color: Color(0x3F000000),
-                          blurRadius: 2,
-                          offset: Offset(0, 2),
-                          spreadRadius: 0,
-                        ),
-                      ],
+                // Rating
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(
+                      Icons.star,
+                      color: AppColors.warning,
+                      size: 16,
                     ),
-                    child: Icon(
-                      Icons.chat_bubble_outline,
-                      size: 20,
-                      color: Colors.grey.shade700,
+                    const SizedBox(width: 4),
+                    Text(
+                      rating.toStringAsFixed(1),
+                      style: AppTextStyles.bodyMedium.copyWith(
+                        color: AppColors.textPrimary,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
-                  ),
+                  ],
                 ),
-                const SizedBox(width: 8),
-                // Call Button
-                GestureDetector(
-                  onTap: onCall,
-                  child: Container(
-                    width: 40,
-                    height: 40,
-                    decoration: const ShapeDecoration(
-                      color: Colors.white,
-                      shape: OvalBorder(),
-                      shadows: [
-                        BoxShadow(
-                          color: Color(0x3F000000),
-                          blurRadius: 2,
-                          offset: Offset(0, 2),
-                          spreadRadius: 0,
-                        ),
-                      ],
+                const SizedBox(height: 4),
+                // Job Count
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      '#',
+                      style: AppTextStyles.bodyMedium.copyWith(
+                        color: AppColors.textPrimary,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
-                    child: Icon(
-                      Icons.phone_outlined,
-                      size: 20,
-                      color: Colors.grey.shade700,
+                    Text(
+                      jobCount.toString(),
+                      style: AppTextStyles.bodyMedium.copyWith(
+                        color: AppColors.textPrimary,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
-                  ),
+                  ],
                 ),
               ],
+            ),
+
+            // Arrow Icon
+            const SizedBox(width: 12),
+            Icon(
+              Icons.arrow_forward_ios,
+              size: 16,
+              color: AppColors.textSecondary,
             ),
           ],
         ),

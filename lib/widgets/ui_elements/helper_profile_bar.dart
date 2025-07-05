@@ -1,13 +1,16 @@
 import 'package:flutter/material.dart';
 
-/// Helper Profile Bar component for displaying helper information
-/// Used in search results, job details, and activity pages
+/// Helper Profile Bar component for displaying helper information from helpee POV
+/// Redesigned to show: name, profile pic, rating, job count, job types
 class HelperProfileBar extends StatelessWidget {
   final String name;
   final String? profileImageUrl;
   final double rating;
   final int jobCount;
+  final List<String> jobTypes;
   final VoidCallback? onTap;
+  final String? helperId;
+  final Map<String, dynamic>? helperData;
   final Color? backgroundColor;
   final double? height;
 
@@ -17,20 +20,34 @@ class HelperProfileBar extends StatelessWidget {
     this.profileImageUrl,
     required this.rating,
     required this.jobCount,
+    this.jobTypes = const [],
     this.onTap,
+    this.helperId,
+    this.helperData,
     this.backgroundColor,
-    this.height = 80,
+    this.height = 90,
   });
 
   @override
   Widget build(BuildContext context) {
     final effectiveBackgroundColor = backgroundColor ?? const Color(0xFF8FD89F);
 
+    // Format job types to display (max 3, then "...more")
+    String displayJobTypes = '';
+    if (jobTypes.isNotEmpty) {
+      if (jobTypes.length <= 3) {
+        displayJobTypes = jobTypes.join(' • ').toLowerCase();
+      } else {
+        displayJobTypes =
+            '${jobTypes.take(3).join(' • ').toLowerCase()} • +${jobTypes.length - 3} more';
+      }
+    }
+
     return GestureDetector(
       onTap: onTap,
       child: Container(
         height: height,
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.all(14),
         decoration: ShapeDecoration(
           color: effectiveBackgroundColor,
           shape: RoundedRectangleBorder(
@@ -39,8 +56,8 @@ class HelperProfileBar extends StatelessWidget {
           shadows: const [
             BoxShadow(
               color: Color(0x3F000000),
-              blurRadius: 4,
-              offset: Offset(0, 4),
+              blurRadius: 6,
+              offset: Offset(0, 3),
               spreadRadius: 0,
             ),
           ],
@@ -49,15 +66,15 @@ class HelperProfileBar extends StatelessWidget {
           children: [
             // Profile Image Section
             Container(
-              width: 56,
-              height: 56,
+              width: 62,
+              height: 62,
               decoration: const ShapeDecoration(
                 color: Colors.white,
                 shape: OvalBorder(),
                 shadows: [
                   BoxShadow(
                     color: Color(0x3F000000),
-                    blurRadius: 2,
+                    blurRadius: 4,
                     offset: Offset(0, 2),
                     spreadRadius: 0,
                   ),
@@ -68,44 +85,82 @@ class HelperProfileBar extends StatelessWidget {
                     ? ClipOval(
                         child: Image.network(
                           profileImageUrl!,
-                          width: 50,
-                          height: 50,
+                          width: 56,
+                          height: 56,
                           fit: BoxFit.cover,
                           errorBuilder: (context, error, stackTrace) => Icon(
                             Icons.person,
-                            size: 30,
+                            size: 35,
                             color: Colors.grey.shade600,
                           ),
                         ),
                       )
                     : Icon(
                         Icons.person,
-                        size: 30,
+                        size: 35,
                         color: Colors.grey.shade600,
                       ),
               ),
             ),
-            const SizedBox(width: 12),
-            // Name Section
+            const SizedBox(width: 14),
+
+            // Helper Info Section
             Expanded(
-              child: Text(
-                name,
-                style: const TextStyle(
-                  color: Colors.black,
-                  fontSize: 18,
-                  fontFamily: 'Manjari',
-                  fontWeight: FontWeight.w700,
-                ),
-                overflow: TextOverflow.ellipsis,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  // Helper Name
+                  Text(
+                    name,
+                    style: const TextStyle(
+                      color: Colors.black,
+                      fontSize: 18,
+                      fontFamily: 'Manjari',
+                      fontWeight: FontWeight.w700,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
+                  ),
+                  const SizedBox(height: 4),
+
+                  // Job Types (small text)
+                  if (displayJobTypes.isNotEmpty) ...[
+                    Text(
+                      displayJobTypes,
+                      style: const TextStyle(
+                        color: Color(0xFF2E5A3A),
+                        fontSize: 12,
+                        fontFamily: 'Manjari',
+                        fontWeight: FontWeight.w500,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 1,
+                    ),
+                  ] else ...[
+                    Text(
+                      'general services',
+                      style: TextStyle(
+                        color: Colors.grey.shade600,
+                        fontSize: 12,
+                        fontFamily: 'Manjari',
+                        fontWeight: FontWeight.w500,
+                        fontStyle: FontStyle.italic,
+                      ),
+                    ),
+                  ],
+                ],
               ),
             ),
+
             const SizedBox(width: 12),
+
             // Statistics Section
             Column(
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                // Rating
+                // Rating with star
                 Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -121,13 +176,14 @@ class HelperProfileBar extends StatelessWidget {
                         color: Colors.black,
                         fontSize: 16,
                         fontFamily: 'Manjari',
-                        fontWeight: FontWeight.w600,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 4),
-                // Job Count
+                const SizedBox(height: 6),
+
+                // Job Count with # symbol
                 Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -140,14 +196,14 @@ class HelperProfileBar extends StatelessWidget {
                         fontWeight: FontWeight.w600,
                       ),
                     ),
-                    const SizedBox(width: 4),
+                    const SizedBox(width: 2),
                     Text(
                       jobCount.toString(),
                       style: const TextStyle(
                         color: Colors.black,
                         fontSize: 16,
                         fontFamily: 'Manjari',
-                        fontWeight: FontWeight.w600,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
                   ],

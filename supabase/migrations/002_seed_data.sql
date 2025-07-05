@@ -1,66 +1,127 @@
--- Helping Hands App - Seed Data
--- Migration: 002_seed_data.sql
+-- HELPING HANDS APP - SEED DATA
+-- ============================================================================
+-- This file inserts initial data for the Helping Hands application
+-- Run this after running 001_complete_schema.sql
 
--- Insert Job Categories (matching the app's job types)
-INSERT INTO job_categories (id, name, description, icon_name) VALUES
-(uuid_generate_v4(), 'House Cleaning', 'General house cleaning services including dusting, vacuuming, and sanitizing', 'cleaning_services'),
-(uuid_generate_v4(), 'Deep Cleaning', 'Thorough deep cleaning for homes and offices', 'cleaning_services'),
-(uuid_generate_v4(), 'Gardening', 'Garden maintenance, landscaping, and plant care', 'yard_work'),
-(uuid_generate_v4(), 'Pet Care', 'Pet sitting, walking, feeding, and grooming services', 'pets'),
-(uuid_generate_v4(), 'Elderly Care', 'Companion care and assistance for elderly individuals', 'elderly_care'),
-(uuid_generate_v4(), 'Tutoring', 'Educational tutoring and homework assistance', 'school'),
-(uuid_generate_v4(), 'Tech Support', 'Computer troubleshooting and technical assistance', 'computer'),
-(uuid_generate_v4(), 'Photography', 'Event photography and photo editing services', 'camera_alt'),
-(uuid_generate_v4(), 'Fitness Training', 'Personal fitness training and workout guidance', 'fitness_center'),
-(uuid_generate_v4(), 'Cooking', 'Meal preparation and cooking services', 'restaurant'),
-(uuid_generate_v4(), 'Laundry', 'Washing, drying, and folding clothes', 'local_laundry_service'),
-(uuid_generate_v4(), 'Plumbing', 'Basic plumbing repairs and maintenance', 'plumbing'),
-(uuid_generate_v4(), 'Electrical Work', 'Basic electrical repairs and installations', 'electrical_services'),
-(uuid_generate_v4(), 'Painting', 'Interior and exterior painting services', 'format_paint'),
-(uuid_generate_v4(), 'Moving Help', 'Assistance with packing and moving', 'local_shipping'),
-(uuid_generate_v4(), 'Furniture Assembly', 'Assembly of furniture and household items', 'construction'),
-(uuid_generate_v4(), 'Car Washing', 'Vehicle cleaning and detailing services', 'local_car_wash'),
-(uuid_generate_v4(), 'Delivery Services', 'Package and food delivery', 'delivery_dining'),
-(uuid_generate_v4(), 'Event Planning', 'Party and event organization assistance', 'event'),
-(uuid_generate_v4(), 'Shopping Assistance', 'Grocery shopping and errands', 'shopping_cart'),
-(uuid_generate_v4(), 'Office Maintenance', 'Office cleaning and maintenance services', 'business'),
-(uuid_generate_v4(), 'Babysitting', 'Child care and supervision services', 'child_care'),
-(uuid_generate_v4(), 'Window Cleaning', 'Professional window cleaning services', 'cleaning_services'),
-(uuid_generate_v4(), 'Carpet Cleaning', 'Carpet and upholstery cleaning', 'cleaning_services'),
-(uuid_generate_v4(), 'Appliance Repair', 'Basic appliance troubleshooting and repair', 'home_repair_service'),
-(uuid_generate_v4(), 'Massage Therapy', 'Therapeutic massage and wellness services', 'spa'),
-(uuid_generate_v4(), 'Language Translation', 'Document translation and interpretation', 'translate'),
-(uuid_generate_v4(), 'Music Lessons', 'Musical instrument lessons and music theory', 'music_note'),
-(uuid_generate_v4(), 'Art and Craft', 'Art lessons and creative workshops', 'palette'),
-(uuid_generate_v4(), 'Data Entry', 'Administrative and data entry services', 'keyboard');
+-- ============================================================================
+-- BULLETPROOF COLUMN HANDLING - ALL POSSIBLE VARIATIONS
+-- ============================================================================
 
--- Create sample admin user (for testing purposes)
-INSERT INTO users (id, email, phone, first_name, last_name, user_type, is_verified, is_active) VALUES
-(uuid_generate_v4(), 'admin@helpinghands.com', '+94771234567', 'System', 'Administrator', 'admin', true, true);
+-- Ensure job_categories table has all required columns
+ALTER TABLE job_categories ADD COLUMN IF NOT EXISTS default_hourly_rate DECIMAL(10, 2);
+ALTER TABLE job_categories ADD COLUMN IF NOT EXISTS icon_name VARCHAR(100);
+ALTER TABLE job_categories ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT true;
 
--- Note: In production, real users will be created through the app's registration process
--- The following are just examples of the data structure:
+-- Handle ALL possible column name variations for job_category_questions
+ALTER TABLE job_category_questions ADD COLUMN IF NOT EXISTS question TEXT;
+ALTER TABLE job_category_questions ADD COLUMN IF NOT EXISTS question_text TEXT;
+ALTER TABLE job_category_questions ADD COLUMN IF NOT EXISTS question_type VARCHAR(50);
+ALTER TABLE job_category_questions ADD COLUMN IF NOT EXISTS is_required BOOLEAN DEFAULT true;
+ALTER TABLE job_category_questions ADD COLUMN IF NOT EXISTS order_index INTEGER DEFAULT 0;
+ALTER TABLE job_category_questions ADD COLUMN IF NOT EXISTS question_order INTEGER DEFAULT 0;
+ALTER TABLE job_category_questions ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT true;
 
-/*
-Example Helper User:
-INSERT INTO users (email, phone, first_name, last_name, user_type, gender, about_me, location_address, location_city) VALUES
-('john.helper@email.com', '+94771234568', 'John', 'Smith', 'helper', 'male', 'Experienced cleaner with 5 years of experience', '123 Main St, Colombo', 'Colombo');
+-- Synchronize data between different column name variations
+UPDATE job_category_questions SET question_text = question WHERE question_text IS NULL AND question IS NOT NULL;
+UPDATE job_category_questions SET question = question_text WHERE question IS NULL AND question_text IS NOT NULL;
+UPDATE job_category_questions SET question_order = order_index WHERE question_order IS NULL AND order_index IS NOT NULL;
+UPDATE job_category_questions SET order_index = question_order WHERE order_index IS NULL AND question_order IS NOT NULL;
 
-Example Helpee User:
-INSERT INTO users (email, phone, first_name, last_name, user_type, gender, location_address, location_city) VALUES
-('jane.helpee@email.com', '+94771234569', 'Jane', 'Doe', 'helpee', 'female', '456 Oak Ave, Kandy', 'Kandy');
+-- ============================================================================
+-- COMPREHENSIVE DATA CLEANUP
+-- ============================================================================
 
-Example Helper Skills:
-INSERT INTO user_skills (user_id, category_id, experience_years, skill_level, hourly_rate) VALUES
-((SELECT id FROM users WHERE email = 'john.helper@email.com'), 
- (SELECT id FROM job_categories WHERE name = 'House Cleaning'), 
- 5, 'advanced', 2500.00);
+-- Delete all questions for categories we're about to insert (by name)
+DELETE FROM job_category_questions WHERE category_id IN (
+    SELECT id FROM job_categories WHERE name IN (
+        'House Cleaning', 'Deep Cleaning', 'Gardening', 'Cooking', 'Elderly Care',
+        'Child Care', 'Pet Care', 'Tutoring', 'Tech Support', 'Moving Help'
+    )
+);
 
-Example Job Posting:
-INSERT INTO jobs (helpee_id, category_id, title, description, job_type, hourly_rate, scheduled_date, scheduled_start_time, location_latitude, location_longitude, location_address) VALUES
-((SELECT id FROM users WHERE email = 'jane.helpee@email.com'),
- (SELECT id FROM job_categories WHERE name = 'House Cleaning'),
- 'Weekly house cleaning needed',
- 'Looking for someone to clean my 3-bedroom apartment weekly',
- 'public', 2000.00, '2024-12-30', '10:00:00', 6.9271, 79.8612, '456 Oak Ave, Kandy');
-*/ 
+-- Delete all existing categories with these names
+DELETE FROM job_categories WHERE name IN (
+    'House Cleaning', 'Deep Cleaning', 'Gardening', 'Cooking', 'Elderly Care',
+    'Child Care', 'Pet Care', 'Tutoring', 'Tech Support', 'Moving Help'
+);
+
+-- ============================================================================
+-- JOB CATEGORIES SEED DATA (INSERT FIRST)
+-- ============================================================================
+
+INSERT INTO job_categories (id, name, description, default_hourly_rate, is_active) VALUES 
+('550e8400-e29b-41d4-a716-446655440001', 'House Cleaning', 'General house cleaning services including dusting, mopping, and organizing', 2500.00, true),
+('550e8400-e29b-41d4-a716-446655440002', 'Deep Cleaning', 'Thorough deep cleaning services for homes and offices', 3000.00, true),
+('550e8400-e29b-41d4-a716-446655440003', 'Gardening', 'Garden maintenance, landscaping, and plant care services', 2000.00, true),
+('550e8400-e29b-41d4-a716-446655440004', 'Cooking', 'Meal preparation and cooking services for events or daily meals', 2200.00, true),
+('550e8400-e29b-41d4-a716-446655440005', 'Elderly Care', 'Care and assistance for elderly individuals including companionship', 2800.00, true),
+('550e8400-e29b-41d4-a716-446655440006', 'Child Care', 'Babysitting and child care services for families', 2400.00, true),
+('550e8400-e29b-41d4-a716-446655440007', 'Pet Care', 'Pet sitting, walking, and general pet care services', 1800.00, true),
+('550e8400-e29b-41d4-a716-446655440008', 'Tutoring', 'Educational tutoring and homework assistance', 3500.00, true),
+('550e8400-e29b-41d4-a716-446655440009', 'Tech Support', 'Computer and technology assistance services', 4000.00, true),
+('550e8400-e29b-41d4-a716-446655440010', 'Moving Help', 'Assistance with packing, moving, and organizing', 2800.00, true);
+
+-- ============================================================================
+-- JOB CATEGORY QUESTIONS SEED DATA (INSERT AFTER CATEGORIES)
+-- ============================================================================
+
+-- House Cleaning Questions
+INSERT INTO job_category_questions (id, category_id, question, question_text, question_type, is_required, order_index, question_order) VALUES 
+('650e8400-e29b-41d4-a716-446655440001', '550e8400-e29b-41d4-a716-446655440001', 'How many rooms need cleaning?', 'How many rooms need cleaning?', 'number', true, 1, 1),
+('650e8400-e29b-41d4-a716-446655440002', '550e8400-e29b-41d4-a716-446655440001', 'Do you have cleaning supplies?', 'Do you have cleaning supplies?', 'text', true, 2, 2),
+('650e8400-e29b-41d4-a716-446655440003', '550e8400-e29b-41d4-a716-446655440001', 'Any specific cleaning requirements?', 'Any specific cleaning requirements?', 'text', false, 3, 3),
+('650e8400-e29b-41d4-a716-446655440004', '550e8400-e29b-41d4-a716-446655440001', 'Are there pets in the house?', 'Are there pets in the house?', 'text', false, 4, 4);
+
+-- Deep Cleaning Questions
+INSERT INTO job_category_questions (id, category_id, question, question_text, question_type, is_required, order_index, question_order) VALUES 
+('650e8400-e29b-41d4-a716-446655440005', '550e8400-e29b-41d4-a716-446655440002', 'What areas need deep cleaning?', 'What areas need deep cleaning?', 'text', true, 1, 1),
+('650e8400-e29b-41d4-a716-446655440006', '550e8400-e29b-41d4-a716-446655440002', 'How long since last deep clean?', 'How long since last deep clean?', 'text', false, 2, 2),
+('650e8400-e29b-41d4-a716-446655440007', '550e8400-e29b-41d4-a716-446655440002', 'Any stubborn stains or problem areas?', 'Any stubborn stains or problem areas?', 'text', false, 3, 3);
+
+-- Gardening Questions
+INSERT INTO job_category_questions (id, category_id, question, question_text, question_type, is_required, order_index, question_order) VALUES 
+('650e8400-e29b-41d4-a716-446655440008', '550e8400-e29b-41d4-a716-446655440003', 'What type of gardening work is needed?', 'What type of gardening work is needed?', 'text', true, 1, 1),
+('650e8400-e29b-41d4-a716-446655440009', '550e8400-e29b-41d4-a716-446655440003', 'Size of garden/area?', 'Size of garden/area?', 'text', false, 2, 2),
+('650e8400-e29b-41d4-a716-446655440010', '550e8400-e29b-41d4-a716-446655440003', 'Do you have gardening tools?', 'Do you have gardening tools?', 'text', false, 3, 3);
+
+-- Cooking Questions
+INSERT INTO job_category_questions (id, category_id, question, question_text, question_type, is_required, order_index, question_order) VALUES 
+('650e8400-e29b-41d4-a716-446655440011', '550e8400-e29b-41d4-a716-446655440004', 'How many people will be served?', 'How many people will be served?', 'number', true, 1, 1),
+('650e8400-e29b-41d4-a716-446655440012', '550e8400-e29b-41d4-a716-446655440004', 'Any dietary restrictions?', 'Any dietary restrictions?', 'text', false, 2, 2),
+('650e8400-e29b-41d4-a716-446655440013', '550e8400-e29b-41d4-a716-446655440004', 'Type of cuisine preferred?', 'Type of cuisine preferred?', 'text', false, 3, 3);
+
+-- Elderly Care Questions
+INSERT INTO job_category_questions (id, category_id, question, question_text, question_type, is_required, order_index, question_order) VALUES 
+('650e8400-e29b-41d4-a716-446655440014', '550e8400-e29b-41d4-a716-446655440005', 'What type of care is needed?', 'What type of care is needed?', 'text', true, 1, 1),
+('650e8400-e29b-41d4-a716-446655440015', '550e8400-e29b-41d4-a716-446655440005', 'Any medical conditions to consider?', 'Any medical conditions to consider?', 'text', false, 2, 2),
+('650e8400-e29b-41d4-a716-446655440016', '550e8400-e29b-41d4-a716-446655440005', 'Mobility assistance required?', 'Mobility assistance required?', 'text', false, 3, 3);
+
+-- Child Care Questions
+INSERT INTO job_category_questions (id, category_id, question, question_text, question_type, is_required, order_index, question_order) VALUES 
+('650e8400-e29b-41d4-a716-446655440017', '550e8400-e29b-41d4-a716-446655440006', 'Age of children?', 'Age of children?', 'text', true, 1, 1),
+('650e8400-e29b-41d4-a716-446655440018', '550e8400-e29b-41d4-a716-446655440006', 'Number of children?', 'Number of children?', 'number', true, 2, 2),
+('650e8400-e29b-41d4-a716-446655440019', '550e8400-e29b-41d4-a716-446655440006', 'Any special needs or allergies?', 'Any special needs or allergies?', 'text', false, 3, 3);
+
+-- Pet Care Questions
+INSERT INTO job_category_questions (id, category_id, question, question_text, question_type, is_required, order_index, question_order) VALUES 
+('650e8400-e29b-41d4-a716-446655440020', '550e8400-e29b-41d4-a716-446655440007', 'What type of pets?', 'What type of pets?', 'text', true, 1, 1),
+('650e8400-e29b-41d4-a716-446655440021', '550e8400-e29b-41d4-a716-446655440007', 'Number of pets?', 'Number of pets?', 'number', true, 2, 2),
+('650e8400-e29b-41d4-a716-446655440022', '550e8400-e29b-41d4-a716-446655440007', 'Any special care requirements?', 'Any special care requirements?', 'text', false, 3, 3);
+
+-- Tutoring Questions
+INSERT INTO job_category_questions (id, category_id, question, question_text, question_type, is_required, order_index, question_order) VALUES 
+('650e8400-e29b-41d4-a716-446655440023', '550e8400-e29b-41d4-a716-446655440008', 'What subject(s) need tutoring?', 'What subject(s) need tutoring?', 'text', true, 1, 1),
+('650e8400-e29b-41d4-a716-446655440024', '550e8400-e29b-41d4-a716-446655440008', 'Student grade level?', 'Student grade level?', 'text', true, 2, 2),
+('650e8400-e29b-41d4-a716-446655440025', '550e8400-e29b-41d4-a716-446655440008', 'Specific learning goals?', 'Specific learning goals?', 'text', false, 3, 3);
+
+-- Tech Support Questions
+INSERT INTO job_category_questions (id, category_id, question, question_text, question_type, is_required, order_index, question_order) VALUES 
+('650e8400-e29b-41d4-a716-446655440026', '550e8400-e29b-41d4-a716-446655440009', 'What type of tech issue?', 'What type of tech issue?', 'text', true, 1, 1),
+('650e8400-e29b-41d4-a716-446655440027', '550e8400-e29b-41d4-a716-446655440009', 'Device type (computer, phone, etc.)?', 'Device type (computer, phone, etc.)?', 'text', true, 2, 2),
+('650e8400-e29b-41d4-a716-446655440028', '550e8400-e29b-41d4-a716-446655440009', 'Urgency level?', 'Urgency level?', 'text', false, 3, 3);
+
+-- Moving Help Questions
+INSERT INTO job_category_questions (id, category_id, question, question_text, question_type, is_required, order_index, question_order) VALUES 
+('650e8400-e29b-41d4-a716-446655440029', '550e8400-e29b-41d4-a716-446655440010', 'Size of move (studio, 1BR, 2BR, etc.)?', 'Size of move (studio, 1BR, 2BR, etc.)?', 'text', true, 1, 1),
+('650e8400-e29b-41d4-a716-446655440030', '550e8400-e29b-41d4-a716-446655440010', 'Heavy furniture involved?', 'Heavy furniture involved?', 'text', true, 2, 2),
+('650e8400-e29b-41d4-a716-446655440031', '550e8400-e29b-41d4-a716-446655440010', 'Distance of move?', 'Distance of move?', 'text', false, 3, 3); 

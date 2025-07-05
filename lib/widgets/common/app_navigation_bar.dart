@@ -3,7 +3,8 @@ import 'package:go_router/go_router.dart';
 import '../../utils/app_colors.dart';
 
 enum UserType { helpee, helper }
-enum NavigationTab { home, calendar, activity, profile }
+
+enum NavigationTab { home, calendar, activity, profile, search, requests }
 
 class AppNavigationBar extends StatelessWidget {
   final NavigationTab currentTab;
@@ -65,7 +66,7 @@ class AppNavigationBar extends StatelessWidget {
     required String label,
   }) {
     final bool isActive = currentTab == tab;
-    
+
     return GestureDetector(
       onTap: () => _navigateToTab(context, tab),
       child: Container(
@@ -100,7 +101,7 @@ class AppNavigationBar extends StatelessWidget {
 
   void _navigateToTab(BuildContext context, NavigationTab tab) {
     String route;
-    
+
     switch (userType) {
       case UserType.helpee:
         switch (tab) {
@@ -115,6 +116,12 @@ class AppNavigationBar extends StatelessWidget {
             break;
           case NavigationTab.profile:
             route = '/helpee/profile';
+            break;
+          case NavigationTab.search:
+            route = '/helpee/search-helper';
+            break;
+          case NavigationTab.requests:
+            route = '/helpee/home'; // Default for helpees
             break;
         }
         break;
@@ -132,12 +139,18 @@ class AppNavigationBar extends StatelessWidget {
           case NavigationTab.profile:
             route = '/helper/profile';
             break;
+          case NavigationTab.search:
+            route = '/helper/home'; // Default for helpers
+            break;
+          case NavigationTab.requests:
+            route = '/helper/view-requests/private';
+            break;
         }
         break;
     }
-    
+
     if (currentTab != tab) {
       context.go(route);
     }
   }
-} 
+}
