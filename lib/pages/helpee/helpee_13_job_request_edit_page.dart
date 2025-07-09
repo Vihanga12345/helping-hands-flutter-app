@@ -6,6 +6,7 @@ import '../../utils/app_text_styles.dart';
 import '../../widgets/common/app_header.dart';
 import '../../widgets/common/app_navigation_bar.dart';
 import '../../services/supabase_service.dart';
+import '../../services/localization_service.dart';
 
 class Helpee13JobRequestEditPage extends StatefulWidget {
   final String? jobId;
@@ -34,7 +35,7 @@ class _Helpee13JobRequestEditPageState
 
   final List<String> _jobTypes = [
     'Gardening',
-    'Housekeeping',
+    'Housekeeping', 
     'Childcare',
     'Cooking',
   ];
@@ -148,13 +149,13 @@ class _Helpee13JobRequestEditPageState
   @override
   Widget build(BuildContext context) {
     final String jobId = widget.jobId ?? 'Unknown Job';
-
+    
     return Scaffold(
       body: Column(
         children: [
           // Header with Save button
           AppHeader(
-            title: 'Edit Job $jobId',
+            title: 'Edit Job Request'.tr(),
             showBackButton: true,
             showMenuButton: false,
             showNotificationButton: false,
@@ -182,7 +183,7 @@ class _Helpee13JobRequestEditPageState
               ),
             ),
           ),
-
+          
           // Body Content
           Expanded(
             child: Container(
@@ -229,12 +230,12 @@ class _Helpee13JobRequestEditPageState
                             ],
                           ),
                         ),
-
+                        
                         const SizedBox(height: 24),
-
+                        
                         // Service Type (Read-only)
                         const Text(
-                          'Service Type',
+                          'Service Type', 
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
@@ -244,7 +245,7 @@ class _Helpee13JobRequestEditPageState
                         Container(
                           width: double.infinity,
                           padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
+                                decoration: BoxDecoration(
                             color: AppColors.lightGrey.withOpacity(0.3),
                             borderRadius: BorderRadius.circular(12),
                             border: Border.all(color: AppColors.lightGrey),
@@ -259,7 +260,7 @@ class _Helpee13JobRequestEditPageState
                               const SizedBox(width: 12),
                               Text(
                                 _selectedJobType ?? 'Loading...',
-                                style: TextStyle(
+                                  style: TextStyle(
                                   fontSize: 16,
                                   color: AppColors.textSecondary,
                                   fontWeight: FontWeight.w500,
@@ -274,12 +275,12 @@ class _Helpee13JobRequestEditPageState
                             ],
                           ),
                         ),
-
+                        
                         const SizedBox(height: 20),
-
+                        
                         // Location
                         const Text(
-                          'Location',
+                          'Location', 
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
@@ -306,9 +307,9 @@ class _Helpee13JobRequestEditPageState
                             return null;
                           },
                         ),
-
+                        
                         const SizedBox(height: 20),
-
+                        
                         // Date and Time
                         Row(
                           children: [
@@ -317,7 +318,7 @@ class _Helpee13JobRequestEditPageState
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   const Text(
-                                    'Date',
+                                    'Date', 
                                     style: TextStyle(
                                       fontSize: 16,
                                       fontWeight: FontWeight.w600,
@@ -359,7 +360,7 @@ class _Helpee13JobRequestEditPageState
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   const Text(
-                                    'Time',
+                                    'Time', 
                                     style: TextStyle(
                                       fontSize: 16,
                                       fontWeight: FontWeight.w600,
@@ -397,12 +398,12 @@ class _Helpee13JobRequestEditPageState
                             ),
                           ],
                         ),
-
+                        
                         const SizedBox(height: 20),
-
+                        
                         // Description
                         const Text(
-                          'Job Description',
+                          'Job Description', 
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
@@ -430,7 +431,7 @@ class _Helpee13JobRequestEditPageState
                             return null;
                           },
                         ),
-
+                        
                         const SizedBox(height: 20),
 
                         // Job Questions (if any)
@@ -449,7 +450,7 @@ class _Helpee13JobRequestEditPageState
                           _buildJobQuestionsWidget(),
                           const SizedBox(height: 20),
                         ],
-
+                        
                         // Action Buttons
                         Row(
                           children: [
@@ -491,7 +492,7 @@ class _Helpee13JobRequestEditPageState
                             ),
                           ],
                         ),
-
+                        
                         const SizedBox(height: 20),
                       ],
                     ),
@@ -500,7 +501,7 @@ class _Helpee13JobRequestEditPageState
               ),
             ),
           ),
-
+          
           // Navigation Bar
           const AppNavigationBar(
             currentTab: NavigationTab.home,
@@ -603,8 +604,8 @@ class _Helpee13JobRequestEditPageState
                   initialValue: currentAnswer,
                   decoration: InputDecoration(
                     hintText: isRequired
-                        ? 'Enter your answer (required)'
-                        : 'Enter your answer',
+                        ? 'Enter your answer (required)'.tr()
+                        : 'Enter your answer'.tr(),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(8),
                       borderSide: BorderSide(
@@ -622,7 +623,7 @@ class _Helpee13JobRequestEditPageState
                   validator: isRequired
                       ? (value) {
                           if (value == null || value.trim().isEmpty) {
-                            return 'This question is required';
+                            return 'This question is required'.tr();
                           }
                           return null;
                         }
@@ -645,8 +646,8 @@ class _Helpee13JobRequestEditPageState
     // Validate required questions first
     if (!_validateRequiredQuestions()) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please answer all required questions before saving.'),
+        SnackBar(
+          content: Text('Please answer all required questions before saving.'.tr()),
           backgroundColor: AppColors.error,
         ),
       );
@@ -657,8 +658,8 @@ class _Helpee13JobRequestEditPageState
       try {
         // Show loading
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Saving changes...'),
+          SnackBar(
+            content: Text('Saving changes...'.tr()),
             backgroundColor: AppColors.primaryGreen,
           ),
         );
@@ -667,17 +668,17 @@ class _Helpee13JobRequestEditPageState
         final success = await _updateJobInDatabase();
 
         if (success) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Job request updated successfully!'),
-              backgroundColor: AppColors.success,
-            ),
-          );
-          context.pop();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Job request updated successfully!'.tr()),
+          backgroundColor: AppColors.success,
+        ),
+      );
+      context.pop();
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Failed to update job request. Please try again.'),
+            SnackBar(
+              content: Text('Failed to update job request. Please try again.'.tr()),
               backgroundColor: AppColors.error,
             ),
           );
@@ -685,7 +686,7 @@ class _Helpee13JobRequestEditPageState
       } catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error updating job: $e'),
+            content: Text('Error updating job: $e'.tr()),
             backgroundColor: AppColors.error,
           ),
         );
@@ -874,4 +875,4 @@ class _Helpee13JobRequestEditPageState
     _budgetController.dispose();
     super.dispose();
   }
-}
+} 

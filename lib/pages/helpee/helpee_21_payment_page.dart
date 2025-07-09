@@ -4,6 +4,7 @@ import '../../utils/app_colors.dart';
 import '../../utils/app_text_styles.dart';
 import '../../widgets/common/app_header.dart';
 import '../../widgets/common/app_navigation_bar.dart';
+import '../../services/localization_service.dart';
 
 class Helpee21PaymentPage extends StatefulWidget {
   const Helpee21PaymentPage({super.key});
@@ -24,8 +25,8 @@ class _Helpee21PaymentPageState extends State<Helpee21PaymentPage> {
       body: Column(
         children: [
           // Header
-          const AppHeader(
-            title: 'Payment',
+          AppHeader(
+            title: 'Payment'.tr(),
             showBackButton: true,
             showMenuButton: false,
             showNotificationButton: false,

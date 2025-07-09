@@ -7,6 +7,7 @@ import '../../widgets/common/app_navigation_bar.dart';
 import '../../services/user_data_service.dart';
 import '../../services/custom_auth_service.dart';
 import '../../widgets/ui_elements/helper_profile_bar.dart';
+import '../../services/localization_service.dart';
 
 class Helpee9SearchHelperPage extends StatefulWidget {
   const Helpee9SearchHelperPage({super.key});
@@ -59,7 +60,7 @@ class _Helpee9SearchHelperPageState extends State<Helpee9SearchHelperPage> {
     } catch (e) {
       setState(() {
         _isLoading = false;
-        _error = 'Failed to load helpers: $e';
+        _error = 'Failed to load helpers: $e'.tr();
       });
     }
   }
@@ -106,7 +107,7 @@ class _Helpee9SearchHelperPageState extends State<Helpee9SearchHelperPage> {
   String _calculateDistance(Map<String, dynamic> helper) {
     // In a real implementation, calculate actual distance based on coordinates
     // For now, return a placeholder
-    return 'Distance unknown';
+    return 'Distance unknown'.tr();
   }
 
   void _filterHelpers(String query) {
@@ -137,7 +138,7 @@ class _Helpee9SearchHelperPageState extends State<Helpee9SearchHelperPage> {
       body: Column(
         children: [
           AppHeader(
-            title: 'Search Helpers',
+            title: 'Search Helpers'.tr(),
             showBackButton: true,
             showMenuButton: false,
             showNotificationButton: true,
@@ -199,11 +200,11 @@ class _Helpee9SearchHelperPageState extends State<Helpee9SearchHelperPage> {
       child: TextField(
         controller: _searchController,
         onChanged: _filterHelpers,
-        decoration: const InputDecoration(
-          hintText: 'Search by name, skill, or location...',
-          prefixIcon: Icon(Icons.search, color: AppColors.primaryGreen),
+        decoration: InputDecoration(
+          hintText: 'Search by name, skill, or location...'.tr(),
+          prefixIcon: const Icon(Icons.search, color: AppColors.primaryGreen),
           border: InputBorder.none,
-          contentPadding: EdgeInsets.symmetric(vertical: 16),
+          contentPadding: const EdgeInsets.symmetric(vertical: 16),
         ),
       ),
     );
@@ -216,13 +217,13 @@ class _Helpee9SearchHelperPageState extends State<Helpee9SearchHelperPage> {
       child: ListView(
         scrollDirection: Axis.horizontal,
         children: [
-          _buildFilterChip('All', true),
-          _buildFilterChip('Available Now', false),
-          _buildFilterChip('Nearby', false),
-          _buildFilterChip('Top Rated', false),
-          _buildFilterChip('House Cleaning', false),
-          _buildFilterChip('Gardening', false),
-          _buildFilterChip('Cooking', false),
+          _buildFilterChip('All'.tr(), true),
+          _buildFilterChip('Available Now'.tr(), false),
+          _buildFilterChip('Nearby'.tr(), false),
+          _buildFilterChip('Top Rated'.tr(), false),
+          _buildFilterChip('House Cleaning'.tr(), false),
+          _buildFilterChip('Gardening'.tr(), false),
+          _buildFilterChip('Cooking'.tr(), false),
         ],
       ),
     );
@@ -282,7 +283,7 @@ class _Helpee9SearchHelperPageState extends State<Helpee9SearchHelperPage> {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       child: HelperProfileBar(
-        name: helper['display_name'] ?? 'Unknown Helper',
+        name: helper['display_name'] ?? 'Unknown Helper'.tr(),
         rating: (helper['rating'] ?? 0.0).toDouble(),
         jobCount: helper['total_jobs'] ?? 0,
         jobTypes: skills,
@@ -294,14 +295,15 @@ class _Helpee9SearchHelperPageState extends State<Helpee9SearchHelperPage> {
           'average_rating': helper['rating'],
           'total_reviews': helper['total_reviews'],
           'job_type_names': skills,
-          'bio': 'Professional helper ready to assist you',
+          'bio': 'Professional helper ready to assist you'.tr(),
           'location': helper['location_city'],
           'phone_number': helper['phone_number'],
           'email': helper['email'],
           'is_available': isAvailable,
-          'availability_status': isAvailable ? 'Available Now' : 'Busy',
+          'availability_status':
+              isAvailable ? 'Available Now'.tr() : 'Busy'.tr(),
         },
-          onTap: () {
+        onTap: () {
           context.push('/helpee/helper-profile', extra: {
             'helperId': helper['id'],
             'helperData': {
@@ -310,12 +312,13 @@ class _Helpee9SearchHelperPageState extends State<Helpee9SearchHelperPage> {
               'average_rating': helper['rating'],
               'total_reviews': helper['total_reviews'],
               'job_type_names': skills,
-              'bio': 'Professional helper ready to assist you',
+              'bio': 'Professional helper ready to assist you'.tr(),
               'location': helper['location_city'],
               'phone_number': helper['phone_number'],
               'email': helper['email'],
               'is_available': isAvailable,
-              'availability_status': isAvailable ? 'Available Now' : 'Busy',
+              'availability_status':
+                  isAvailable ? 'Available Now'.tr() : 'Busy'.tr(),
               'response_time': '< 1hr',
               'total_jobs': helper['total_jobs'] ?? 0,
               'experience_years': 1,
@@ -353,9 +356,9 @@ class _Helpee9SearchHelperPageState extends State<Helpee9SearchHelperPage> {
               color: AppColors.error,
             ),
             const SizedBox(height: 16),
-            const Text(
-              'Unable to load helpers',
-              style: TextStyle(
+            Text(
+              'Unable to load helpers'.tr(),
+              style: const TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w600,
                 color: AppColors.textPrimary,
@@ -363,7 +366,7 @@ class _Helpee9SearchHelperPageState extends State<Helpee9SearchHelperPage> {
             ),
             const SizedBox(height: 8),
             Text(
-              _error ?? 'Unknown error',
+              _error ?? 'Unknown error'.tr(),
               style: const TextStyle(
                 color: AppColors.textSecondary,
               ),
@@ -375,9 +378,9 @@ class _Helpee9SearchHelperPageState extends State<Helpee9SearchHelperPage> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primaryGreen,
               ),
-              child: const Text(
-                'Retry',
-                style: TextStyle(color: AppColors.white),
+              child: Text(
+                'Retry'.tr(),
+                style: const TextStyle(color: AppColors.white),
               ),
             ),
           ],
@@ -399,18 +402,19 @@ class _Helpee9SearchHelperPageState extends State<Helpee9SearchHelperPage> {
               color: AppColors.textSecondary.withOpacity(0.5),
             ),
             const SizedBox(height: 16),
-            const Text(
-              'No helpers found',
-              style: TextStyle(
+            Text(
+              'No helpers found'.tr(),
+              style: const TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w600,
                 color: AppColors.textPrimary,
               ),
             ),
             const SizedBox(height: 8),
-            const Text(
-              'Try adjusting your search terms or filters to find more helpers.',
-              style: TextStyle(
+            Text(
+              'Try adjusting your search terms or filters to find more helpers.'
+                  .tr(),
+              style: const TextStyle(
                 fontSize: 14,
                 color: AppColors.textSecondary,
               ),
@@ -425,9 +429,9 @@ class _Helpee9SearchHelperPageState extends State<Helpee9SearchHelperPage> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primaryGreen,
               ),
-              child: const Text(
-                'Clear Search',
-                style: TextStyle(color: AppColors.white),
+              child: Text(
+                'Clear Search'.tr(),
+                style: const TextStyle(color: AppColors.white),
               ),
             ),
           ],

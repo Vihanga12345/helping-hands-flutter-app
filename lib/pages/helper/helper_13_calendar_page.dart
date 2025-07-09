@@ -716,20 +716,36 @@ class _Helper13CalendarPageState extends State<Helper13CalendarPage> {
 
   String _formatDate(DateTime date) {
     final months = [
-      'Jan',
-      'Feb',
-      'Mar',
-      'Apr',
+      'January',
+      'February',
+      'March',
+      'April',
       'May',
-      'Jun',
-      'Jul',
-      'Aug',
-      'Sep',
-      'Oct',
-      'Nov',
-      'Dec'
+      'June',
+      'July',
+      'August',
+      'September',
+      'October',
+      'November',
+      'December'
     ];
-    return '${months[date.month - 1]} ${date.day}, ${date.year}';
+    final day = date.day;
+    final suffix = _getDaySuffix(day);
+    return '${day}${suffix} ${months[date.month - 1]} ${date.year}';
+  }
+
+  String _getDaySuffix(int day) {
+    if (day >= 11 && day <= 13) return 'th';
+    switch (day % 10) {
+      case 1:
+        return 'st';
+      case 2:
+        return 'nd';
+      case 3:
+        return 'rd';
+      default:
+        return 'th';
+    }
   }
 
   String _getJobTypeFromStatus(String status) {

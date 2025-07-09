@@ -10,6 +10,11 @@ dependencies:
   flutter:
     sdk: flutter
   
+  # Multilingual Support
+  flutter_localizations:
+    sdk: flutter
+  intl: 0.20.2
+  
   # Navigation
   go_router: ^14.2.7
   
@@ -34,12 +39,12 @@ dependencies:
   
   # Storage
   shared_preferences: ^2.2.3
+  path_provider: ^2.1.1
   
   # Security & Encryption
   crypto: ^3.0.3
   
-  # Maps
-  google_maps_flutter: ^2.6.1
+  # Location Services (No Google APIs)
   geolocator: ^12.0.0
   
   # Image Handling
@@ -49,17 +54,18 @@ dependencies:
   # File Handling
   file_picker: ^8.0.7
   
-  # Payments
-  stripe_payment: ^1.1.4
+  # WebRTC Calling (FREE Alternative) & Permissions
+  # flutter_webrtc: ^0.9.47 # Temporarily disabled for faster install
+  permission_handler: ^11.0.1
   
   # Notifications
   firebase_messaging: ^14.9.4
   flutter_local_notifications: ^17.2.2
   
   # Utils
-  intl: ^0.19.0
   uuid: ^4.4.0
   timeago: ^3.7.1
+  url_launcher: ^6.3.1
   
 dev_dependencies:
   flutter_test:
@@ -68,6 +74,7 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  generate: true
   
   assets:
     - assets/images/

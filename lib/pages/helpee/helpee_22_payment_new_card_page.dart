@@ -4,15 +4,18 @@ import '../../utils/app_colors.dart';
 import '../../utils/app_text_styles.dart';
 import '../../widgets/common/app_header.dart';
 import '../../widgets/common/app_navigation_bar.dart';
+import '../../services/localization_service.dart';
 
 class Helpee22PaymentNewCardPage extends StatefulWidget {
   const Helpee22PaymentNewCardPage({super.key});
 
   @override
-  State<Helpee22PaymentNewCardPage> createState() => _Helpee22PaymentNewCardPageState();
+  State<Helpee22PaymentNewCardPage> createState() =>
+      _Helpee22PaymentNewCardPageState();
 }
 
-class _Helpee22PaymentNewCardPageState extends State<Helpee22PaymentNewCardPage> {
+class _Helpee22PaymentNewCardPageState
+    extends State<Helpee22PaymentNewCardPage> {
   final _formKey = GlobalKey<FormState>();
   final _cardNumberController = TextEditingController();
   final _expiryController = TextEditingController();
@@ -27,7 +30,7 @@ class _Helpee22PaymentNewCardPageState extends State<Helpee22PaymentNewCardPage>
         children: [
           // Header with Save button
           AppHeader(
-            title: 'Add New Card',
+            title: 'Add New Card'.tr(),
             showBackButton: true,
             showMenuButton: false,
             showNotificationButton: false,
@@ -55,7 +58,7 @@ class _Helpee22PaymentNewCardPageState extends State<Helpee22PaymentNewCardPage>
               ),
             ),
           ),
-          
+
           // Body Content
           Expanded(
             child: Container(
@@ -105,7 +108,8 @@ class _Helpee22PaymentNewCardPageState extends State<Helpee22PaymentNewCardPage>
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
                                   children: [
                                     const Text(
                                       'Helping Hands',
@@ -116,7 +120,8 @@ class _Helpee22PaymentNewCardPageState extends State<Helpee22PaymentNewCardPage>
                                       ),
                                     ),
                                     Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 8, vertical: 4),
                                       decoration: BoxDecoration(
                                         color: AppColors.white.withOpacity(0.2),
                                         borderRadius: BorderRadius.circular(4),
@@ -144,10 +149,12 @@ class _Helpee22PaymentNewCardPageState extends State<Helpee22PaymentNewCardPage>
                                 ),
                                 const SizedBox(height: 16),
                                 Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
                                   children: [
                                     Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
                                       children: [
                                         const Text(
                                           'CARDHOLDER',
@@ -159,7 +166,10 @@ class _Helpee22PaymentNewCardPageState extends State<Helpee22PaymentNewCardPage>
                                         ),
                                         const SizedBox(height: 4),
                                         Text(
-                                          _nameController.text.isEmpty ? 'YOUR NAME' : _nameController.text.toUpperCase(),
+                                          _nameController.text.isEmpty
+                                              ? 'YOUR NAME'
+                                              : _nameController.text
+                                                  .toUpperCase(),
                                           style: const TextStyle(
                                             color: AppColors.white,
                                             fontSize: 14,
@@ -169,7 +179,8 @@ class _Helpee22PaymentNewCardPageState extends State<Helpee22PaymentNewCardPage>
                                       ],
                                     ),
                                     Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
                                       children: [
                                         const Text(
                                           'EXPIRES',
@@ -181,7 +192,9 @@ class _Helpee22PaymentNewCardPageState extends State<Helpee22PaymentNewCardPage>
                                         ),
                                         const SizedBox(height: 4),
                                         Text(
-                                          _expiryController.text.isEmpty ? 'MM/YY' : _expiryController.text,
+                                          _expiryController.text.isEmpty
+                                              ? 'MM/YY'
+                                              : _expiryController.text,
                                           style: const TextStyle(
                                             color: AppColors.white,
                                             fontSize: 14,
@@ -196,7 +209,7 @@ class _Helpee22PaymentNewCardPageState extends State<Helpee22PaymentNewCardPage>
                             ),
                           ),
                         ),
-                        
+
                         // Card Number
                         Container(
                           width: double.infinity,
@@ -223,7 +236,7 @@ class _Helpee22PaymentNewCardPageState extends State<Helpee22PaymentNewCardPage>
                                 ),
                               ),
                               const SizedBox(height: 16),
-                              
+
                               // Card Number Field
                               const Text(
                                 'Card Number',
@@ -241,7 +254,8 @@ class _Helpee22PaymentNewCardPageState extends State<Helpee22PaymentNewCardPage>
                                   prefixIcon: const Icon(Icons.credit_card),
                                   border: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(12),
-                                    borderSide: const BorderSide(color: AppColors.lightGrey),
+                                    borderSide: const BorderSide(
+                                        color: AppColors.lightGrey),
                                   ),
                                   filled: true,
                                   fillColor: AppColors.backgroundLight,
@@ -249,11 +263,14 @@ class _Helpee22PaymentNewCardPageState extends State<Helpee22PaymentNewCardPage>
                                 onChanged: (value) {
                                   setState(() {
                                     // Format card number as user types
-                                    final formatted = _formatCardNumberInput(value);
+                                    final formatted =
+                                        _formatCardNumberInput(value);
                                     if (formatted != value) {
-                                      _cardNumberController.value = TextEditingValue(
+                                      _cardNumberController.value =
+                                          TextEditingValue(
                                         text: formatted,
-                                        selection: TextSelection.collapsed(offset: formatted.length),
+                                        selection: TextSelection.collapsed(
+                                            offset: formatted.length),
                                       );
                                     }
                                   });
@@ -268,15 +285,16 @@ class _Helpee22PaymentNewCardPageState extends State<Helpee22PaymentNewCardPage>
                                   return null;
                                 },
                               ),
-                              
+
                               const SizedBox(height: 16),
-                              
+
                               // Expiry and CVV Row
                               Row(
                                 children: [
                                   Expanded(
                                     child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
                                       children: [
                                         const Text(
                                           'Expiry Date',
@@ -292,29 +310,39 @@ class _Helpee22PaymentNewCardPageState extends State<Helpee22PaymentNewCardPage>
                                           decoration: InputDecoration(
                                             hintText: 'MM/YY',
                                             border: OutlineInputBorder(
-                                              borderRadius: BorderRadius.circular(12),
-                                              borderSide: const BorderSide(color: AppColors.lightGrey),
+                                              borderRadius:
+                                                  BorderRadius.circular(12),
+                                              borderSide: const BorderSide(
+                                                  color: AppColors.lightGrey),
                                             ),
                                             filled: true,
-                                            fillColor: AppColors.backgroundLight,
+                                            fillColor:
+                                                AppColors.backgroundLight,
                                           ),
                                           onChanged: (value) {
                                             setState(() {
                                               // Format expiry as user types
-                                              final formatted = _formatExpiryInput(value);
+                                              final formatted =
+                                                  _formatExpiryInput(value);
                                               if (formatted != value) {
-                                                _expiryController.value = TextEditingValue(
+                                                _expiryController.value =
+                                                    TextEditingValue(
                                                   text: formatted,
-                                                  selection: TextSelection.collapsed(offset: formatted.length),
+                                                  selection:
+                                                      TextSelection.collapsed(
+                                                          offset:
+                                                              formatted.length),
                                                 );
                                               }
                                             });
                                           },
                                           validator: (value) {
-                                            if (value == null || value.isEmpty) {
+                                            if (value == null ||
+                                                value.isEmpty) {
                                               return 'Required';
                                             }
-                                            if (!RegExp(r'^\d{2}/\d{2}$').hasMatch(value)) {
+                                            if (!RegExp(r'^\d{2}/\d{2}$')
+                                                .hasMatch(value)) {
                                               return 'Invalid format';
                                             }
                                             return null;
@@ -326,7 +354,8 @@ class _Helpee22PaymentNewCardPageState extends State<Helpee22PaymentNewCardPage>
                                   const SizedBox(width: 16),
                                   Expanded(
                                     child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
                                       children: [
                                         const Text(
                                           'CVV',
@@ -345,14 +374,18 @@ class _Helpee22PaymentNewCardPageState extends State<Helpee22PaymentNewCardPage>
                                             hintText: '123',
                                             counterText: '',
                                             border: OutlineInputBorder(
-                                              borderRadius: BorderRadius.circular(12),
-                                              borderSide: const BorderSide(color: AppColors.lightGrey),
+                                              borderRadius:
+                                                  BorderRadius.circular(12),
+                                              borderSide: const BorderSide(
+                                                  color: AppColors.lightGrey),
                                             ),
                                             filled: true,
-                                            fillColor: AppColors.backgroundLight,
+                                            fillColor:
+                                                AppColors.backgroundLight,
                                           ),
                                           validator: (value) {
-                                            if (value == null || value.isEmpty) {
+                                            if (value == null ||
+                                                value.isEmpty) {
                                               return 'Required';
                                             }
                                             if (value.length != 3) {
@@ -366,9 +399,9 @@ class _Helpee22PaymentNewCardPageState extends State<Helpee22PaymentNewCardPage>
                                   ),
                                 ],
                               ),
-                              
+
                               const SizedBox(height: 16),
-                              
+
                               // Cardholder Name
                               const Text(
                                 'Cardholder Name',
@@ -386,7 +419,8 @@ class _Helpee22PaymentNewCardPageState extends State<Helpee22PaymentNewCardPage>
                                   prefixIcon: const Icon(Icons.person),
                                   border: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(12),
-                                    borderSide: const BorderSide(color: AppColors.lightGrey),
+                                    borderSide: const BorderSide(
+                                        color: AppColors.lightGrey),
                                   ),
                                   filled: true,
                                   fillColor: AppColors.backgroundLight,
@@ -402,9 +436,9 @@ class _Helpee22PaymentNewCardPageState extends State<Helpee22PaymentNewCardPage>
                             ],
                           ),
                         ),
-                        
+
                         const SizedBox(height: 20),
-                        
+
                         // Save Card Option
                         Container(
                           width: double.infinity,
@@ -456,9 +490,9 @@ class _Helpee22PaymentNewCardPageState extends State<Helpee22PaymentNewCardPage>
                             ],
                           ),
                         ),
-                        
+
                         const SizedBox(height: 32),
-                        
+
                         // Add Card Button
                         SizedBox(
                           width: double.infinity,
@@ -481,7 +515,7 @@ class _Helpee22PaymentNewCardPageState extends State<Helpee22PaymentNewCardPage>
                             ),
                           ),
                         ),
-                        
+
                         const SizedBox(height: 20),
                       ],
                     ),
@@ -490,7 +524,7 @@ class _Helpee22PaymentNewCardPageState extends State<Helpee22PaymentNewCardPage>
               ),
             ),
           ),
-          
+
           // Navigation Bar
           const AppNavigationBar(
             currentTab: NavigationTab.home,
@@ -503,36 +537,36 @@ class _Helpee22PaymentNewCardPageState extends State<Helpee22PaymentNewCardPage>
 
   String _formatCardNumber(String value) {
     if (value.isEmpty) return '•••• •••• •••• ••••';
-    
+
     final digits = value.replaceAll(' ', '');
     final buffer = StringBuffer();
-    
+
     for (int i = 0; i < 16; i++) {
       if (i < digits.length) {
         buffer.write(digits[i]);
       } else {
         buffer.write('•');
       }
-      
+
       if ((i + 1) % 4 == 0 && i != 15) {
         buffer.write(' ');
       }
     }
-    
+
     return buffer.toString();
   }
 
   String _formatCardNumberInput(String value) {
     final digits = value.replaceAll(' ', '');
     final buffer = StringBuffer();
-    
+
     for (int i = 0; i < digits.length && i < 16; i++) {
       if (i > 0 && i % 4 == 0) {
         buffer.write(' ');
       }
       buffer.write(digits[i]);
     }
-    
+
     return buffer.toString();
   }
 
@@ -548,7 +582,9 @@ class _Helpee22PaymentNewCardPageState extends State<Helpee22PaymentNewCardPage>
     if (_formKey.currentState!.validate()) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(_saveCard ? 'Card saved successfully!' : 'Card details saved!'),
+          content: Text(_saveCard
+              ? 'Card saved successfully!'.tr()
+              : 'Card details saved!'.tr()),
           backgroundColor: AppColors.success,
         ),
       );
@@ -560,7 +596,9 @@ class _Helpee22PaymentNewCardPageState extends State<Helpee22PaymentNewCardPage>
     if (_formKey.currentState!.validate()) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(_saveCard ? 'Card added successfully!' : 'Card details validated!'),
+          content: Text(_saveCard
+              ? 'Card added successfully!'.tr()
+              : 'Card details validated!'.tr()),
           backgroundColor: AppColors.success,
         ),
       );
@@ -576,4 +614,4 @@ class _Helpee22PaymentNewCardPageState extends State<Helpee22PaymentNewCardPage>
     _nameController.dispose();
     super.dispose();
   }
-} 
+}

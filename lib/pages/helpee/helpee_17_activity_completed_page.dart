@@ -4,6 +4,10 @@ import '../../utils/app_colors.dart';
 import '../../utils/app_text_styles.dart';
 import '../../widgets/common/app_header.dart';
 import '../../widgets/common/app_navigation_bar.dart';
+import '../../services/job_data_service.dart';
+import '../../services/custom_auth_service.dart';
+import '../../widgets/ui_elements/functional_job_card.dart';
+import '../../services/localization_service.dart';
 
 class Helpee17ActivityCompletedPage extends StatelessWidget {
   const Helpee17ActivityCompletedPage({super.key});
@@ -14,11 +18,11 @@ class Helpee17ActivityCompletedPage extends StatelessWidget {
       body: Column(
         children: [
           // Header
-          const AppHeader(
-            title: 'Activity',
-            showBackButton: false,
-            showMenuButton: true,
-            showNotificationButton: true,
+          AppHeader(
+            title: 'Completed Jobs'.tr(),
+            showBackButton: true,
+            showMenuButton: false,
+            showNotificationButton: false,
           ),
 
           // Body Content

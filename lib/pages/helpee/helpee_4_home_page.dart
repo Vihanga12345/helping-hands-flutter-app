@@ -6,6 +6,7 @@ import '../../widgets/common/app_header.dart';
 import '../../widgets/common/app_navigation_bar.dart';
 import '../../services/user_data_service.dart';
 import '../../services/custom_auth_service.dart';
+import '../../services/localization_service.dart';
 
 class Helpee4HomePage extends StatefulWidget {
   const Helpee4HomePage({super.key});
@@ -24,8 +25,8 @@ class _Helpee4HomePageState extends State<Helpee4HomePage> {
       body: Column(
         children: [
           // Header
-          const AppHeader(
-            title: 'Home',
+          AppHeader(
+            title: 'Home'.tr(),
             showBackButton: false,
             showMenuButton: true,
             showNotificationButton: true,
@@ -45,7 +46,7 @@ class _Helpee4HomePageState extends State<Helpee4HomePage> {
               ),
               child: SafeArea(
                 top: false,
-                child: Padding(
+                child: SingleChildScrollView(
                   padding: const EdgeInsets.all(16.0),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -56,9 +57,9 @@ class _Helpee4HomePageState extends State<Helpee4HomePage> {
                       const SizedBox(height: 32),
 
                       // Quick Actions
-                      const Text(
-                        'Quick Actions',
-                        style: TextStyle(
+                      Text(
+                        'Quick Actions'.tr(),
+                        style: const TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.w600,
                         ),
@@ -69,7 +70,7 @@ class _Helpee4HomePageState extends State<Helpee4HomePage> {
                           Expanded(
                             child: _buildQuickActionCard(
                               context,
-                              'Request Help',
+                              'Request Help'.tr(),
                               Icons.add_circle,
                               () => context.go('/helpee/job-request'),
                             ),
@@ -78,7 +79,7 @@ class _Helpee4HomePageState extends State<Helpee4HomePage> {
                           Expanded(
                             child: _buildQuickActionCard(
                               context,
-                              'Find Helpers',
+                              'Find Helpers'.tr(),
                               Icons.people,
                               () => context.go('/helpee/search-helper'),
                             ),
@@ -94,7 +95,7 @@ class _Helpee4HomePageState extends State<Helpee4HomePage> {
                           Expanded(
                             child: _buildQuickActionCard(
                               context,
-                              'My Activity',
+                              'Activity'.tr(),
                               Icons.work_history,
                               () => context.go('/helpee/activity/pending'),
                             ),
@@ -103,7 +104,7 @@ class _Helpee4HomePageState extends State<Helpee4HomePage> {
                           Expanded(
                             child: _buildQuickActionCard(
                               context,
-                              'Calendar',
+                              'Calendar'.tr(),
                               Icons.calendar_today,
                               () => context.go('/helpee/calendar'),
                             ),
@@ -132,7 +133,7 @@ class _Helpee4HomePageState extends State<Helpee4HomePage> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Need Help?',
+                              'Need Help?'.tr(),
                               style: const TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.w600,
@@ -141,7 +142,8 @@ class _Helpee4HomePageState extends State<Helpee4HomePage> {
                             ),
                             const SizedBox(height: 12),
                             Text(
-                              'Get started by creating your first job request or browse available helpers in your area.',
+                              'Get started by creating your first job request or browse available helpers in your area.'
+                                  .tr(),
                               style: const TextStyle(
                                 fontSize: 14,
                                 color: AppColors.textSecondary,
@@ -159,9 +161,9 @@ class _Helpee4HomePageState extends State<Helpee4HomePage> {
                                   padding:
                                       const EdgeInsets.symmetric(vertical: 12),
                                 ),
-                                child: const Text(
-                                  'Create Job Request',
-                                  style: TextStyle(
+                                child: Text(
+                                  'Create Job Request'.tr(),
+                                  style: const TextStyle(
                                     color: AppColors.white,
                                     fontWeight: FontWeight.w600,
                                   ),
@@ -192,16 +194,17 @@ class _Helpee4HomePageState extends State<Helpee4HomePage> {
     return FutureBuilder<Map<String, dynamic>?>(
       future: _userDataService.getCurrentUserProfile(),
       builder: (context, snapshot) {
-        String welcomeName = 'Welcome!';
+        String welcomeName = 'Welcome!'.tr();
 
         if (snapshot.hasData && snapshot.data != null) {
           final firstName = snapshot.data!['first_name'] ?? '';
           if (firstName.isNotEmpty) {
-            welcomeName = 'Welcome, $firstName!';
+            welcomeName = '${'Welcome'.tr()}, $firstName!';
           }
         }
 
         return Container(
+          width: double.infinity,
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
             color: AppColors.white,
@@ -214,46 +217,23 @@ class _Helpee4HomePageState extends State<Helpee4HomePage> {
               ),
             ],
           ),
-          child: Row(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const CircleAvatar(
-                radius: 30,
-                backgroundColor: AppColors.primaryGreen,
-                child: Icon(
-                  Icons.person,
-                  color: AppColors.white,
-                  size: 30,
+              Text(
+                welcomeName,
+                style: const TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textPrimary,
                 ),
               ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      welcomeName,
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const Text(
-                      'Ready to get some help today?',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: AppColors.textSecondary,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              IconButton(
-                onPressed: () {
-                  context.go('/helpee/search-helper');
-                },
-                icon: const Icon(
-                  Icons.search,
-                  color: AppColors.primaryGreen,
+              const SizedBox(height: 8),
+              Text(
+                'How can we help you today?'.tr(),
+                style: const TextStyle(
+                  fontSize: 16,
+                  color: AppColors.textSecondary,
                 ),
               ),
             ],
@@ -269,8 +249,9 @@ class _Helpee4HomePageState extends State<Helpee4HomePage> {
     IconData icon,
     VoidCallback onTap,
   ) {
-    return GestureDetector(
+    return InkWell(
       onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
@@ -278,34 +259,29 @@ class _Helpee4HomePageState extends State<Helpee4HomePage> {
           borderRadius: BorderRadius.circular(12),
           boxShadow: const [
             BoxShadow(
-              color: AppColors.shadowColorLight,
+              color: AppColors.shadowColor,
               blurRadius: 4,
               offset: Offset(0, 2),
             ),
           ],
         ),
         child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: const BoxDecoration(
-                color: AppColors.primaryGreen,
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                icon,
-                color: AppColors.white,
-                size: 24,
-              ),
+            Icon(
+              icon,
+              size: 32,
+              color: AppColors.primaryGreen,
             ),
             const SizedBox(height: 8),
             Text(
               title,
+              textAlign: TextAlign.center,
               style: const TextStyle(
                 fontSize: 14,
-                fontWeight: FontWeight.w500,
+                fontWeight: FontWeight.w600,
+                color: AppColors.textPrimary,
               ),
-              textAlign: TextAlign.center,
             ),
           ],
         ),

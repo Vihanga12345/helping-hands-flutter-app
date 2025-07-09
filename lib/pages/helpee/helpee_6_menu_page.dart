@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../utils/app_colors.dart';
-import '../../utils/app_text_styles.dart';
 import '../../widgets/common/app_header.dart';
 import '../../widgets/common/app_navigation_bar.dart';
 import '../../services/custom_auth_service.dart';
+import '../../services/localization_service.dart';
 
 class Helpee6MenuPage extends StatefulWidget {
   const Helpee6MenuPage({super.key});
@@ -15,8 +15,7 @@ class Helpee6MenuPage extends StatefulWidget {
 
 class _Helpee6MenuPageState extends State<Helpee6MenuPage> {
   bool _isDarkMode = false;
-  String _selectedLanguage = 'English';
-  final CustomAuthService _authService = CustomAuthService();
+  final _authService = CustomAuthService();
 
   @override
   Widget build(BuildContext context) {
@@ -26,122 +25,109 @@ class _Helpee6MenuPageState extends State<Helpee6MenuPage> {
           // Header
           const AppHeader(
             title: 'Menu',
-            showBackButton: true,
             showMenuButton: false,
-            showNotificationButton: false,
           ),
 
-          // Body Content
+          // Content
           Expanded(
             child: Container(
-              width: double.infinity,
-              height: double.infinity,
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment(0.50, 0.00),
-                  end: Alignment(0.50, 1.00),
-                  colors: AppColors.backgroundGradient,
-                ),
-              ),
-              child: SafeArea(
-                top: false,
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    children: [
-                      // Profile Section
-                      Container(
-                        padding: const EdgeInsets.all(20),
-                        decoration: BoxDecoration(
-                          color: AppColors.white,
-                          borderRadius: BorderRadius.circular(16),
-                          boxShadow: const [
-                            BoxShadow(
-                              color: AppColors.shadowColorLight,
-                              blurRadius: 8,
-                              offset: Offset(0, 4),
+              color: AppColors.backgroundLight,
+              child: Padding(
+                padding: const EdgeInsets.all(24.0),
+                child: Column(
+                  children: [
+                    // Profile Section
+                    Container(
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        color: AppColors.white,
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppColors.shadowColor.withOpacity(0.1),
+                            blurRadius: 10,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: Row(
+                        children: [
+                          const CircleAvatar(
+                            radius: 30,
+                            backgroundColor: AppColors.primaryGreen,
+                            child: Icon(
+                              Icons.person,
+                              size: 35,
+                              color: AppColors.white,
                             ),
-                          ],
-                        ),
-                        child: Row(
-                          children: [
-                            const CircleAvatar(
-                              radius: 30,
-                              backgroundColor: AppColors.primaryGreen,
-                              child: Icon(
-                                Icons.person,
-                                size: 35,
-                                color: AppColors.white,
+                          ),
+                          const SizedBox(width: 16),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                _authService.currentUser != null
+                                    ? '${_authService.currentUser!['first_name'] ?? ''} ${_authService.currentUser!['last_name'] ?? ''}'
+                                        .trim()
+                                    : 'User'.tr(),
+                                style: const TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w600,
+                                ),
                               ),
-                            ),
-                            const SizedBox(width: 16),
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  _authService.currentUser != null
-                                      ? '${_authService.currentUser!['first_name'] ?? ''} ${_authService.currentUser!['last_name'] ?? ''}'
-                                          .trim()
-                                      : 'User',
-                                  style: const TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.w600,
-                                  ),
+                              Text(
+                                'Helpee Account'.tr(),
+                                style: const TextStyle(
+                                  color: AppColors.textSecondary,
+                                  fontSize: 14,
                                 ),
-                                const Text(
-                                  'Helpee Account',
-                                  style: TextStyle(
-                                    color: AppColors.textSecondary,
-                                    fontSize: 14,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
+                              ),
+                            ],
+                          ),
+                        ],
                       ),
+                    ),
 
-                      const SizedBox(height: 24),
+                    const SizedBox(height: 24),
 
-                      // Menu Items
-                      Expanded(
-                        child: ListView(
-                          children: [
-                            _buildMenuItem(
-                              icon: Icons.notifications,
-                              title: 'Notifications',
-                              onTap: () => context.go('/helpee/notifications'),
-                            ),
-                            _buildDarkModeMenuItem(),
-                            _buildLanguageMenuItem(),
-                            _buildMenuItem(
-                              icon: Icons.help,
-                              title: 'Help & Support',
-                              onTap: () => context.go('/helpee/help-support'),
-                            ),
-                            _buildMenuItem(
-                              icon: Icons.payment,
-                              title: 'Payments',
-                              onTap: () => context.go('/helpee/payments'),
-                            ),
-                            _buildMenuItem(
-                              icon: Icons.info,
-                              title: 'About Us',
-                              onTap: () => context.go('/helpee/about-us'),
-                            ),
-                            _buildMenuItem(
-                              icon: Icons.logout,
-                              title: 'Logout',
-                              onTap: () {
-                                _showLogoutDialog(context);
-                              },
-                              isDestructive: true,
-                            ),
-                          ],
-                        ),
+                    // Menu Items
+                    Expanded(
+                      child: ListView(
+                        children: [
+                          _buildMenuItem(
+                            icon: Icons.notifications,
+                            title: 'Notifications'.tr(),
+                            onTap: () => context.go('/helpee/notifications'),
+                          ),
+                          _buildDarkModeMenuItem(),
+                          _buildLanguageMenuItem(),
+                          _buildMenuItem(
+                            icon: Icons.help,
+                            title: 'Help & Support'.tr(),
+                            onTap: () => context.go('/helpee/help-support'),
+                          ),
+                          _buildMenuItem(
+                            icon: Icons.payment,
+                            title: 'Payments'.tr(),
+                            onTap: () => context.go('/helpee/payments'),
+                          ),
+                          _buildMenuItem(
+                            icon: Icons.info,
+                            title: 'About Us'.tr(),
+                            onTap: () => context.go('/helpee/about-us'),
+                          ),
+                          _buildMenuItem(
+                            icon: Icons.logout,
+                            title: 'Logout'.tr(),
+                            onTap: () {
+                              _showLogoutDialog(context);
+                            },
+                            isDestructive: true,
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               ),
             ),
@@ -197,12 +183,12 @@ class _Helpee6MenuPageState extends State<Helpee6MenuPage> {
       margin: const EdgeInsets.only(bottom: 8),
       child: ListTile(
         leading: const Icon(
-          Icons.visibility,
+          Icons.dark_mode,
           color: AppColors.primaryGreen,
         ),
-        title: const Text(
-          'Dark Mode',
-          style: TextStyle(
+        title: Text(
+          'Dark Mode'.tr(),
+          style: const TextStyle(
             color: AppColors.textPrimary,
             fontSize: 16,
             fontWeight: FontWeight.w500,
@@ -215,6 +201,7 @@ class _Helpee6MenuPageState extends State<Helpee6MenuPage> {
               _isDarkMode = value;
             });
           },
+          activeColor: AppColors.primaryGreen,
         ),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
@@ -232,35 +219,41 @@ class _Helpee6MenuPageState extends State<Helpee6MenuPage> {
           Icons.language,
           color: AppColors.primaryGreen,
         ),
-        title: const Text(
-          'Language',
-          style: TextStyle(
+        title: Text(
+          'Language'.tr(),
+          style: const TextStyle(
             color: AppColors.textPrimary,
             fontSize: 16,
             fontWeight: FontWeight.w500,
           ),
         ),
         trailing: DropdownButton<String>(
-          value: _selectedLanguage,
-          onChanged: (String? newValue) {
-            setState(() {
-              _selectedLanguage = newValue!;
-            });
-          },
+          value: LocalizationService().currentLanguage,
+          underline: Container(),
+          icon: const Icon(
+            Icons.arrow_drop_down,
+            color: AppColors.primaryGreen,
+          ),
           items: const [
-            DropdownMenuItem<String>(
-              value: 'English',
+            DropdownMenuItem(
+              value: 'en',
               child: Text('English'),
             ),
-            DropdownMenuItem<String>(
-              value: 'Sinhala',
-              child: Text('Sinhala'),
+            DropdownMenuItem(
+              value: 'si',
+              child: Text('සිංහල'),
             ),
-            DropdownMenuItem<String>(
-              value: 'Tamil',
-              child: Text('Tamil'),
+            DropdownMenuItem(
+              value: 'ta',
+              child: Text('தமிழ්'),
             ),
           ],
+          onChanged: (String? newLanguage) {
+            if (newLanguage != null) {
+              LocalizationService().changeLanguage(newLanguage);
+              setState(() {}); // Refresh the menu page immediately
+            }
+          },
         ),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
@@ -275,19 +268,25 @@ class _Helpee6MenuPageState extends State<Helpee6MenuPage> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: const Text('Logout'),
-          content: const Text('Are you sure you want to logout?'),
+          title: Text('Logout'.tr()),
+          content: Text('Are you sure you want to logout?'.tr()),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Cancel'),
+              child: Text('Cancel'.tr()),
             ),
             TextButton(
-              onPressed: () {
+              onPressed: () async {
                 Navigator.of(context).pop();
-                context.go('/user-selection');
+                await _authService.logout();
+                if (context.mounted) {
+                  context.go('/');
+                }
               },
-              child: const Text('Logout'),
+              child: Text(
+                'Logout'.tr(),
+                style: const TextStyle(color: AppColors.error),
+              ),
             ),
           ],
         );

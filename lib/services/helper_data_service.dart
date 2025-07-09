@@ -683,7 +683,8 @@ class HelperDataService {
       // Get job counts by status
       final allJobs = await _supabase
           .from('jobs')
-          .select('id, status, pay, category_id, created_at, time_taken_hours')
+          .select(
+              'id, status, hourly_rate, category_id, created_at, time_taken_hours')
           .eq('assigned_helper_id', helperId);
 
       int completedJobs = 0;
@@ -706,7 +707,7 @@ class HelperDataService {
 
       for (var job in allJobs) {
         final jobDate = DateTime.parse(job['created_at']);
-        final pay = (job['pay'] ?? 0).toDouble();
+        final pay = (job['hourly_rate'] ?? 0).toDouble();
         final hours = ((job['time_taken_hours'] ?? 3) as num)
             .toInt(); // Default 3 hours if not specified
 

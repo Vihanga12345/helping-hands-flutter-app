@@ -135,70 +135,70 @@ class _Helper21ProfileTabPageState extends State<Helper21ProfileTabPage>
                     Flexible(
                       flex: 3,
                       child: Container(
-                decoration: BoxDecoration(
-                  color: AppColors.white,
-                  borderRadius: BorderRadius.circular(30),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.08),
-                      blurRadius: 20,
-                      offset: const Offset(0, 8),
-                    ),
-                  ],
-                ),
-                child: Container(
-                  padding: const EdgeInsets.all(4),
-                  child: TabBar(
-                    controller: _tabController,
-                    labelColor: AppColors.white,
-                    unselectedLabelColor: AppColors.textSecondary,
-                    indicator: BoxDecoration(
-                      color: AppColors.primaryGreen,
-                      borderRadius: BorderRadius.circular(26),
-                      boxShadow: [
-                        BoxShadow(
+                        decoration: BoxDecoration(
+                          color: AppColors.white,
+                          borderRadius: BorderRadius.circular(30),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.08),
+                              blurRadius: 20,
+                              offset: const Offset(0, 8),
+                            ),
+                          ],
+                        ),
+                        child: Container(
+                          padding: const EdgeInsets.all(4),
+                          child: TabBar(
+                            controller: _tabController,
+                            labelColor: AppColors.white,
+                            unselectedLabelColor: AppColors.textSecondary,
+                            indicator: BoxDecoration(
+                              color: AppColors.primaryGreen,
+                              borderRadius: BorderRadius.circular(26),
+                              boxShadow: [
+                                BoxShadow(
                                   color:
                                       AppColors.primaryGreen.withOpacity(0.3),
-                          blurRadius: 8,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    indicatorSize: TabBarIndicatorSize.tab,
-                    dividerColor: Colors.transparent,
-                    labelStyle: AppTextStyles.buttonMedium.copyWith(
-                      fontWeight: FontWeight.w600,
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
+                            ),
+                            indicatorSize: TabBarIndicatorSize.tab,
+                            dividerColor: Colors.transparent,
+                            labelStyle: AppTextStyles.buttonMedium.copyWith(
+                              fontWeight: FontWeight.w600,
                               fontSize: 13,
-                    ),
+                            ),
                             unselectedLabelStyle:
                                 AppTextStyles.buttonMedium.copyWith(
-                      fontWeight: FontWeight.w500,
+                              fontWeight: FontWeight.w500,
                               fontSize: 13,
-                    ),
-                    tabs: const [
-                      Tab(
-                        child: Padding(
+                            ),
+                            tabs: const [
+                              Tab(
+                                child: Padding(
                                   padding: EdgeInsets.symmetric(vertical: 10),
-                          child: Text('Profile'),
-                        ),
-                      ),
-                      Tab(
-                        child: Padding(
+                                  child: Text('Profile'),
+                                ),
+                              ),
+                              Tab(
+                                child: Padding(
                                   padding: EdgeInsets.symmetric(vertical: 10),
-                          child: Text('Jobs'),
-                        ),
-                      ),
-                      Tab(
-                        child: Padding(
+                                  child: Text('Jobs'),
+                                ),
+                              ),
+                              Tab(
+                                child: Padding(
                                   padding: EdgeInsets.symmetric(vertical: 10),
-                          child: Text('Resume'),
-                        ),
-                      ),
-                    ],
+                                  child: Text('Resume'),
+                                ),
+                              ),
+                            ],
                           ),
-                  ),
-                ),
-              ),
+                        ),
+                      ),
+                    ),
 
                     // Spacer between TabBar and Edit Button
                     const SizedBox(width: 16),
@@ -830,9 +830,39 @@ class _Helper21ProfileTabPageState extends State<Helper21ProfileTabPage>
     if (dateString == null) return 'Unknown date';
     try {
       final date = DateTime.parse(dateString);
-      return '${date.day}/${date.month}/${date.year}';
+      final months = [
+        'January',
+        'February',
+        'March',
+        'April',
+        'May',
+        'June',
+        'July',
+        'August',
+        'September',
+        'October',
+        'November',
+        'December'
+      ];
+      final day = date.day;
+      final suffix = _getDaySuffix(day);
+      return '${day}${suffix} ${months[date.month - 1]} ${date.year}';
     } catch (e) {
       return 'Unknown date';
+    }
+  }
+
+  String _getDaySuffix(int day) {
+    if (day >= 11 && day <= 13) return 'th';
+    switch (day % 10) {
+      case 1:
+        return 'st';
+      case 2:
+        return 'nd';
+      case 3:
+        return 'rd';
+      default:
+        return 'th';
     }
   }
 

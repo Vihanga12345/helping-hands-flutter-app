@@ -62,26 +62,26 @@ class JobDetailService {
 
         // Get the correct answer based on question type
         switch (questionType) {
-          case 'text':
+            case 'text':
             answerValue = question['answer_text'] ?? question['answer'];
-            break;
-          case 'number':
+              break;
+            case 'number':
             answerValue =
                 question['answer_number']?.toString() ?? question['answer'];
             break;
           case 'yes_no':
             answerValue =
                 question['answer_boolean']?.toString() ?? question['answer'];
-            break;
-          case 'date':
+              break;
+            case 'date':
             answerValue =
                 question['answer_date']?.toString() ?? question['answer'];
-            break;
-          case 'time':
+              break;
+            case 'time':
             answerValue =
                 question['answer_time']?.toString() ?? question['answer'];
-            break;
-          default:
+              break;
+            default:
             answerValue = question['answer'] ?? question['answer_text'];
         }
 
@@ -144,7 +144,7 @@ class JobDetailService {
         'helpee_last_name': job['helpee']?['last_name'] ?? '',
         'helpee_full_name':
             '${job['helpee']?['first_name'] ?? ''} ${job['helpee']?['last_name'] ?? ''}'
-                .trim(),
+              .trim(),
         'helpee_phone': job['helpee']?['phone'] ?? '',
         'helpee_email': job['helpee']?['email'] ?? '',
         'helpee_profile_pic': job['helpee']?['profile_image_url'] ?? '',
@@ -157,7 +157,7 @@ class JobDetailService {
         'helper_last_name': job['helper']?['last_name'] ?? '',
         'helper_full_name':
             '${job['helper']?['first_name'] ?? ''} ${job['helper']?['last_name'] ?? ''}'
-                .trim(),
+                        .trim(),
         'helper_phone': job['helper']?['phone'] ?? '',
         'helper_email': job['helper']?['email'] ?? '',
         'helper_profile_pic': job['helper']?['profile_image_url'] ?? '',
@@ -166,6 +166,7 @@ class JobDetailService {
 
         // Job questions and answers
         'questions': questions,
+        'parsed_questions': questions,
         'has_questions': questions.isNotEmpty,
 
         // Payment details (for completed jobs)
@@ -193,11 +194,11 @@ class JobDetailService {
   /// Get helper statistics
   Future<Map<String, dynamic>?> _getHelperStatistics(String helperId) async {
     try {
-      // Get helper rating and review count
+      // Try to get helper rating using job relationship (since helper_id column might not exist)
       final ratingResponse = await _supabase
           .from('ratings_reviews')
-          .select('rating')
-          .eq('helper_id', helperId);
+          .select('rating, jobs!inner(assigned_helper_id)')
+          .eq('jobs.assigned_helper_id', helperId);
 
       final ratings = List<Map<String, dynamic>>.from(ratingResponse);
       final avgRating = ratings.isEmpty
@@ -223,7 +224,28 @@ class JobDetailService {
       };
     } catch (e) {
       print('❌ Error fetching helper statistics: $e');
-      return null;
+
+      // Fallback: try to get basic job statistics without ratings
+      try {
+        final completedJobsResponse = await _supabase
+            .from('jobs')
+            .select('id')
+            .eq('assigned_helper_id', helperId)
+            .eq('status', 'completed');
+
+        return {
+          'avg_rating': 0.0,
+          'rating_count': 0,
+          'completed_jobs': completedJobsResponse.length,
+        };
+      } catch (fallbackError) {
+        print('❌ Error in fallback helper statistics: $fallbackError');
+        return {
+          'avg_rating': 0.0,
+          'rating_count': 0,
+          'completed_jobs': 0,
+        };
+      }
     }
   }
 
@@ -292,7 +314,7 @@ class JobDetailService {
   /// Get job timer status for ongoing jobs
   Future<Map<String, dynamic>?> _getJobTimerStatus(String jobId) async {
     try {
-      // Get timer records
+      // Try to get timer records from job_timers table
       final timerResponse = await _supabase
           .from('job_timers')
           .select('*')
@@ -319,6 +341,8 @@ class JobDetailService {
       };
     } catch (e) {
       print('❌ Error fetching timer status: $e');
+
+      // Return default timer status when table doesn't exist
       return {
         'is_started': false,
         'is_paused': false,
@@ -385,18 +409,18 @@ class JobDetailService {
     try {
       final date = DateTime.parse(dateString);
       final months = [
-        'Jan',
-        'Feb',
-        'Mar',
-        'Apr',
+        'January',
+        'February',
+        'March',
+        'April',
         'May',
-        'Jun',
-        'Jul',
-        'Aug',
-        'Sep',
-        'Oct',
-        'Nov',
-        'Dec'
+        'June',
+        'July',
+        'August',
+        'September',
+        'October',
+        'November',
+        'December'
       ];
 
       final day = date.day;

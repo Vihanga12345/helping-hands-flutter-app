@@ -145,10 +145,6 @@ class _HelperComprehensiveJobDetailPageState
                               _buildPostedBySection(),
                               const SizedBox(height: 24),
 
-                              // Segment 4.5: Contact Options
-                              _buildContactSection(),
-                              const SizedBox(height: 24),
-
                               // Segment 5: Job Action Buttons
                               _buildJobActionButtons(context),
                               const SizedBox(height: 24),
@@ -263,7 +259,7 @@ class _HelperComprehensiveJobDetailPageState
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'Main Job Details',
+                'Job details',
                 style: AppTextStyles.heading3.copyWith(
                   fontWeight: FontWeight.w700,
                   color: AppColors.textPrimary,
@@ -290,7 +286,11 @@ class _HelperComprehensiveJobDetailPageState
 
           // 1. Job Type
           _buildDetailRow(
-              'Job Type', _jobDetails!['category'] ?? 'General Services'),
+              'Job Type',
+              _jobDetails!['job_category_name'] ??
+                  _jobDetails!['category_name'] ??
+                  _jobDetails!['category'] ??
+                  'General Services'),
           const SizedBox(height: 12),
 
           // 2. Job Hourly Rate
@@ -356,18 +356,18 @@ class _HelperComprehensiveJobDetailPageState
     try {
       final date = DateTime.parse(dateString);
       const months = [
-        'Jan',
-        'Feb',
-        'Mar',
-        'Apr',
+        'January',
+        'February',
+        'March',
+        'April',
         'May',
-        'Jun',
-        'Jul',
-        'Aug',
-        'Sep',
-        'Oct',
-        'Nov',
-        'Dec'
+        'June',
+        'July',
+        'August',
+        'September',
+        'October',
+        'November',
+        'December'
       ];
       return '${date.day}${_getDayOfMonthSuffix(date.day)} ${months[date.month - 1]} ${date.year}';
     } catch (e) {
@@ -652,7 +652,7 @@ class _HelperComprehensiveJobDetailPageState
                     .trim(),
             rating: (_helpeeStatistics?['rating'] ?? 0.0).toDouble(),
             jobCount: _helpeeStatistics?['total_jobs'] ?? 0,
-            serviceType: _jobDetails?['category'] ?? 'general services',
+            serviceType: null, // Remove service type display
             profileImageUrl: _helpeeProfile!['profile_image_url'],
             onTap: () {
               // Navigate to helpee profile page
@@ -663,37 +663,8 @@ class _HelperComprehensiveJobDetailPageState
               });
             },
           ),
-        ],
-      ),
-    );
-  }
 
-  // Segment 4.5: Contact Options
-  Widget _buildContactSection() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: AppColors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: const [
-          BoxShadow(
-            color: AppColors.shadowColorLight,
-            blurRadius: 8,
-            offset: Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Contact Options',
-            style: AppTextStyles.heading3.copyWith(
-              fontWeight: FontWeight.w700,
-              color: AppColors.textPrimary,
-            ),
-          ),
+          // Contact buttons integrated into Posted By section
           const SizedBox(height: 16),
           Row(
             children: [

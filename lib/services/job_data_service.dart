@@ -1065,7 +1065,9 @@ class JobDataService {
     if (dateStr == null) return 'Date TBD';
     try {
       final date = DateTime.parse(dateStr);
-      return '${_getMonthName(date.month)} ${date.day}, ${date.year}';
+      final day = date.day;
+      final suffix = _getDaySuffix(day);
+      return '${day}${suffix} ${_getMonthName(date.month)} ${date.year}';
     } catch (e) {
       return 'Date TBD';
     }
@@ -1074,20 +1076,34 @@ class JobDataService {
   String _getMonthName(int month) {
     const months = [
       '',
-      'Jan',
-      'Feb',
-      'Mar',
-      'Apr',
+      'January',
+      'February',
+      'March',
+      'April',
       'May',
-      'Jun',
-      'Jul',
-      'Aug',
-      'Sep',
-      'Oct',
-      'Nov',
-      'Dec'
+      'June',
+      'July',
+      'August',
+      'September',
+      'October',
+      'November',
+      'December'
     ];
     return months[month];
+  }
+
+  String _getDaySuffix(int day) {
+    if (day >= 11 && day <= 13) return 'th';
+    switch (day % 10) {
+      case 1:
+        return 'st';
+      case 2:
+        return 'nd';
+      case 3:
+        return 'rd';
+      default:
+        return 'th';
+    }
   }
 
   // Get job details with questions and answers

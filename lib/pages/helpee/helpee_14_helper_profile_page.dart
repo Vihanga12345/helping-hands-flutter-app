@@ -5,6 +5,8 @@ import '../../utils/app_text_styles.dart';
 import '../../widgets/common/app_header.dart';
 import '../../widgets/common/app_navigation_bar.dart';
 import '../../services/helper_data_service.dart';
+import '../../services/custom_auth_service.dart';
+import '../../services/localization_service.dart';
 
 class Helpee14HelperProfilePage extends StatefulWidget {
   final String? helperId;
@@ -125,10 +127,10 @@ class _Helpee14HelperProfilePageState extends State<Helpee14HelperProfilePage>
         children: [
           // Header with standard notification button
           AppHeader(
-            title: 'Helper Profile',
+            title: 'Helper Profile'.tr(),
             showBackButton: true,
             showMenuButton: false,
-            showNotificationButton: true,
+            showNotificationButton: false,
           ),
 
           // Styled Tab Bar directly at the top

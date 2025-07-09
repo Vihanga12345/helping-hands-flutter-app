@@ -5,6 +5,7 @@ import '../../utils/app_text_styles.dart';
 import '../../widgets/common/app_header.dart';
 import '../../widgets/common/app_navigation_bar.dart';
 import '../../services/custom_auth_service.dart';
+import '../../services/localization_service.dart';
 
 class Helpee5NotificationPage extends StatefulWidget {
   const Helpee5NotificationPage({super.key});
@@ -53,8 +54,8 @@ class _Helpee5NotificationPageState extends State<Helpee5NotificationPage> {
       body: Column(
         children: [
           // Header
-          const AppHeader(
-            title: 'Notifications',
+          AppHeader(
+            title: 'Notifications'.tr(),
             showBackButton: true,
             showMenuButton: false,
             showNotificationButton: false,
@@ -91,11 +92,11 @@ class _Helpee5NotificationPageState extends State<Helpee5NotificationPage> {
                                           _notifications[index];
                                       return _buildNotificationCard(
                                         title: notification['title'] ??
-                                            'Notification',
+                                            'Notification'.tr(),
                                         message: notification['message'] ??
-                                            'No message',
+                                            'No message'.tr(),
                                         time: notification['time'] ??
-                                            'Unknown time',
+                                            'Unknown time'.tr(),
                                         isRead:
                                             notification['is_read'] ?? false,
                                       );
@@ -130,18 +131,18 @@ class _Helpee5NotificationPageState extends State<Helpee5NotificationPage> {
             color: AppColors.lightGrey,
           ),
           const SizedBox(height: 16),
-          const Text(
-            'No Notifications',
-            style: TextStyle(
+          Text(
+            'No Notifications'.tr(),
+            style: const TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w600,
               color: AppColors.textSecondary,
             ),
           ),
           const SizedBox(height: 8),
-          const Text(
-            'You don\'t have any notifications yet.',
-            style: TextStyle(color: AppColors.textSecondary),
+          Text(
+            'You don\'t have any notifications yet.'.tr(),
+            style: const TextStyle(color: AppColors.textSecondary),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 16),
@@ -151,7 +152,7 @@ class _Helpee5NotificationPageState extends State<Helpee5NotificationPage> {
               backgroundColor: AppColors.primaryGreen,
               foregroundColor: AppColors.white,
             ),
-            child: const Text('Refresh'),
+            child: Text('Refresh'.tr()),
           ),
         ],
       ),

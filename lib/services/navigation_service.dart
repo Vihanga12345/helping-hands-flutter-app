@@ -58,6 +58,14 @@ import '../pages/helper/helper_privacy_policy_page.dart';
 import '../pages/helper/helper_helpee_profile_page.dart';
 import '../pages/helper/helper_comprehensive_job_detail_page.dart';
 
+// Admin Pages
+import '../pages/admin/admin_start_page.dart';
+import '../pages/admin/admin_login_page.dart';
+import '../pages/admin/admin_home_page.dart';
+import '../pages/admin/admin_manage_jobs_page.dart';
+import '../pages/admin/admin_job_details_page.dart';
+import '../pages/admin/admin_analytics_page.dart';
+
 class NavigationService {
   static final GoRouter router = GoRouter(
     initialLocation: '/',
@@ -387,6 +395,45 @@ class NavigationService {
         path: '/helper/privacy-policy',
         name: 'helper-privacy-policy',
         builder: (context, state) => const HelperPrivacyPolicyPage(),
+      ),
+
+      // Admin Routes
+      GoRoute(
+        path: '/admin',
+        name: 'admin-start',
+        builder: (context, state) => const AdminStartPage(),
+      ),
+      GoRoute(
+        path: '/admin/login',
+        name: 'admin-login',
+        builder: (context, state) => const AdminLoginPage(),
+      ),
+      GoRoute(
+        path: '/admin/home',
+        name: 'admin-home',
+        builder: (context, state) => const AdminHomePage(),
+      ),
+      GoRoute(
+        path: '/admin/manage-jobs',
+        name: 'admin-manage-jobs',
+        builder: (context, state) => const AdminManageJobsPage(),
+      ),
+      GoRoute(
+        path: '/admin/job-details/:jobId',
+        name: 'admin-job-details',
+        builder: (context, state) {
+          final jobId = state.pathParameters['jobId']!;
+          final extra = state.extra as Map<String, dynamic>?;
+          return AdminJobDetailsPage(
+            jobId: jobId,
+            jobData: extra?['jobData'],
+          );
+        },
+      ),
+      GoRoute(
+        path: '/admin/analytics',
+        name: 'admin-analytics',
+        builder: (context, state) => const AdminAnalyticsPage(),
       ),
     ],
   );

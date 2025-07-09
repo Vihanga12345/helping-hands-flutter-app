@@ -4,6 +4,7 @@ import '../../utils/app_colors.dart';
 import '../../utils/app_text_styles.dart';
 import '../../widgets/common/app_header.dart';
 import '../../widgets/common/app_navigation_bar.dart';
+import '../../services/localization_service.dart';
 
 class Helpee28JobCompletedPage extends StatefulWidget {
   const Helpee28JobCompletedPage({super.key});
@@ -33,8 +34,8 @@ class _Helpee28JobCompletedPageState extends State<Helpee28JobCompletedPage> {
       body: Column(
         children: [
           // Header
-          const AppHeader(
-            title: 'Job Completed',
+          AppHeader(
+            title: 'Completed Job'.tr(),
             showBackButton: true,
             showMenuButton: false,
             showNotificationButton: false,

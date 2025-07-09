@@ -1,15 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 import '../../utils/app_colors.dart';
 import '../../utils/app_text_styles.dart';
 import '../../widgets/common/app_header.dart';
 import '../../widgets/common/app_navigation_bar.dart';
 import '../../widgets/job_questions_widget.dart';
 import '../../widgets/ui_elements/helper_profile_bar.dart';
+import '../../widgets/location_picker_widget.dart';
 import '../../services/supabase_service.dart';
 import '../../services/job_questions_service.dart';
 import '../../services/custom_auth_service.dart';
 import '../../services/job_data_service.dart';
+import '../../services/localization_service.dart';
 
 class Helpee7JobRequestPage extends StatefulWidget {
   final bool isEdit;
@@ -34,6 +37,10 @@ class _Helpee7JobRequestPageState extends State<Helpee7JobRequestPage> {
   final _locationController = TextEditingController();
   final _titleController = TextEditingController();
   final _notesController = TextEditingController();
+
+  // Location coordinates for map integration
+  double? _selectedLatitude;
+  double? _selectedLongitude;
 
   // Job posting type
   String _jobPostingType = 'public'; // public or private
@@ -71,6 +78,14 @@ class _Helpee7JobRequestPageState extends State<Helpee7JobRequestPage> {
     _descriptionController.text = jobData['description'] ?? '';
     _locationController.text = jobData['location_address'] ?? '';
     _notesController.text = jobData['notes'] ?? '';
+
+    // Set location coordinates if available
+    if (jobData['location_latitude'] != null) {
+      _selectedLatitude = jobData['location_latitude'].toDouble();
+    }
+    if (jobData['location_longitude'] != null) {
+      _selectedLongitude = jobData['location_longitude'].toDouble();
+    }
 
     // Set category
     _selectedCategoryId = jobData['category_id'];
@@ -403,6 +418,102 @@ class _Helpee7JobRequestPageState extends State<Helpee7JobRequestPage> {
                         return null;
                       },
                     ),
+
+                    const SizedBox(height: 12),
+
+                    // Map Location Picker Button
+                    Container(
+                      width: double.infinity,
+                      height: 48,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            AppColors.primaryGreen.withOpacity(0.1),
+                            AppColors.primaryGreen.withOpacity(0.05),
+                          ],
+                        ),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: AppColors.primaryGreen.withOpacity(0.3),
+                        ),
+                      ),
+                      child: ElevatedButton.icon(
+                        onPressed: _showLocationPicker,
+                        icon: const Icon(
+                          Icons.map,
+                          color: AppColors.primaryGreen,
+                          size: 20,
+                        ),
+                        label: Text(
+                          _selectedLatitude != null &&
+                                  _selectedLongitude != null
+                              ? 'Location Selected ✓'
+                              : 'Pick Location on Map',
+                          style: const TextStyle(
+                            color: AppColors.primaryGreen,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 14,
+                          ),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.transparent,
+                          shadowColor: Colors.transparent,
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                      ),
+                    ),
+
+                    // Location coordinates display (if selected)
+                    if (_selectedLatitude != null &&
+                        _selectedLongitude != null) ...[
+                      const SizedBox(height: 8),
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: AppColors.primaryGreen.withOpacity(0.05),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                            color: AppColors.primaryGreen.withOpacity(0.2),
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(
+                              Icons.location_on,
+                              color: AppColors.primaryGreen,
+                              size: 16,
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                'Coordinates: ${_selectedLatitude!.toStringAsFixed(6)}, ${_selectedLongitude!.toStringAsFixed(6)}',
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  color: AppColors.primaryGreen,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ),
+                            GestureDetector(
+                              onTap: () {
+                                setState(() {
+                                  _selectedLatitude = null;
+                                  _selectedLongitude = null;
+                                });
+                              },
+                              child: const Icon(
+                                Icons.close,
+                                color: AppColors.primaryGreen,
+                                size: 16,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
 
                     const SizedBox(height: 20),
 
@@ -941,6 +1052,56 @@ class _Helpee7JobRequestPageState extends State<Helpee7JobRequestPage> {
     }
   }
 
+  Future<void> _showLocationPicker() async {
+    final result = await showModalBottomSheet<Map<String, dynamic>>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => DraggableScrollableSheet(
+        initialChildSize: 0.8,
+        maxChildSize: 0.9,
+        minChildSize: 0.5,
+        builder: (context, scrollController) => Container(
+          padding: const EdgeInsets.all(16),
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          child: LocationPickerWidget(
+            initialLocation:
+                _selectedLatitude != null && _selectedLongitude != null
+                    ? LatLng(_selectedLatitude!, _selectedLongitude!)
+                    : null,
+            initialAddress: _locationController.text.trim().isNotEmpty
+                ? _locationController.text.trim()
+                : null,
+            onLocationSelected: (coordinates, address) {
+              // Update state with selected location
+              setState(() {
+                _selectedLatitude = coordinates.latitude;
+                _selectedLongitude = coordinates.longitude;
+                _locationController.text = address;
+              });
+
+              // Close the bottom sheet
+              Navigator.of(context).pop({
+                'latitude': coordinates.latitude,
+                'longitude': coordinates.longitude,
+                'address': address,
+              });
+            },
+          ),
+        ),
+      ),
+    );
+
+    // Additional handling if needed
+    if (result != null) {
+      print('✅ Location selected: ${result['address']}');
+      print('📍 Coordinates: ${result['latitude']}, ${result['longitude']}');
+    }
+  }
+
   Future<void> _handleSubmit() async {
     if (!_formKey.currentState!.validate()) {
       return;
@@ -1100,8 +1261,10 @@ class _Helpee7JobRequestPageState extends State<Helpee7JobRequestPage> {
           scheduledDate: _selectedDate!.toIso8601String().split('T')[0],
           scheduledStartTime:
               '${_selectedTime!.hour.toString().padLeft(2, '0')}:${_selectedTime!.minute.toString().padLeft(2, '0')}',
-          locationLatitude: 6.9271, // TODO: Get from map selection
-          locationLongitude: 79.8612, // TODO: Get from map selection
+          locationLatitude:
+              _selectedLatitude ?? 6.9271, // TODO: Get from map selection
+          locationLongitude:
+              _selectedLongitude ?? 79.8612, // TODO: Get from map selection
           locationAddress: _locationController.text.trim(),
           questionAnswers: questionAnswers,
           invitedHelperEmail:
@@ -1125,7 +1288,7 @@ class _Helpee7JobRequestPageState extends State<Helpee7JobRequestPage> {
             );
             // Navigate back to home or jobs page
             if (context.canPop()) {
-            context.pop();
+              context.pop();
             } else {
               context.go('/helpee/home');
             }

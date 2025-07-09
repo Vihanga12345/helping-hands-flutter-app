@@ -7,6 +7,8 @@ import '../../widgets/common/app_navigation_bar.dart';
 import '../../widgets/ui_elements/helper_profile_bar.dart';
 import '../../services/job_data_service.dart';
 import '../../services/job_detail_service.dart';
+import '../../services/custom_auth_service.dart';
+import '../../services/localization_service.dart';
 
 class HelpeeJobDetailPendingPage extends StatefulWidget {
   final String? jobId;
@@ -75,10 +77,10 @@ class _HelpeeJobDetailPendingPageState
         child: Column(
           children: [
             AppHeader(
-              title: 'Job Details',
+              title: 'Job Details'.tr(),
               showBackButton: true,
-              showMenuButton: true,
-              showNotificationButton: true,
+              showMenuButton: false,
+              showNotificationButton: false,
             ),
             Expanded(
               child: _buildContent(),
@@ -149,6 +151,8 @@ class _HelpeeJobDetailPendingPageState
             _buildJobSpecificationSegment(),
             const SizedBox(height: 16),
           ],
+          _buildJobAdditionalDetailsSegment(),
+          const SizedBox(height: 16),
           _buildJobStatusSegment(),
           const SizedBox(height: 16),
           _buildActionButtonSegment(),
@@ -187,7 +191,7 @@ class _HelpeeJobDetailPendingPageState
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Request Pending',
+                  'Request Pending'.tr(),
                   style: AppTextStyles.bodyLarge.copyWith(
                     fontWeight: FontWeight.w600,
                     color: AppColors.warning,
@@ -195,7 +199,7 @@ class _HelpeeJobDetailPendingPageState
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'We\'re finding the best helpers for you. You\'ll be notified once someone accepts.',
+                  'We\'re finding the best helpers for you. You\'ll be notified once someone accepts.'.tr(),
                   style: AppTextStyles.bodySmall.copyWith(
                     color: AppColors.warning,
                   ),
@@ -246,7 +250,7 @@ class _HelpeeJobDetailPendingPageState
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Job Details',
+                      'Job Details'.tr(),
                       style: AppTextStyles.heading3.copyWith(
                         fontWeight: FontWeight.w600,
                       ),
@@ -262,7 +266,7 @@ class _HelpeeJobDetailPendingPageState
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
-                  _jobDetails!['pay'] ?? 'Rate not set',
+                  _jobDetails!['pay'] ?? 'Rate not set'.tr(),
                   style: AppTextStyles.bodyMedium.copyWith(
                     color: AppColors.white,
                     fontWeight: FontWeight.w600,
@@ -274,27 +278,27 @@ class _HelpeeJobDetailPendingPageState
           const SizedBox(height: 16),
           _buildDetailRow(
             Icons.category,
-            'Job Type',
+            'Job Type'.tr(),
             _jobDetails!['category_name'] ?? 'Unknown',
           ),
           _buildDetailRow(
             Icons.calendar_today,
-            'Job Date',
+            'Job Date'.tr(),
             _jobDetails!['date'] ?? 'Date not set',
           ),
           _buildDetailRow(
             Icons.access_time,
-            'Job Time',
+            'Job Time'.tr(),
             _jobDetails!['time'] ?? 'Time not set',
           ),
           _buildDetailRow(
             Icons.location_on,
-            'Job Location',
+            'Job Location'.tr(),
             _jobDetails!['location'] ?? 'Location not set',
           ),
           const SizedBox(height: 16),
           Text(
-            'Job Title',
+            'Job Title'.tr(),
             style: AppTextStyles.bodyMedium.copyWith(
               fontWeight: FontWeight.w600,
               color: AppColors.textSecondary,
@@ -302,36 +306,18 @@ class _HelpeeJobDetailPendingPageState
           ),
           const SizedBox(height: 4),
           Text(
-            _jobDetails!['title'] ?? 'Untitled Job',
+            _jobDetails!['title'] ?? 'Untitled Job'.tr(),
             style: AppTextStyles.bodyLarge.copyWith(
               fontWeight: FontWeight.w600,
             ),
           ),
-          if (_jobDetails!['description'] != null &&
-              _jobDetails!['description'].isNotEmpty) ...[
-            const SizedBox(height: 16),
-            Text(
-              'Description',
-              style: AppTextStyles.bodyMedium.copyWith(
-                fontWeight: FontWeight.w600,
-                color: AppColors.textSecondary,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              _jobDetails!['description'],
-              style: AppTextStyles.bodyMedium.copyWith(
-                height: 1.5,
-              ),
-            ),
-          ],
         ],
       ),
     );
   }
 
   Widget _buildJobSpecificationSegment() {
-    final questions = _jobDetails!['questions'] as List<Map<String, dynamic>>;
+    final questions = _jobDetails!['parsed_questions'] as List? ?? [];
 
     return Container(
       width: double.infinity,
@@ -366,7 +352,117 @@ class _HelpeeJobDetailPendingPageState
               ),
               const SizedBox(width: 12),
               Text(
-                'Job Specifications',
+                'Job Questions'.tr(),
+                style: AppTextStyles.heading3.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Questions and answers for this job'.tr(),
+            style: AppTextStyles.bodyMedium.copyWith(
+              color: AppColors.textSecondary,
+            ),
+          ),
+          const SizedBox(height: 16),
+          if (questions.isEmpty)
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: AppColors.backgroundLight,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Center(
+                child: Text(
+                  'No questions available for this job',
+                  style: TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 16,
+                  ),
+                ),
+              ),
+            )
+          else
+            ...questions.asMap().entries.map((entry) {
+              final index = entry.key;
+              final qa = entry.value;
+              final question = qa['question'] ?? 'Question not available'.tr();
+              final answer = qa['answer'] ?? 'No answer provided'.tr();
+
+              return Padding(
+                padding: EdgeInsets.only(
+                    bottom: index < questions.length - 1 ? 16 : 0),
+                child: Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: AppColors.primaryGreen.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Q${index + 1}: $question',
+                        style: AppTextStyles.bodyMedium.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'A: $answer',
+                        style: AppTextStyles.bodyMedium.copyWith(
+                          color: AppColors.textSecondary,
+                          height: 1.4,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }).toList(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildJobAdditionalDetailsSegment() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: AppColors.primaryGreen.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(
+                  Icons.description,
+                  color: AppColors.primaryGreen,
+                  size: 24,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Text(
+                'Job Additional Details'.tr(),
                 style: AppTextStyles.heading3.copyWith(
                   fontWeight: FontWeight.w600,
                 ),
@@ -374,43 +470,53 @@ class _HelpeeJobDetailPendingPageState
             ],
           ),
           const SizedBox(height: 16),
-          ...questions.asMap().entries.map((entry) {
-            final index = entry.key;
-            final question = entry.value;
-
-            return Padding(
-              padding: EdgeInsets.only(
-                  bottom: index < questions.length - 1 ? 16 : 0),
-              child: Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: AppColors.backgroundLight,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: AppColors.lightGrey),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Q${index + 1}: ${question['question']?['question'] ?? 'No question'}',
-                      style: AppTextStyles.bodyMedium.copyWith(
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.textPrimary,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'A: ${question['processed_answer'] ?? 'No answer provided'}',
-                      style: AppTextStyles.bodyMedium.copyWith(
-                        color: AppColors.textSecondary,
-                        height: 1.4,
-                      ),
-                    ),
-                  ],
+          if (_jobDetails!['description'] != null &&
+              _jobDetails!['description'].isNotEmpty) ...[
+            Text(
+              'Job Description'.tr(),
+              style: AppTextStyles.bodyMedium.copyWith(
+                fontWeight: FontWeight.w600,
+                color: AppColors.textSecondary,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: AppColors.backgroundLight,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: AppColors.primaryGreen.withOpacity(0.2),
                 ),
               ),
-            );
-          }).toList(),
+              child: Text(
+                _jobDetails!['description'],
+                style: AppTextStyles.bodyMedium.copyWith(
+                  height: 1.5,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+            ),
+          ] else ...[
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: AppColors.backgroundLight,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Center(
+                child: Text(
+                  'No additional details provided for this job',
+                  style: TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 16,
+                  ),
+                ),
+              ),
+            ),
+          ],
         ],
       ),
     );
@@ -450,7 +556,7 @@ class _HelpeeJobDetailPendingPageState
               ),
               const SizedBox(width: 12),
               Text(
-                'Job Status',
+                'Job Status'.tr(),
                 style: AppTextStyles.heading3.copyWith(
                   fontWeight: FontWeight.w600,
                 ),
@@ -477,7 +583,7 @@ class _HelpeeJobDetailPendingPageState
               ),
               const SizedBox(width: 12),
               Text(
-                'Waiting for Helper',
+                'Waiting for Helper'.tr(),
                 style: AppTextStyles.bodyMedium.copyWith(
                   color: AppColors.textSecondary,
                 ),
@@ -486,12 +592,12 @@ class _HelpeeJobDetailPendingPageState
           ),
           const SizedBox(height: 16),
           _buildStatusInfoRow(
-              'Request Created', _formatDateTime(_jobDetails!['created_at'])),
-          _buildStatusInfoRow('Priority',
+              'Request Created'.tr(), _formatDateTime(_jobDetails!['created_at'])),
+          _buildStatusInfoRow('Priority'.tr(),
               (_jobDetails!['priority'] ?? 'standard').toUpperCase()),
           _buildStatusInfoRow(
-              'Visibility', _jobDetails!['is_private'] ? 'Private' : 'Public'),
-          _buildStatusInfoRow('Estimated Response', 'Within 2 hours'),
+              'Visibility'.tr(), _jobDetails!['is_private'] ? 'Private'.tr() : 'Public'.tr()),
+          _buildStatusInfoRow('Estimated Response'.tr(), 'Within 2 hours'.tr()),
         ],
       ),
     );
@@ -516,7 +622,7 @@ class _HelpeeJobDetailPendingPageState
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Available Actions',
+            'Available Actions'.tr(),
             style: AppTextStyles.heading3.copyWith(
               fontWeight: FontWeight.w600,
             ),
@@ -528,7 +634,7 @@ class _HelpeeJobDetailPendingPageState
             child: OutlinedButton.icon(
               onPressed: () => _editRequest(),
               icon: const Icon(Icons.edit),
-              label: const Text('Edit Request'),
+              label: Text('Edit Request'.tr()),
               style: OutlinedButton.styleFrom(
                 foregroundColor: AppColors.primaryGreen,
                 side: const BorderSide(color: AppColors.primaryGreen),
@@ -545,7 +651,7 @@ class _HelpeeJobDetailPendingPageState
             child: OutlinedButton.icon(
               onPressed: () => _cancelRequest(),
               icon: const Icon(Icons.cancel),
-              label: const Text('Cancel Request'),
+              label: Text('Cancel Request'.tr()),
               style: OutlinedButton.styleFrom(
                 foregroundColor: AppColors.error,
                 side: const BorderSide(color: AppColors.error),
@@ -612,12 +718,87 @@ class _HelpeeJobDetailPendingPageState
   }
 
   String _formatDateTime(String? dateTime) {
-    if (dateTime == null) return 'Unknown';
+    if (dateTime == null) return 'Unknown'.tr();
     try {
       final dt = DateTime.parse(dateTime);
-      return '${dt.day}/${dt.month}/${dt.year} at ${dt.hour}:${dt.minute.toString().padLeft(2, '0')}';
+      final months = [
+        'January'.tr(),
+        'February'.tr(),
+        'March'.tr(),
+        'April'.tr(),
+        'May'.tr(),
+        'June'.tr(),
+        'July'.tr(),
+        'August'.tr(),
+        'September'.tr(),
+        'October'.tr(),
+        'November'.tr(),
+        'December'.tr()
+      ];
+      final day = dt.day;
+      final suffix = _getDaySuffix(day);
+      return '${day}${suffix} ${months[dt.month - 1]} ${dt.year} at ${dt.hour}:${dt.minute.toString().padLeft(2, '0')}'.tr();
     } catch (e) {
       return dateTime;
+    }
+  }
+
+  String? _formatTime(String? timeString) {
+    if (timeString == null || timeString.isEmpty) return null;
+
+    try {
+      final time = DateTime.parse('2024-01-01 $timeString');
+      final hour = time.hour;
+      final minute = time.minute;
+      final period = hour >= 12 ? 'PM'.tr() : 'AM'.tr();
+      final displayHour = hour > 12 ? hour - 12 : (hour == 0 ? 12 : hour);
+      final displayMinute = minute.toString().padLeft(2, '0');
+      return '$displayHour:$displayMinute $period'.tr();
+    } catch (e) {
+      return timeString;
+    }
+  }
+
+  String? _formatDate(String? dateString) {
+    if (dateString == null || dateString.isEmpty) return null;
+
+    try {
+      final date = DateTime.parse(dateString);
+      final months = [
+        'January'.tr(),
+        'February'.tr(),
+        'March'.tr(),
+        'April'.tr(),
+        'May'.tr(),
+        'June'.tr(),
+        'July'.tr(),
+        'August'.tr(),
+        'September'.tr(),
+        'October'.tr(),
+        'November'.tr(),
+        'December'.tr()
+      ];
+
+      final day = date.day;
+      final suffix = _getDaySuffix(day);
+
+      return '${day}${suffix} ${months[date.month - 1]} ${date.year}'.tr();
+    } catch (e) {
+      return dateString;
+    }
+  }
+
+  String _getDaySuffix(int day) {
+    if (day >= 11 && day <= 13) return 'th'.tr();
+    switch (day % 10) {
+      case 1:
+        return 'st'.tr();
+      case 2:
+        return 'nd'.tr();
+      case 3:
+        return 'rd'.tr();
+      default:
+        return 'th'.tr();
     }
   }
 
@@ -633,13 +814,13 @@ class _HelpeeJobDetailPendingPageState
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: const Text('Cancel Request'),
+          title: Text('Cancel Request'.tr()),
           content: Text(
-              'Are you sure you want to cancel "${_jobDetails!['title'] ?? 'this job'}"? This action cannot be undone and the job will be permanently deleted.'),
+              'Are you sure you want to cancel "${_jobDetails!['title'] ?? 'this job'}"? This action cannot be undone and the job will be permanently deleted.'.tr()),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Keep Request'),
+              child: Text('Keep Request'.tr()),
             ),
             TextButton(
               onPressed: () async {
@@ -647,7 +828,7 @@ class _HelpeeJobDetailPendingPageState
                 await _cancelJob();
               },
               style: TextButton.styleFrom(foregroundColor: AppColors.error),
-              child: const Text('Cancel Request'),
+              child: Text('Cancel Request'.tr()),
             ),
           ],
         );
@@ -665,30 +846,30 @@ class _HelpeeJobDetailPendingPageState
     try {
       final jobId = widget.jobId ?? widget.jobData?['id'];
       if (jobId == null) {
-        throw Exception('No job ID available');
+        throw Exception('No job ID available'.tr());
       }
 
       final success = await _jobDataService.cancelJob(
-          jobId.toString(), 'Cancelled by helpee');
+          jobId.toString(), 'Cancelled by helpee'.tr());
 
       if (success) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Job cancelled and deleted successfully'),
+            SnackBar(
+              content: Text('Job cancelled and deleted successfully'.tr()),
               backgroundColor: AppColors.success,
             ),
           );
           context.go('/helpee/activity/pending');
         }
       } else {
-        throw Exception('Failed to cancel job');
+        throw Exception('Failed to cancel job'.tr());
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error cancelling job: $e'),
+            content: Text('Error cancelling job: $e'.tr()),
             backgroundColor: AppColors.error,
           ),
         );

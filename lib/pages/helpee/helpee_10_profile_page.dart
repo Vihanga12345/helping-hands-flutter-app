@@ -6,6 +6,7 @@ import '../../widgets/common/app_header.dart';
 import '../../widgets/common/app_navigation_bar.dart';
 import '../../services/user_data_service.dart';
 import '../../services/custom_auth_service.dart';
+import '../../services/localization_service.dart';
 
 class Helpee10ProfilePage extends StatefulWidget {
   const Helpee10ProfilePage({super.key});
@@ -25,7 +26,7 @@ class _Helpee10ProfilePageState extends State<Helpee10ProfilePage> {
         children: [
           // Header
           AppHeader(
-            title: 'Profile',
+            title: 'Profile'.tr(),
             showBackButton: false,
             showMenuButton: true,
             showNotificationButton: false,
@@ -481,9 +482,25 @@ class _Helpee10ProfilePageState extends State<Helpee10ProfilePage> {
         'December'
       ];
 
-      return '${months[date.month - 1]} ${date.day}, ${date.year}';
+      final day = date.day;
+      final suffix = _getDaySuffix(day);
+      return '${day}${suffix} ${months[date.month - 1]} ${date.year}';
     } catch (e) {
       return 'Not provided';
+    }
+  }
+
+  String _getDaySuffix(int day) {
+    if (day >= 11 && day <= 13) return 'th';
+    switch (day % 10) {
+      case 1:
+        return 'st';
+      case 2:
+        return 'nd';
+      case 3:
+        return 'rd';
+      default:
+        return 'th';
     }
   }
 

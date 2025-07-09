@@ -6,6 +6,7 @@ import '../../widgets/common/app_header.dart';
 import '../../widgets/common/app_navigation_bar.dart';
 import '../../services/user_data_service.dart';
 import '../../services/custom_auth_service.dart';
+import '../../services/localization_service.dart';
 
 class Helpee11ProfileEditPage extends StatefulWidget {
   const Helpee11ProfileEditPage({super.key});
@@ -75,13 +76,13 @@ class _Helpee11ProfileEditPageState extends State<Helpee11ProfileEditPage> {
       } else {
         setState(() {
           _isLoading = false;
-          _error = 'Could not load user profile data';
+          _error = 'Could not load user profile data'.tr();
         });
       }
     } catch (e) {
       setState(() {
         _isLoading = false;
-        _error = 'Failed to load profile: $e';
+        _error = 'Failed to load profile: $e'.tr();
       });
     }
   }
@@ -93,7 +94,7 @@ class _Helpee11ProfileEditPageState extends State<Helpee11ProfileEditPage> {
         children: [
           // Header with Save button
           AppHeader(
-            title: 'Edit Profile',
+            title: 'Edit Profile'.tr(),
             showBackButton: true,
             showMenuButton: false,
             showNotificationButton: false,
@@ -310,9 +311,10 @@ class _Helpee11ProfileEditPageState extends State<Helpee11ProfileEditPage> {
                                       ),
                                       const SizedBox(height: 16),
                                       SwitchListTile(
-                                        title: const Text('Push Notifications'),
-                                        subtitle: const Text(
-                                            'Receive notifications about your jobs'),
+                                        title: Text('Push Notifications'.tr()),
+                                        subtitle: Text(
+                                            'Receive notifications about your jobs'
+                                                .tr()),
                                         value: _notificationsEnabled,
                                         onChanged: (value) {
                                           setState(() {
@@ -347,8 +349,8 @@ class _Helpee11ProfileEditPageState extends State<Helpee11ProfileEditPage> {
                                                   AlwaysStoppedAnimation<Color>(
                                                       AppColors.white),
                                             )
-                                          : const Text(
-                                              'Save Changes',
+                                          : Text(
+                                              'Save Changes'.tr(),
                                               style: TextStyle(
                                                 fontSize: 16,
                                                 fontWeight: FontWeight.w600,
@@ -411,9 +413,9 @@ class _Helpee11ProfileEditPageState extends State<Helpee11ProfileEditPage> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primaryGreen,
               ),
-              child: const Text(
-                'Retry',
-                style: TextStyle(color: AppColors.white),
+              child: Text(
+                'Retry'.tr(),
+                style: const TextStyle(color: AppColors.white),
               ),
             ),
           ],
@@ -479,7 +481,7 @@ class _Helpee11ProfileEditPageState extends State<Helpee11ProfileEditPage> {
       ),
       validator: (value) {
         if (value == null || value.isEmpty) {
-          return 'Please enter $label';
+          return 'Please enter $label'.tr();
         }
         return null;
       },
@@ -542,8 +544,8 @@ class _Helpee11ProfileEditPageState extends State<Helpee11ProfileEditPage> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Profile updated successfully!'),
+          SnackBar(
+            content: Text('Profile updated successfully!'.tr()),
             backgroundColor: AppColors.success,
           ),
         );
@@ -553,7 +555,7 @@ class _Helpee11ProfileEditPageState extends State<Helpee11ProfileEditPage> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to update profile: $e'),
+            content: Text('Failed to update profile: $e'.tr()),
             backgroundColor: AppColors.error,
           ),
         );

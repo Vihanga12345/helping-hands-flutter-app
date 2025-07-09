@@ -124,31 +124,7 @@ class HelperProfileBar extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
 
-                  // Job Types (small text)
-                  if (displayJobTypes.isNotEmpty) ...[
-                    Text(
-                      displayJobTypes,
-                      style: const TextStyle(
-                        color: Color(0xFF2E5A3A),
-                        fontSize: 12,
-                        fontFamily: 'Manjari',
-                        fontWeight: FontWeight.w500,
-                      ),
-                      overflow: TextOverflow.ellipsis,
-                      maxLines: 1,
-                    ),
-                  ] else ...[
-                    Text(
-                      'general services',
-                      style: TextStyle(
-                        color: Colors.grey.shade600,
-                        fontSize: 12,
-                        fontFamily: 'Manjari',
-                        fontWeight: FontWeight.w500,
-                        fontStyle: FontStyle.italic,
-                      ),
-                    ),
-                  ],
+
                 ],
               ),
             ),

@@ -6,6 +6,8 @@ import '../../widgets/common/app_header.dart';
 import '../../widgets/common/app_navigation_bar.dart';
 import '../../services/job_data_service.dart';
 import '../../services/custom_auth_service.dart';
+import '../../widgets/ui_elements/functional_job_card.dart';
+import '../../services/localization_service.dart';
 
 class Helpee15ActivityPendingPage extends StatefulWidget {
   final int initialTabIndex;
@@ -50,9 +52,10 @@ class _Helpee15ActivityPendingPageState
       body: Column(
         children: [
           AppHeader(
-            title: 'Activities',
-            showMenuButton: true,
-            showNotificationButton: true,
+            title: 'Pending Jobs'.tr(),
+            showBackButton: true,
+            showMenuButton: false,
+            showNotificationButton: false,
           ),
           Expanded(
             child: Container(
@@ -597,6 +600,21 @@ class _Helpee15ActivityPendingPageState
   }
 
   Widget _buildErrorState(String status) {
+    String? _error;
+    switch (status) {
+      case 'pending':
+        _error = 'Failed to load pending jobs'.tr();
+        break;
+      case 'ongoing':
+        _error = 'Failed to load ongoing jobs'.tr();
+        break;
+      case 'completed':
+        _error = 'Failed to load completed jobs'.tr();
+        break;
+      default:
+        _error = 'Unknown error'.tr();
+    }
+
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(50.0),
@@ -610,7 +628,7 @@ class _Helpee15ActivityPendingPageState
             ),
             const SizedBox(height: 16),
             Text(
-              'Unable to load $status jobs',
+              'Unable to load pending jobs'.tr(),
               style: const TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w600,
@@ -618,9 +636,9 @@ class _Helpee15ActivityPendingPageState
               ),
             ),
             const SizedBox(height: 8),
-            const Text(
-              'Please check your connection and try again',
-              style: TextStyle(
+            Text(
+              _error ?? 'Unknown error'.tr(),
+              style: const TextStyle(
                 color: AppColors.textSecondary,
               ),
               textAlign: TextAlign.center,
@@ -633,9 +651,9 @@ class _Helpee15ActivityPendingPageState
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primaryGreen,
               ),
-              child: const Text(
-                'Retry',
-                style: TextStyle(color: AppColors.white),
+              child: Text(
+                'Retry'.tr(),
+                style: const TextStyle(color: AppColors.white),
               ),
             ),
           ],

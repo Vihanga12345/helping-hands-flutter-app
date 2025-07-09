@@ -4,6 +4,7 @@ import '../../utils/app_colors.dart';
 import '../../utils/app_text_styles.dart';
 import '../../widgets/common/app_header.dart';
 import '../../widgets/common/app_navigation_bar.dart';
+import '../../services/localization_service.dart';
 
 class Helpee24HelpSupportOtherOptionsPage extends StatefulWidget {
   const Helpee24HelpSupportOtherOptionsPage({super.key});
@@ -19,8 +20,8 @@ class _Helpee24HelpSupportOtherOptionsPageState extends State<Helpee24HelpSuppor
       body: Column(
         children: [
           // Header
-          const AppHeader(
-            title: 'Help & Support',
+          AppHeader(
+            title: 'Other Options'.tr(),
             showBackButton: true,
             showMenuButton: false,
             showNotificationButton: false,

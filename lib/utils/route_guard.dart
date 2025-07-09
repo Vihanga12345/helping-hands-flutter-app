@@ -30,9 +30,9 @@ class RouteGuard {
               accessResult.reason ?? 'Unauthorized access');
         }
 
-        // Show error message to user
+        // Show error message to user only if context is available and mounted
         if (context.mounted) {
-          _showAccessDeniedDialog(
+          _showAccessDeniedSnackBar(
               context, accessResult.reason ?? 'Access denied');
         }
 
@@ -45,43 +45,40 @@ class RouteGuard {
     }
   }
 
-  /// Show access denied dialog to user
-  static void _showAccessDeniedDialog(BuildContext context, String reason) {
+  /// Show access denied snackbar to user (safer than dialog)
+  static void _showAccessDeniedSnackBar(BuildContext context, String reason) {
     if (!context.mounted) return;
 
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        title: const Row(
-          children: [
-            Icon(Icons.security, color: Colors.red),
-            SizedBox(width: 8),
-            Text('Access Denied'),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(reason),
-            const SizedBox(height: 16),
-            const Text(
-              'You will be redirected to the appropriate page.',
-              style: TextStyle(fontSize: 12, color: Colors.grey),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-            },
-            child: const Text('OK'),
+    try {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              const Icon(Icons.security, color: Colors.white),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Access Denied: $reason',
+                  style: const TextStyle(color: Colors.white),
+                ),
+              ),
+            ],
           ),
-        ],
-      ),
-    );
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 4),
+          action: SnackBarAction(
+            label: 'OK',
+            textColor: Colors.white,
+            onPressed: () {
+              ScaffoldMessenger.of(context).hideCurrentSnackBar();
+            },
+          ),
+        ),
+      );
+    } catch (e) {
+      // If even SnackBar fails, just print to console
+      print('⚠️ Could not show access denied message: $reason');
+    }
   }
 
   /// Check if user can access a specific route (for UI elements)
@@ -192,13 +189,14 @@ extension RouteProtectionExtension on BuildContext {
       go(route);
     } else {
       // Show access denied message
-      ScaffoldMessenger.of(this).showSnackBar(
-        const SnackBar(
-          content: Text('You do not have permission to access this page'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(this).showSnackBar(
+          const SnackBar(
+            content: Text('You do not have permission to access this page'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 }
- 

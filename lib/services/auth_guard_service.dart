@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'custom_auth_service.dart';
+import 'admin_auth_service.dart';
 
 /// AuthGuardService - Handles user type-based route protection and session validation
 class AuthGuardService {
@@ -16,6 +17,13 @@ class AuthGuardService {
   CustomAuthService get _authService {
     _authServiceInstance ??= CustomAuthService();
     return _authServiceInstance!;
+  }
+
+  // Admin auth service for admin-specific authentication
+  AdminAuthService? _adminAuthInstance;
+  AdminAuthService get _adminAuth {
+    _adminAuthInstance ??= AdminAuthService();
+    return _adminAuthInstance!;
   }
 
   // Route patterns that require specific user types
@@ -38,6 +46,8 @@ class AuthGuardService {
     '/helper-auth',
     '/helper-login',
     '/helper-register',
+    '/admin', // Admin start page (splash screen)
+    '/admin/login', // Admin login page
   ];
 
   /// Check if a route requires authentication
@@ -52,6 +62,11 @@ class AuthGuardService {
       // Check if route requires authentication
       if (!requiresAuth(route)) {
         return RouteAccessResult.allowed();
+      }
+
+      // Special handling for admin routes
+      if (route.startsWith('/admin')) {
+        return await _checkAdminRouteAccess(route);
       }
 
       // Check if user is logged in
@@ -108,6 +123,48 @@ class AuthGuardService {
     }
   }
 
+  /// Check admin route access using AdminAuthService
+  Future<RouteAccessResult> _checkAdminRouteAccess(String route) async {
+    try {
+      // Allow access to admin start and login pages
+      if (route == '/admin' || route == '/admin/login') {
+        return RouteAccessResult.allowed();
+      }
+
+      // Check if admin is logged in
+      if (!_adminAuth.isLoggedIn) {
+        return RouteAccessResult.denied(
+          reason: 'Admin authentication required',
+          redirectTo: '/admin/login',
+        );
+      }
+
+      // Validate admin session
+      final sessionValid = await _adminAuth.validateSession();
+      if (!sessionValid) {
+        await _adminAuth.logout();
+        return RouteAccessResult.denied(
+          reason: 'Admin session expired',
+          redirectTo: '/admin/login',
+        );
+      }
+
+      // Log admin access
+      await _adminAuth.logAction('access', 'route', actionDetails: {
+        'route_accessed': route,
+        'access_time': DateTime.now().toIso8601String(),
+      });
+
+      return RouteAccessResult.allowed();
+    } catch (e) {
+      print('❌ Error checking admin route access: $e');
+      return RouteAccessResult.denied(
+        reason: 'Admin security check failed',
+        redirectTo: '/admin/login',
+      );
+    }
+  }
+
   /// Get required user type for a route
   String? _getRequiredUserTypeForRoute(String route) {
     for (final entry in _routePermissions.entries) {
@@ -126,7 +183,7 @@ class AuthGuardService {
     } else if (route.startsWith('/helper')) {
       return '/helper-login';
     } else if (route.startsWith('/admin')) {
-      return '/admin-login';
+      return '/admin/login';
     }
     return '/user-selection';
   }
@@ -139,7 +196,7 @@ class AuthGuardService {
       case 'helper':
         return '/helper/home';
       case 'admin':
-        return '/admin/dashboard';
+        return '/admin/home';
       default:
         return '/user-selection';
     }
@@ -156,15 +213,10 @@ class AuthGuardService {
         return false;
       }
 
-      final result =
-          await _supabase.rpc('validate_user_session_and_type', params: {
-        'p_session_token': sessionToken,
-        'p_required_user_type': currentUserType,
-      });
-
-      if (result is List && result.isNotEmpty) {
-        final validation = result.first;
-        return validation['is_valid'] == true;
+      // Simplified session validation without database functions
+      // Check if user is logged in with valid session data
+      if (_authService.isLoggedIn && _authService.currentUser != null) {
+        return true;
       }
 
       return false;
@@ -184,151 +236,120 @@ class AuthGuardService {
     String severity = 'medium',
   }) async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final sessionToken = prefs.getString('session_token');
-
-      await _supabase.rpc('log_security_event', params: {
-        'p_user_id': _authService.currentUserId,
-        'p_session_token': sessionToken,
-        'p_event_type': eventType,
-        'p_attempted_route': attemptedRoute,
-        'p_expected_user_type': expectedUserType,
-        'p_actual_user_type': actualUserType,
-        'p_event_details': eventDetails,
-        'p_severity': severity,
-      });
-
-      print('🔒 Security event logged: $eventType for route $attemptedRoute');
+      // Simplified security logging without database functions
+      print('🔒 Security event: $eventType for route $attemptedRoute');
+      print('   Expected: $expectedUserType, Actual: $actualUserType');
+      print('   Details: $eventDetails');
     } catch (e) {
       print('❌ Failed to log security event: $e');
     }
   }
 
-  /// Force logout user due to security violation
+  /// Force logout for security reasons
   Future<void> forceLogoutForSecurity(String reason) async {
     try {
-      // Log the forced logout
+      // Log security logout event
       await _logSecurityEvent(
         eventType: 'forced_logout',
-        attemptedRoute: 'security_violation',
-        eventDetails: {'reason': reason},
+        attemptedRoute: 'security',
+        eventDetails: {'logout_reason': reason},
         severity: 'high',
       );
 
-      // Invalidate all user sessions in database
-      if (_authService.currentUserId != null) {
-        await _supabase.rpc('invalidate_user_sessions', params: {
-          'p_user_id': _authService.currentUserId,
-          'p_reason': reason,
-        });
+      // Perform logout based on current user type
+      if (_authService.isLoggedIn) {
+        await _authService.logout();
       }
 
-      // Logout locally
-      await _authService.logout();
+      if (_adminAuth.isLoggedIn) {
+        await _adminAuth.logout();
+      }
 
-      print('🔒 User force logged out due to: $reason');
+      print('🔒 Security logout completed: $reason');
     } catch (e) {
-      print('❌ Error during force logout: $e');
+      print('❌ Error during security logout: $e');
     }
   }
 
-  /// Create new session in database
-  Future<bool> createUserSession(
-      String userId, String userType, String sessionToken,
-      {String? userAuthId}) async {
+  /// Get user permissions for UI display
+  Future<Map<String, dynamic>> getUserPermissions() async {
     try {
-      // Need to get the user_auth_id if not provided
-      String? authId = userAuthId;
+      final currentUserType = _authService.currentUserType;
+      final isAdminLoggedIn = _adminAuth.isLoggedIn;
 
-      if (authId == null) {
-        // Get the user_auth_id from the user_authentication table
-        final authResult = await _supabase
-            .from('user_authentication')
-            .select('id')
-            .eq('user_id', userId)
-            .eq('user_type', userType)
-            .maybeSingle();
-
-        if (authResult != null) {
-          authId = authResult['id'];
-        }
-      }
-
-      await _supabase.from('user_sessions').insert({
-        'user_auth_id': authId, // Required field
-        'user_id': userId, // Added for backwards compatibility
-        'session_token': sessionToken,
-        'user_type': userType,
-        'device_info': kIsWeb ? 'Web Browser' : 'Mobile Device',
-        'expires_at':
-            DateTime.now().add(const Duration(days: 30)).toIso8601String(),
-      });
-
-      print('✅ User session created in database');
-      return true;
+      return {
+        'user_type': currentUserType,
+        'is_admin': isAdminLoggedIn,
+        'can_access_helpee': currentUserType == 'helpee',
+        'can_access_helper': currentUserType == 'helper',
+        'can_access_admin': isAdminLoggedIn,
+        'session_valid': await _validateSessionInDatabase(),
+        'admin_session_valid':
+            isAdminLoggedIn ? await _adminAuth.validateSession() : false,
+      };
     } catch (e) {
-      print('❌ Failed to create user session: $e');
-      return false;
+      print('❌ Error getting user permissions: $e');
+      return {
+        'user_type': null,
+        'is_admin': false,
+        'can_access_helpee': false,
+        'can_access_helper': false,
+        'can_access_admin': false,
+        'session_valid': false,
+        'admin_session_valid': false,
+      };
     }
   }
 
-  /// Invalidate current session
+  /// Clear all user sessions (for complete logout)
+  Future<void> clearAllSessions() async {
+    try {
+      await _authService.logout();
+      await _adminAuth.logout();
+
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.clear();
+
+      print('🔒 All user sessions cleared');
+    } catch (e) {
+      print('❌ Error clearing sessions: $e');
+    }
+  }
+
+  /// Create user session (called by CustomAuthService)
+  Future<void> createUserSession(
+    String userId,
+    String userType,
+    String sessionToken, {
+    String? userAuthId,
+  }) async {
+    try {
+      // Store session information
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('session_token', sessionToken);
+      await prefs.setString('user_id', userId);
+      await prefs.setString('user_type', userType);
+
+      // Simplified session creation without database functions
+      print('✅ User session created: $userType for user $userId');
+    } catch (e) {
+      print('❌ Error creating user session: $e');
+    }
+  }
+
+  /// Invalidate current session (called by CustomAuthService)
   Future<void> invalidateCurrentSession() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final sessionToken = prefs.getString('session_token');
 
-      if (sessionToken != null) {
-        await _supabase
-            .from('user_sessions')
-            .update({'is_active': false}).eq('session_token', sessionToken);
-      }
+      // Clear session data
+      await prefs.remove('session_token');
+      await prefs.remove('user_id');
+      await prefs.remove('user_type');
+
+      print('✅ Current session invalidated');
     } catch (e) {
-      print('❌ Failed to invalidate session: $e');
-    }
-  }
-
-  /// Check if route permission exists in database
-  Future<bool> checkRoutePermissionInDatabase(
-      String route, String userType) async {
-    try {
-      final result = await _supabase.rpc('check_route_permission', params: {
-        'p_route': route,
-        'p_user_type': userType,
-      });
-
-      return result == true;
-    } catch (e) {
-      print('❌ Error checking route permission: $e');
-      return false;
-    }
-  }
-
-  /// Get security audit logs for admin
-  Future<List<Map<String, dynamic>>> getSecurityAuditLogs({
-    int limit = 100,
-    String? eventType,
-    String? severity,
-  }) async {
-    try {
-      dynamic query = _supabase.from('security_audit_log').select(
-          '*, users!security_audit_log_user_id_fkey(first_name, last_name, email)');
-
-      if (eventType != null) {
-        query = query.eq('event_type', eventType);
-      }
-
-      if (severity != null) {
-        query = query.eq('severity', severity);
-      }
-
-      query = query.order('created_at', ascending: false).limit(limit);
-
-      final result = await query;
-      return List<Map<String, dynamic>>.from(result);
-    } catch (e) {
-      print('❌ Error fetching security audit logs: $e');
-      return [];
+      print('❌ Error invalidating session: $e');
     }
   }
 }
@@ -352,7 +373,7 @@ class RouteAccessResult {
   }
 
   factory RouteAccessResult.denied({
-    required String reason,
+    String? reason,
     String? redirectTo,
     bool shouldLogout = false,
   }) {

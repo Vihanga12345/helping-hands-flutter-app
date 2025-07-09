@@ -6,8 +6,10 @@ import '../../widgets/common/app_header.dart';
 import '../../widgets/common/app_navigation_bar.dart';
 import '../../widgets/ui_elements/helper_profile_bar.dart';
 import '../../services/job_data_service.dart';
+import '../../services/job_detail_service.dart';
 import '../../services/custom_auth_service.dart';
 import '../../services/helper_data_service.dart';
+import '../../services/localization_service.dart';
 
 class HelpeeJobDetailCompletedPage extends StatefulWidget {
   final String? jobId;
@@ -27,6 +29,7 @@ class HelpeeJobDetailCompletedPage extends StatefulWidget {
 class _HelpeeJobDetailCompletedPageState
     extends State<HelpeeJobDetailCompletedPage> {
   final JobDataService _jobDataService = JobDataService();
+  final JobDetailService _jobDetailService = JobDetailService();
   final CustomAuthService _authService = CustomAuthService();
 
   Map<String, dynamic>? _jobDetails;
@@ -48,7 +51,7 @@ class _HelpeeJobDetailCompletedPageState
 
       try {
         final jobDetails =
-            await _jobDataService.getJobDetailsWithQuestions(widget.jobId!);
+            await _jobDetailService.getCompleteJobDetails(widget.jobId!);
         setState(() {
           _jobDetails = jobDetails;
           _isLoading = false;
@@ -99,10 +102,10 @@ class _HelpeeJobDetailCompletedPageState
         child: Column(
           children: [
             AppHeader(
-              title: 'Job Details',
+              title: 'Completed Job'.tr(),
               showBackButton: true,
-              showMenuButton: true,
-              showNotificationButton: true,
+              showMenuButton: false,
+              showNotificationButton: false,
             ),
             Expanded(
               child: SingleChildScrollView(
@@ -111,6 +114,10 @@ class _HelpeeJobDetailCompletedPageState
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     _buildMainJobDetails(),
+                    const SizedBox(height: 24),
+                    _buildJobQuestions(),
+                    const SizedBox(height: 24),
+                    _buildJobAdditionalDetailsSegment(),
                     const SizedBox(height: 24),
                     _buildJobSummary(),
                     const SizedBox(height: 24),
@@ -185,11 +192,10 @@ class _HelpeeJobDetailCompletedPageState
           _buildDetailRow(
               'Job Type', _jobDetails?['category_name'] ?? 'General Service'),
           const SizedBox(height: 12),
-          _buildDetailRow(
-              'Completed Date', _jobDetails?['scheduled_date'] ?? 'Not set'),
+          _buildDetailRow('Completed Date', _jobDetails?['date'] ?? 'Not set'),
           const SizedBox(height: 12),
-          _buildDetailRow('Completion Time',
-              _jobDetails?['actual_end_time'] ?? 'Not recorded'),
+          _buildDetailRow(
+              'Completion Time', _jobDetails?['time'] ?? 'Not recorded'),
           const SizedBox(height: 12),
           _buildDetailRow('Location',
               _jobDetails?['location_address'] ?? 'Location not provided'),
@@ -378,22 +384,22 @@ class _HelpeeJobDetailCompletedPageState
           ),
 
           if (review != null && review.isNotEmpty) ...[
-          const SizedBox(height: 12),
-          Text(
-            'Your Review:',
-            style: AppTextStyles.bodyLarge.copyWith(
-              fontWeight: FontWeight.w600,
-              color: AppColors.textPrimary,
+            const SizedBox(height: 12),
+            Text(
+              'Your Review:',
+              style: AppTextStyles.bodyLarge.copyWith(
+                fontWeight: FontWeight.w600,
+                color: AppColors.textPrimary,
+              ),
             ),
-          ),
-          const SizedBox(height: 8),
-          Text(
+            const SizedBox(height: 8),
+            Text(
               review,
-            style: AppTextStyles.bodyMedium.copyWith(
-              color: AppColors.textSecondary,
-              height: 1.5,
+              style: AppTextStyles.bodyMedium.copyWith(
+                color: AppColors.textSecondary,
+                height: 1.5,
+              ),
             ),
-          ),
           ],
         ],
       ),
@@ -437,15 +443,13 @@ class _HelpeeJobDetailCompletedPageState
             jobCount: (_jobDetails?['helper_completed_jobs'] is num)
                 ? (_jobDetails!['helper_completed_jobs'] as num).toInt()
                 : 0,
-            jobTypes: _jobDetails?['helper_job_types'] != null
-                ? _jobDetails!['helper_job_types'].toString().split(' • ')
-                : ['${_jobDetails?['category_name'] ?? 'General Service'}'],
+            jobTypes: [], // Remove job types display
             profileImageUrl: _jobDetails?['helper_profile_pic'],
             helperId: _jobDetails?['assigned_helper_id'],
             onTap: () {
               final helperId = _jobDetails?['assigned_helper_id'];
               if (helperId != null && helperId.isNotEmpty) {
-                    context.push('/helpee/helper-profile-detailed', extra: {
+                context.push('/helpee/helper-profile-detailed', extra: {
                   'helperId': helperId,
                 });
               }
@@ -711,6 +715,207 @@ class _HelpeeJobDetailCompletedPageState
       },
       activeColor: AppColors.primaryGreen,
       contentPadding: EdgeInsets.zero,
+    );
+  }
+
+  // Job Questions Section
+  Widget _buildJobQuestions() {
+    if (_jobDetails == null) return const SizedBox.shrink();
+
+    final questions = _jobDetails!['parsed_questions'] as List? ?? [];
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: const [
+          BoxShadow(
+            color: AppColors.shadowColorLight,
+            blurRadius: 8,
+            offset: Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Job Questions',
+            style: AppTextStyles.heading3.copyWith(
+              fontWeight: FontWeight.w700,
+              color: AppColors.textPrimary,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Questions and answers for this job',
+            style: AppTextStyles.bodyMedium.copyWith(
+              color: AppColors.textSecondary,
+            ),
+          ),
+          const SizedBox(height: 16),
+          if (questions.isEmpty)
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: AppColors.backgroundLight,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Center(
+                child: Text(
+                  'No questions available for this job',
+                  style: TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 16,
+                  ),
+                ),
+              ),
+            )
+          else
+            ...questions.asMap().entries.map((entry) {
+              final index = entry.key;
+              final qa = entry.value;
+              final question = qa['question'] ?? 'Question not available';
+              final answer = qa['answer'] ?? 'No answer provided';
+
+              return Column(
+                children: [
+                  if (index > 0) const SizedBox(height: 12),
+                  _buildQuestionAnswer(
+                    'Q${index + 1}: $question',
+                    'A: $answer',
+                  ),
+                ],
+              );
+            }).toList(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildQuestionAnswer(String question, String answer) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.primaryGreen.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            question,
+            style: AppTextStyles.bodyMedium.copyWith(
+              fontWeight: FontWeight.w600,
+              color: AppColors.textPrimary,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            answer,
+            style: AppTextStyles.bodyMedium.copyWith(
+              color: AppColors.textSecondary,
+              height: 1.4,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildJobAdditionalDetailsSegment() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: AppColors.primaryGreen.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(
+                  Icons.description,
+                  color: AppColors.primaryGreen,
+                  size: 24,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Text(
+                'Job Additional Details',
+                style: AppTextStyles.heading3.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          if (_jobDetails!['description'] != null &&
+              _jobDetails!['description'].isNotEmpty) ...[
+            Text(
+              'Job Description',
+              style: AppTextStyles.bodyMedium.copyWith(
+                fontWeight: FontWeight.w600,
+                color: AppColors.textSecondary,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: AppColors.backgroundLight,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: AppColors.primaryGreen.withOpacity(0.2),
+                ),
+              ),
+              child: Text(
+                _jobDetails!['description'],
+                style: AppTextStyles.bodyMedium.copyWith(
+                  height: 1.5,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+            ),
+          ] else ...[
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: AppColors.backgroundLight,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Center(
+                child: Text(
+                  'No additional details provided for this job',
+                  style: TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 16,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
     );
   }
 }

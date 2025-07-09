@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 import '../../utils/app_colors.dart';
 import '../../utils/app_text_styles.dart';
 import '../../widgets/common/app_header.dart';
 import '../../widgets/common/app_navigation_bar.dart';
+import '../../widgets/language_switcher.dart';
 import '../../services/user_data_service.dart';
 import '../../services/custom_auth_service.dart';
+import '../../services/localization_service.dart';
 
 class Helper20MenuPage extends StatefulWidget {
   const Helper20MenuPage({super.key});
@@ -195,6 +198,40 @@ class _Helper20MenuPageState extends State<Helper20MenuPage> {
                           _MenuItem('Earnings', Icons.analytics,
                               () => context.push('/helper/earnings')),
                         ],
+                      ),
+
+                      const SizedBox(height: 16),
+
+                      // Settings Section with Language Switcher
+                      Container(
+                        decoration: BoxDecoration(
+                          color: AppColors.white,
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: const [
+                            BoxShadow(
+                              color: AppColors.shadowColorLight,
+                              blurRadius: 8,
+                              offset: Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Padding(
+                              padding: const EdgeInsets.fromLTRB(20, 20, 20, 8),
+                              child: Text(
+                                'Settings',
+                                style: TextStyle().copyWith(
+                                  fontWeight: FontWeight.w600,
+                                  color: AppColors.primaryGreen,
+                                ),
+                              ),
+                            ),
+                            const LanguageSwitcher(),
+                            const SizedBox(height: 8),
+                          ],
+                        ),
                       ),
 
                       const SizedBox(height: 16),

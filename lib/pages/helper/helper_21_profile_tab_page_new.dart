@@ -919,9 +919,39 @@ class _Helper21ProfileTabPageState extends State<Helper21ProfileTabPage>
     if (dateString == null) return 'Unknown date';
     try {
       final date = DateTime.parse(dateString);
-      return '${date.day}/${date.month}/${date.year}';
+      final months = [
+        'January',
+        'February',
+        'March',
+        'April',
+        'May',
+        'June',
+        'July',
+        'August',
+        'September',
+        'October',
+        'November',
+        'December'
+      ];
+      final day = date.day;
+      final suffix = _getDaySuffix(day);
+      return '${day}${suffix} ${months[date.month - 1]} ${date.year}';
     } catch (e) {
       return 'Unknown date';
+    }
+  }
+
+  String _getDaySuffix(int day) {
+    if (day >= 11 && day <= 13) return 'th';
+    switch (day % 10) {
+      case 1:
+        return 'st';
+      case 2:
+        return 'nd';
+      case 3:
+        return 'rd';
+      default:
+        return 'th';
     }
   }
 

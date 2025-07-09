@@ -978,4 +978,146 @@ class SupabaseService {
         )
         .subscribe();
   }
+
+  // =============================================
+  // FIREBASE NOTIFICATION METHODS
+  // =============================================
+
+  /// Update user's FCM token
+  Future<void> updateUserFCMToken({
+    required String userId,
+    required String fcmToken,
+  }) async {
+    try {
+      await _client.from('users').update({
+        'fcm_token': fcmToken,
+        'last_fcm_update': DateTime.now().toIso8601String(),
+      }).eq('id', userId);
+
+      print('✅ FCM token updated for user: $userId');
+    } catch (e) {
+      print('❌ Error updating FCM token: $e');
+      throw Exception('Failed to update FCM token');
+    }
+  }
+
+  /// Get user's FCM token
+  Future<String?> getUserFCMToken(String userId) async {
+    try {
+      final response = await _client
+          .from('users')
+          .select('fcm_token')
+          .eq('id', userId)
+          .single();
+
+      return response['fcm_token'] as String?;
+    } catch (e) {
+      print('❌ Error getting FCM token: $e');
+      return null;
+    }
+  }
+
+  /// Get user notification preferences
+  Future<Map<String, dynamic>?> getUserNotificationPreferences(
+      String userId) async {
+    try {
+      final response = await _client
+          .from('user_notification_preferences')
+          .select('*')
+          .eq('user_id', userId)
+          .maybeSingle();
+
+      return response;
+    } catch (e) {
+      print('❌ Error getting notification preferences: $e');
+      return null;
+    }
+  }
+
+  /// Update user notification preferences
+  Future<void> updateUserNotificationPreferences(
+    String userId,
+    Map<String, dynamic> preferences,
+  ) async {
+    try {
+      final data = {
+        'user_id': userId,
+        'updated_at': DateTime.now().toIso8601String(),
+        ...preferences,
+      };
+
+      await _client.from('user_notification_preferences').upsert(data);
+
+      print('✅ Notification preferences updated for user: $userId');
+    } catch (e) {
+      print('❌ Error updating notification preferences: $e');
+      throw Exception('Failed to update notification preferences');
+    }
+  }
+
+  /// Get notification template by key and language
+  Future<Map<String, dynamic>?> getNotificationTemplate({
+    required String templateKey,
+    required String languageCode,
+  }) async {
+    try {
+      final response = await _client
+          .from('notification_templates')
+          .select('*')
+          .eq('template_key', templateKey)
+          .eq('is_active', true)
+          .maybeSingle();
+
+      if (response != null) {
+        // Return localized title and body based on language
+        final title = response['title_$languageCode'] ?? response['title_en'];
+        final body = response['body_$languageCode'] ?? response['body_en'];
+
+        return {
+          'title': title,
+          'body': body,
+          'notification_type': response['notification_type'],
+        };
+      }
+
+      return null;
+    } catch (e) {
+      print('❌ Error getting notification template: $e');
+      return null;
+    }
+  }
+
+  /// Log notification to history
+  Future<String?> logNotificationHistory({
+    required String userId,
+    String? notificationId,
+    required String title,
+    required String body,
+    required String notificationType,
+    String? firebaseMessageId,
+    String deviceType = 'unknown',
+    String appVersion = '1.0.0',
+  }) async {
+    try {
+      final response = await _client
+          .from('notification_history')
+          .insert({
+            'user_id': userId,
+            'notification_id': notificationId,
+            'title': title,
+            'body': body,
+            'notification_type': notificationType,
+            'firebase_message_id': firebaseMessageId,
+            'device_type': deviceType,
+            'app_version': appVersion,
+          })
+          .select('id')
+          .single();
+
+      return response['id'] as String;
+    } catch (e) {
+      print('❌ Error logging notification history: $e');
+      return null;
+    }
+  }
 }

@@ -7,6 +7,7 @@ import '../../widgets/common/app_header.dart';
 import '../../widgets/common/app_navigation_bar.dart';
 import '../../services/job_data_service.dart';
 import '../../services/custom_auth_service.dart';
+import '../../services/localization_service.dart';
 
 class Event {
   final String title;
@@ -62,7 +63,7 @@ class _Helpee8CalendarPageState extends State<Helpee8CalendarPage> {
       if (currentUser == null) {
         setState(() {
           _isLoading = false;
-          _error = 'User not logged in';
+          _error = 'User not logged in'.tr();
         });
         return;
       }
@@ -75,9 +76,9 @@ class _Helpee8CalendarPageState extends State<Helpee8CalendarPage> {
       calendarData.forEach((date, jobList) {
         events[date] = jobList
             .map((job) => Event(
-                  title: job['title'] ?? 'Unknown Job',
+                  title: job['title'] ?? 'Unknown Job'.tr(),
                   status: job['status'] ?? 'PENDING',
-                  helper: job['helper'] ?? 'Waiting for Helper',
+                  helper: job['helper'] ?? 'Waiting for Helper'.tr(),
                   jobId: job['job_id'] ?? '',
                 ))
             .toList();
@@ -90,7 +91,7 @@ class _Helpee8CalendarPageState extends State<Helpee8CalendarPage> {
     } catch (e) {
       setState(() {
         _isLoading = false;
-        _error = 'Failed to load calendar events: $e';
+        _error = 'Failed to load calendar events: $e'.tr();
       });
     }
   }
@@ -130,7 +131,7 @@ class _Helpee8CalendarPageState extends State<Helpee8CalendarPage> {
       body: Column(
         children: [
           AppHeader(
-            title: 'Calendar',
+            title: 'Calendar'.tr(),
             showMenuButton: true,
             showNotificationButton: true,
           ),
@@ -178,8 +179,8 @@ class _Helpee8CalendarPageState extends State<Helpee8CalendarPage> {
               color: AppColors.error,
             ),
             const SizedBox(height: 16),
-            const Text(
-              'Unable to load calendar',
+            Text(
+              'Unable to load calendar'.tr(),
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w600,
@@ -188,7 +189,7 @@ class _Helpee8CalendarPageState extends State<Helpee8CalendarPage> {
             ),
             const SizedBox(height: 8),
             Text(
-              _error ?? 'Unknown error',
+              _error ?? 'Unknown error'.tr(),
               style: const TextStyle(
                 color: AppColors.textSecondary,
               ),
@@ -200,9 +201,9 @@ class _Helpee8CalendarPageState extends State<Helpee8CalendarPage> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primaryGreen,
               ),
-              child: const Text(
-                'Retry',
-                style: TextStyle(color: AppColors.white),
+              child: Text(
+                'Retry'.tr(),
+                style: const TextStyle(color: AppColors.white),
               ),
             ),
           ],
@@ -294,8 +295,8 @@ class _Helpee8CalendarPageState extends State<Helpee8CalendarPage> {
                 children: [
                   Text(
                     _selectedDay != null
-                        ? "${_getEventsForDay(_selectedDay!).isNotEmpty ? 'Jobs for ' : 'No jobs for '}${_formatDate(_selectedDay!)}"
-                        : "Today's Schedule",
+                        ? "${_getEventsForDay(_selectedDay!).isNotEmpty ? '${'Jobs for'.tr()} ' : '${'No jobs for'.tr()} '}${_formatDate(_selectedDay!)}"
+                        : "Today's Schedule".tr(),
                     style: AppTextStyles.heading3.copyWith(
                       fontWeight: FontWeight.w700,
                       color: AppColors.textPrimary,
@@ -386,10 +387,10 @@ class _Helpee8CalendarPageState extends State<Helpee8CalendarPage> {
     return _buildJobCard(
       context: context,
       title: event.title,
-      pay: 'Rate not available',
+      pay: 'Rate not available'.tr(),
       date: _formatDate(_selectedDay!),
-      time: 'Time not available',
-      location: 'Location not available',
+      time: 'Time not available'.tr(),
+      location: 'Location not available'.tr(),
       status: event.status,
       helper: event.helper,
       jobType: _getJobTypeFromStatus(event.status),
@@ -445,7 +446,7 @@ class _Helpee8CalendarPageState extends State<Helpee8CalendarPage> {
           ),
           const SizedBox(height: 16),
           Text(
-            'No jobs scheduled for this day',
+            'No jobs scheduled for this day'.tr(),
             style: AppTextStyles.bodyLarge.copyWith(
               color: AppColors.textSecondary,
             ),
@@ -456,9 +457,9 @@ class _Helpee8CalendarPageState extends State<Helpee8CalendarPage> {
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primaryGreen,
             ),
-            child: const Text(
-              'Create Job Request',
-              style: TextStyle(color: AppColors.white),
+            child: Text(
+              'Create Job Request'.tr(),
+              style: const TextStyle(color: AppColors.white),
             ),
           ),
         ],
@@ -702,20 +703,36 @@ class _Helpee8CalendarPageState extends State<Helpee8CalendarPage> {
 
   String _formatDate(DateTime date) {
     final months = [
-      'Jan',
-      'Feb',
-      'Mar',
-      'Apr',
-      'May',
-      'Jun',
-      'Jul',
-      'Aug',
-      'Sep',
-      'Oct',
-      'Nov',
-      'Dec'
+      'January'.tr(),
+      'February'.tr(),
+      'March'.tr(),
+      'April'.tr(),
+      'May'.tr(),
+      'June'.tr(),
+      'July'.tr(),
+      'August'.tr(),
+      'September'.tr(),
+      'October'.tr(),
+      'November'.tr(),
+      'December'.tr()
     ];
-    return '${months[date.month - 1]} ${date.day}, ${date.year}';
+    final day = date.day;
+    final suffix = _getDaySuffix(day);
+    return '${day}${suffix} ${months[date.month - 1]} ${date.year}';
+  }
+
+  String _getDaySuffix(int day) {
+    if (day >= 11 && day <= 13) return 'th';
+    switch (day % 10) {
+      case 1:
+        return 'st';
+      case 2:
+        return 'nd';
+      case 3:
+        return 'rd';
+      default:
+        return 'th';
+    }
   }
 
   String _getJobTypeFromStatus(String status) {

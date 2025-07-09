@@ -4,22 +4,24 @@ import '../../utils/app_colors.dart';
 import '../../utils/app_text_styles.dart';
 import '../../widgets/common/app_header.dart';
 import '../../widgets/common/app_navigation_bar.dart';
+import '../../services/localization_service.dart';
 
 class Helpee19HelperRatingPage extends StatefulWidget {
   const Helpee19HelperRatingPage({super.key});
 
   @override
-  State<Helpee19HelperRatingPage> createState() => _Helpee19HelperRatingPageState();
+  State<Helpee19HelperRatingPage> createState() =>
+      _Helpee19HelperRatingPageState();
 }
 
 class _Helpee19HelperRatingPageState extends State<Helpee19HelperRatingPage> {
   int _rating = 0;
   final TextEditingController _feedbackController = TextEditingController();
-  
+
   @override
   Widget build(BuildContext context) {
     // Extract data passed from previous page
-    final data = GoRouterState.of(context).extra as Map<String, dynamic>? ?? 
+    final data = GoRouterState.of(context).extra as Map<String, dynamic>? ??
         {'jobId': 'JOB1001', 'helper': 'Saman Perera'};
     final String jobId = data['jobId'] as String;
     final String helperName = data['helper'] as String;
@@ -29,7 +31,7 @@ class _Helpee19HelperRatingPageState extends State<Helpee19HelperRatingPage> {
         children: [
           // Header with Submit button
           AppHeader(
-            title: 'Rate Service',
+            title: 'Rate Helper'.tr(),
             showBackButton: true,
             showMenuButton: false,
             showNotificationButton: false,
@@ -57,7 +59,7 @@ class _Helpee19HelperRatingPageState extends State<Helpee19HelperRatingPage> {
               ),
             ),
           ),
-          
+
           // Body Content
           Expanded(
             child: Container(
@@ -125,7 +127,8 @@ class _Helpee19HelperRatingPageState extends State<Helpee19HelperRatingPage> {
                             ),
                             const SizedBox(height: 8),
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 12, vertical: 6),
                               decoration: BoxDecoration(
                                 color: AppColors.success.withOpacity(0.1),
                                 borderRadius: BorderRadius.circular(20),
@@ -142,9 +145,9 @@ class _Helpee19HelperRatingPageState extends State<Helpee19HelperRatingPage> {
                           ],
                         ),
                       ),
-                      
+
                       const SizedBox(height: 32),
-                      
+
                       // Rating Section
                       Container(
                         width: double.infinity,
@@ -178,7 +181,7 @@ class _Helpee19HelperRatingPageState extends State<Helpee19HelperRatingPage> {
                               ),
                             ),
                             const SizedBox(height: 24),
-                            
+
                             // Star Rating
                             Row(
                               mainAxisAlignment: MainAxisAlignment.center,
@@ -192,7 +195,9 @@ class _Helpee19HelperRatingPageState extends State<Helpee19HelperRatingPage> {
                                   child: Container(
                                     padding: const EdgeInsets.all(4),
                                     child: Icon(
-                                      index < _rating ? Icons.star : Icons.star_border,
+                                      index < _rating
+                                          ? Icons.star
+                                          : Icons.star_border,
                                       color: AppColors.warning,
                                       size: 40,
                                     ),
@@ -200,9 +205,9 @@ class _Helpee19HelperRatingPageState extends State<Helpee19HelperRatingPage> {
                                 );
                               }),
                             ),
-                            
+
                             const SizedBox(height: 16),
-                            
+
                             // Rating Text
                             if (_rating > 0)
                               Text(
@@ -216,9 +221,9 @@ class _Helpee19HelperRatingPageState extends State<Helpee19HelperRatingPage> {
                           ],
                         ),
                       ),
-                      
+
                       const SizedBox(height: 24),
-                      
+
                       // Feedback Section
                       Container(
                         width: double.infinity,
@@ -257,10 +262,12 @@ class _Helpee19HelperRatingPageState extends State<Helpee19HelperRatingPage> {
                               controller: _feedbackController,
                               maxLines: 4,
                               decoration: InputDecoration(
-                                hintText: 'Share your thoughts about the service...',
+                                hintText:
+                                    'Share your thoughts about the service...',
                                 border: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(12),
-                                  borderSide: const BorderSide(color: AppColors.lightGrey),
+                                  borderSide: const BorderSide(
+                                      color: AppColors.lightGrey),
                                 ),
                                 filled: true,
                                 fillColor: AppColors.backgroundLight,
@@ -269,9 +276,9 @@ class _Helpee19HelperRatingPageState extends State<Helpee19HelperRatingPage> {
                           ],
                         ),
                       ),
-                      
+
                       const SizedBox(height: 32),
-                      
+
                       // Submit Button
                       SizedBox(
                         width: double.infinity,
@@ -287,7 +294,9 @@ class _Helpee19HelperRatingPageState extends State<Helpee19HelperRatingPage> {
                             disabledBackgroundColor: AppColors.lightGrey,
                           ),
                           child: Text(
-                            _rating > 0 ? 'Submit Rating' : 'Please rate the service',
+                            _rating > 0
+                                ? 'Submit Rating'
+                                : 'Please rate the service',
                             style: const TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w600,
@@ -295,9 +304,9 @@ class _Helpee19HelperRatingPageState extends State<Helpee19HelperRatingPage> {
                           ),
                         ),
                       ),
-                      
+
                       const SizedBox(height: 16),
-                      
+
                       // Skip Button
                       TextButton(
                         onPressed: () => context.pop(),
@@ -309,7 +318,7 @@ class _Helpee19HelperRatingPageState extends State<Helpee19HelperRatingPage> {
                           ),
                         ),
                       ),
-                      
+
                       const SizedBox(height: 20),
                     ],
                   ),
@@ -317,7 +326,7 @@ class _Helpee19HelperRatingPageState extends State<Helpee19HelperRatingPage> {
               ),
             ),
           ),
-          
+
           // Navigation Bar
           const AppNavigationBar(
             currentTab: NavigationTab.home,
@@ -358,11 +367,12 @@ class _Helpee19HelperRatingPageState extends State<Helpee19HelperRatingPage> {
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('Thank you for rating! ${_getRatingText(_rating)} (${_rating}/5)'),
+        content: Text(
+            'Thank you for rating! ${_getRatingText(_rating)} (${_rating}/5)'),
         backgroundColor: AppColors.success,
       ),
     );
-    
+
     context.pop();
   }
 
@@ -371,4 +381,4 @@ class _Helpee19HelperRatingPageState extends State<Helpee19HelperRatingPage> {
     _feedbackController.dispose();
     super.dispose();
   }
-} 
+}

@@ -5,6 +5,7 @@ import '../../utils/app_text_styles.dart';
 import '../../widgets/common/app_header.dart';
 import '../../widgets/common/app_navigation_bar.dart';
 import '../../services/job_data_service.dart';
+import '../../services/localization_service.dart';
 
 class Helpee12JobRequestViewPage extends StatefulWidget {
   final String? jobId;
@@ -35,7 +36,7 @@ class _Helpee12JobRequestViewPageState
         children: [
           // Header with Edit button
           AppHeader(
-            title: 'Job Request $jobId',
+            title: 'Job Request Details'.tr(),
             showBackButton: true,
             showMenuButton: false,
             showNotificationButton: false,

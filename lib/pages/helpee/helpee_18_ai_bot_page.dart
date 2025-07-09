@@ -4,6 +4,7 @@ import '../../utils/app_colors.dart';
 import '../../utils/app_text_styles.dart';
 import '../../widgets/common/app_header.dart';
 import '../../widgets/common/app_navigation_bar.dart';
+import '../../services/localization_service.dart';
 
 class Helpee18AIBotPage extends StatefulWidget {
   const Helpee18AIBotPage({super.key});
@@ -15,7 +16,7 @@ class Helpee18AIBotPage extends StatefulWidget {
 class _Helpee18AIBotPageState extends State<Helpee18AIBotPage> {
   final List<ChatMessage> _messages = [
     ChatMessage(
-      message: "Hello! I'm your AI assistant. How can I help you today?",
+      message: "Hello! I'm your AI assistant. How can I help you today?".tr(),
       isUser: false,
       timestamp: DateTime.now().subtract(const Duration(minutes: 5)),
     ),
@@ -30,8 +31,8 @@ class _Helpee18AIBotPageState extends State<Helpee18AIBotPage> {
       body: Column(
         children: [
           // Header
-          const AppHeader(
-            title: 'AI Assistant',
+          AppHeader(
+            title: 'AI Assistant'.tr(),
             showBackButton: true,
             showMenuButton: false,
             showNotificationButton: false,
@@ -84,7 +85,7 @@ class _Helpee18AIBotPageState extends State<Helpee18AIBotPage> {
                             child: TextFormField(
                               controller: _messageController,
                               decoration: InputDecoration(
-                                hintText: 'Type your message...',
+                                hintText: 'Type your message...'.tr(),
                                 border: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(25),
                                   borderSide: const BorderSide(color: AppColors.lightGrey),
@@ -287,19 +288,19 @@ class _Helpee18AIBotPageState extends State<Helpee18AIBotPage> {
     String response;
 
     if (lowercaseMessage.contains('hello') || lowercaseMessage.contains('hi')) {
-      response = "Hello! How can I assist you with your household tasks today?";
+      response = "Hello! How can I assist you with your household tasks today?".tr();
     } else if (lowercaseMessage.contains('clean') || lowercaseMessage.contains('house')) {
-      response = "I can help you find professional cleaning services. Would you like me to help you create a job request for house cleaning?";
+      response = "I can help you find professional cleaning services. Would you like me to help you create a job request for house cleaning?".tr();
     } else if (lowercaseMessage.contains('garden') || lowercaseMessage.contains('lawn')) {
-      response = "Looking for gardening help? I can connect you with experienced gardeners in your area. What specific gardening tasks do you need help with?";
+      response = "Looking for gardening help? I can connect you with experienced gardeners in your area. What specific gardening tasks do you need help with?".tr();
     } else if (lowercaseMessage.contains('cook') || lowercaseMessage.contains('food')) {
-      response = "Need cooking assistance? I can help you find qualified cooks or meal prep services. What type of cooking help are you looking for?";
+      response = "Need cooking assistance? I can help you find qualified cooks or meal prep services. What type of cooking help are you looking for?".tr();
     } else if (lowercaseMessage.contains('price') || lowercaseMessage.contains('cost')) {
-      response = "Service prices vary based on the type of work, duration, and location. Would you like me to help you get quotes from available helpers?";
+      response = "Service prices vary based on the type of work, duration, and location. Would you like me to help you get quotes from available helpers?".tr();
     } else if (lowercaseMessage.contains('help') || lowercaseMessage.contains('support')) {
-      response = "I'm here to help! I can assist you with:\n• Finding qualified helpers\n• Creating job requests\n• Managing your bookings\n• Answering questions about services\n\nWhat would you like help with?";
+      response = "I'm here to help! I can assist you with:\n• Finding qualified helpers\n• Creating job requests\n• Managing your bookings\n• Answering questions about services\n\nWhat would you like help with?".tr();
     } else {
-      response = "That's interesting! I'm here to help you with household services. You can ask me about cleaning, gardening, cooking, or any other home assistance needs. How can I help you today?";
+      response = "That's interesting! I'm here to help you with household services. You can ask me about cleaning, gardening, cooking, or any other home assistance needs. How can I help you today?".tr();
     }
 
     return ChatMessage(
