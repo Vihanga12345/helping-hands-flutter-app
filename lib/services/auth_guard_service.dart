@@ -46,6 +46,9 @@ class AuthGuardService {
     '/helper-auth',
     '/helper-login',
     '/helper-register',
+    '/helper-register-2',
+    '/helper-register-3',
+    '/helper-register-4',
     '/admin', // Admin start page (splash screen)
     '/admin/login', // Admin login page
   ];

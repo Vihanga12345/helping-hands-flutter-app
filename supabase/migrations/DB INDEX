@@ -1,0 +1,1729 @@
+Schema	Table	Name	
+public
+
+admin_audit_log
+
+admin_audit_log_pkey
+
+
+View definition
+
+public
+
+admin_sessions
+
+admin_sessions_pkey
+
+
+View definition
+
+public
+
+admin_sessions
+
+admin_sessions_session_token_key
+
+
+View definition
+
+public
+
+admin_users
+
+admin_users_email_key
+
+
+View definition
+
+public
+
+admin_users
+
+admin_users_pkey
+
+
+View definition
+
+public
+
+admin_users
+
+admin_users_username_key
+
+
+View definition
+
+public
+
+call_logs
+
+call_logs_pkey
+
+
+View definition
+
+public
+
+conversations
+
+conversations_job_id_key
+
+
+View definition
+
+public
+
+conversations
+
+conversations_pkey
+
+
+View definition
+
+public
+
+emergency_contacts
+
+emergency_contacts_pkey
+
+
+View definition
+
+public
+
+general_reports
+
+general_reports_pkey
+
+
+View definition
+
+public
+
+helper_documents
+
+helper_documents_pkey
+
+
+View definition
+
+public
+
+helper_earnings
+
+helper_earnings_pkey
+
+
+View definition
+
+public
+
+helper_job_types
+
+helper_job_types_helper_id_job_category_id_key
+
+
+View definition
+
+public
+
+helper_job_types
+
+helper_job_types_pkey
+
+
+View definition
+
+public
+
+helper_skills
+
+helper_skills_helper_id_skill_category_key
+
+
+View definition
+
+public
+
+helper_skills
+
+helper_skills_pkey
+
+
+View definition
+
+public
+
+admin_audit_log
+
+idx_admin_audit_action_type
+
+
+View definition
+
+public
+
+admin_audit_log
+
+idx_admin_audit_admin_id
+
+
+View definition
+
+public
+
+admin_audit_log
+
+idx_admin_audit_created_at
+
+
+View definition
+
+public
+
+admin_audit_log
+
+idx_admin_audit_entity_id
+
+
+View definition
+
+public
+
+admin_audit_log
+
+idx_admin_audit_entity_type
+
+
+View definition
+
+public
+
+admin_sessions
+
+idx_admin_sessions_active
+
+
+View definition
+
+public
+
+admin_sessions
+
+idx_admin_sessions_admin_id
+
+
+View definition
+
+public
+
+admin_sessions
+
+idx_admin_sessions_token
+
+
+View definition
+
+public
+
+admin_users
+
+idx_admin_users_active
+
+
+View definition
+
+public
+
+admin_users
+
+idx_admin_users_email
+
+
+View definition
+
+public
+
+admin_users
+
+idx_admin_users_username
+
+
+View definition
+
+public
+
+helper_documents
+
+idx_helper_documents_category
+
+
+View definition
+
+public
+
+helper_documents
+
+idx_helper_documents_helper_id
+
+
+View definition
+
+public
+
+helper_documents
+
+idx_helper_documents_type
+
+
+View definition
+
+public
+
+helper_earnings
+
+idx_helper_earnings_date
+
+
+View definition
+
+public
+
+helper_earnings
+
+idx_helper_earnings_helper_id
+
+
+View definition
+
+public
+
+helper_earnings
+
+idx_helper_earnings_job_id
+
+
+View definition
+
+public
+
+helper_job_types
+
+idx_helper_job_types_active
+
+
+View definition
+
+public
+
+helper_job_types
+
+idx_helper_job_types_category
+
+
+View definition
+
+public
+
+helper_job_types
+
+idx_helper_job_types_category_id
+
+
+View definition
+
+public
+
+helper_job_types
+
+idx_helper_job_types_helper_id
+
+
+View definition
+
+public
+
+helper_skills
+
+idx_helper_skills_active
+
+
+View definition
+
+public
+
+helper_skills
+
+idx_helper_skills_category
+
+
+View definition
+
+public
+
+helper_skills
+
+idx_helper_skills_helper_id
+
+
+View definition
+
+public
+
+job_applications
+
+idx_job_applications_helper_id
+
+
+View definition
+
+public
+
+job_applications
+
+idx_job_applications_job_id
+
+
+View definition
+
+public
+
+job_applications
+
+idx_job_applications_status
+
+
+View definition
+
+public
+
+job_categories
+
+idx_job_categories_active
+
+
+View definition
+
+public
+
+job_categories
+
+idx_job_categories_name
+
+
+View definition
+
+public
+
+job_category_questions
+
+idx_job_category_questions_active
+
+
+View definition
+
+public
+
+job_category_questions
+
+idx_job_category_questions_category
+
+
+View definition
+
+public
+
+job_category_questions
+
+idx_job_category_questions_category_id
+
+
+View definition
+
+public
+
+job_category_questions
+
+idx_job_category_questions_category_order
+
+
+View definition
+
+public
+
+job_category_questions
+
+idx_job_category_questions_category_question_order
+
+
+View definition
+
+public
+
+job_category_questions
+
+idx_job_category_questions_order
+
+
+View definition
+
+public
+
+job_ignores
+
+idx_job_ignores_helper_id
+
+
+View definition
+
+public
+
+job_ignores
+
+idx_job_ignores_ignored_at
+
+
+View definition
+
+public
+
+job_ignores
+
+idx_job_ignores_job_id
+
+
+View definition
+
+public
+
+job_question_answers
+
+idx_job_question_answers_job_id
+
+
+View definition
+
+public
+
+job_question_answers
+
+idx_job_question_answers_job_question
+
+
+View definition
+
+public
+
+job_question_answers
+
+idx_job_question_answers_question_id
+
+
+View definition
+
+public
+
+job_reports
+
+idx_job_reports_job_id
+
+
+View definition
+
+public
+
+job_reports
+
+idx_job_reports_reporter_id
+
+
+View definition
+
+public
+
+job_reports
+
+idx_job_reports_status
+
+
+View definition
+
+public
+
+job_timer_sessions
+
+idx_job_timer_sessions_helper_id
+
+
+View definition
+
+public
+
+job_timer_sessions
+
+idx_job_timer_sessions_job_id
+
+
+View definition
+
+public
+
+job_timer_sessions
+
+idx_job_timer_sessions_start_time
+
+
+View definition
+
+public
+
+job_timers
+
+idx_job_timers_helper_id
+
+
+View definition
+
+public
+
+job_timers
+
+idx_job_timers_job_id
+
+
+View definition
+
+public
+
+job_timers
+
+idx_job_timers_status
+
+
+View definition
+
+public
+
+jobs
+
+idx_jobs_assigned_helper_status
+
+
+View definition
+
+public
+
+jobs
+
+idx_jobs_category_id
+
+
+View definition
+
+public
+
+jobs
+
+idx_jobs_category_name
+
+
+View definition
+
+public
+
+jobs
+
+idx_jobs_cumulative_time
+
+
+View definition
+
+public
+
+jobs
+
+idx_jobs_helpee_id
+
+
+View definition
+
+public
+
+jobs
+
+idx_jobs_helpee_status
+
+
+View definition
+
+public
+
+jobs
+
+idx_jobs_helpee_username
+
+
+View definition
+
+public
+
+jobs
+
+idx_jobs_helper_assignment_status
+
+
+View definition
+
+public
+
+jobs
+
+idx_jobs_helper_id
+
+
+View definition
+
+public
+
+jobs
+
+idx_jobs_helper_status
+
+
+View definition
+
+public
+
+jobs
+
+idx_jobs_helper_username
+
+
+View definition
+
+public
+
+jobs
+
+idx_jobs_is_private
+
+
+View definition
+
+public
+
+jobs
+
+idx_jobs_job_type
+
+
+View definition
+
+public
+
+jobs
+
+idx_jobs_location
+
+
+View definition
+
+public
+
+jobs
+
+idx_jobs_payment_status
+
+
+View definition
+
+public
+
+jobs
+
+idx_jobs_scheduled_date
+
+
+View definition
+
+public
+
+jobs
+
+idx_jobs_scheduled_time
+
+
+View definition
+
+public
+
+jobs
+
+idx_jobs_session_start
+
+
+View definition
+
+public
+
+jobs
+
+idx_jobs_started_at
+
+
+View definition
+
+public
+
+jobs
+
+idx_jobs_status
+
+
+View definition
+
+public
+
+jobs
+
+idx_jobs_status_helpee
+
+
+View definition
+
+public
+
+jobs
+
+idx_jobs_status_helper
+
+
+View definition
+
+public
+
+jobs
+
+idx_jobs_status_updated
+
+
+View definition
+
+public
+
+jobs
+
+idx_jobs_timer_status
+
+
+View definition
+
+public
+
+notification_history
+
+idx_notification_history_delivery_status
+
+
+View definition
+
+public
+
+notification_history
+
+idx_notification_history_sent_at
+
+
+View definition
+
+public
+
+notification_history
+
+idx_notification_history_user_type
+
+
+View definition
+
+public
+
+notifications
+
+idx_notifications_category
+
+
+View definition
+
+public
+
+notifications
+
+idx_notifications_is_read
+
+
+View definition
+
+public
+
+notifications
+
+idx_notifications_push_sent
+
+
+View definition
+
+public
+
+notifications
+
+idx_notifications_related_job
+
+
+View definition
+
+public
+
+notifications
+
+idx_notifications_type
+
+
+View definition
+
+public
+
+notifications
+
+idx_notifications_user_created
+
+
+View definition
+
+public
+
+notifications
+
+idx_notifications_user_id
+
+
+View definition
+
+public
+
+notifications
+
+idx_notifications_user_id_created_at
+
+
+View definition
+
+public
+
+payment_confirmations
+
+idx_payment_confirmations_job_id
+
+
+View definition
+
+public
+
+payment_confirmations
+
+idx_payment_confirmations_user_id
+
+
+View definition
+
+public
+
+payment_disputes
+
+idx_payment_disputes_job_id
+
+
+View definition
+
+public
+
+payment_disputes
+
+idx_payment_disputes_status
+
+
+View definition
+
+public
+
+payment_methods
+
+idx_payment_methods_default
+
+
+View definition
+
+public
+
+payment_methods
+
+idx_payment_methods_user_id
+
+
+View definition
+
+public
+
+payments
+
+idx_payments_job_id
+
+
+View definition
+
+public
+
+payments
+
+idx_payments_status
+
+
+View definition
+
+public
+
+ratings_reviews
+
+idx_ratings_reviews_job_id
+
+
+View definition
+
+public
+
+ratings_reviews
+
+idx_ratings_reviews_reviewee_id
+
+
+View definition
+
+public
+
+route_permissions
+
+idx_route_permissions_pattern
+
+
+View definition
+
+public
+
+route_permissions
+
+idx_route_permissions_user_types
+
+
+View definition
+
+public
+
+security_audit_log
+
+idx_security_audit_created_at
+
+
+View definition
+
+public
+
+security_audit_log
+
+idx_security_audit_event_type
+
+
+View definition
+
+public
+
+security_audit_log
+
+idx_security_audit_severity
+
+
+View definition
+
+public
+
+security_audit_log
+
+idx_security_audit_user_id
+
+
+View definition
+
+public
+
+system_analytics
+
+idx_system_analytics_date
+
+
+View definition
+
+public
+
+system_analytics
+
+idx_system_analytics_metric_date
+
+
+View definition
+
+public
+
+user_authentication
+
+idx_user_authentication_email
+
+
+View definition
+
+public
+
+user_authentication
+
+idx_user_authentication_user_id
+
+
+View definition
+
+public
+
+user_authentication
+
+idx_user_authentication_user_type
+
+
+View definition
+
+public
+
+user_authentication
+
+idx_user_authentication_username
+
+
+View definition
+
+public
+
+user_cards
+
+idx_user_cards_active
+
+
+View definition
+
+public
+
+user_cards
+
+idx_user_cards_default
+
+
+View definition
+
+public
+
+user_cards
+
+idx_user_cards_user_id
+
+
+View definition
+
+public
+
+user_sessions
+
+idx_user_sessions_active
+
+
+View definition
+
+public
+
+user_sessions
+
+idx_user_sessions_expires
+
+
+View definition
+
+public
+
+user_sessions
+
+idx_user_sessions_token
+
+
+View definition
+
+public
+
+user_sessions
+
+idx_user_sessions_user_auth_id
+
+
+View definition
+
+public
+
+user_sessions
+
+idx_user_sessions_user_id
+
+
+View definition
+
+public
+
+user_sessions
+
+idx_user_sessions_user_type
+
+
+View definition
+
+public
+
+user_skills
+
+idx_user_skills_category_id
+
+
+View definition
+
+public
+
+user_skills
+
+idx_user_skills_user_id
+
+
+View definition
+
+public
+
+users
+
+idx_users_email
+
+
+View definition
+
+public
+
+users
+
+idx_users_fcm_token
+
+
+View definition
+
+public
+
+users
+
+idx_users_location
+
+
+View definition
+
+public
+
+users
+
+idx_users_phone
+
+
+View definition
+
+public
+
+users
+
+idx_users_user_type
+
+
+View definition
+
+public
+
+users
+
+idx_users_username
+
+
+View definition
+
+public
+
+job_applications
+
+job_applications_job_id_helper_id_key
+
+
+View definition
+
+public
+
+job_applications
+
+job_applications_pkey
+
+
+View definition
+
+public
+
+job_attachments
+
+job_attachments_pkey
+
+
+View definition
+
+public
+
+job_categories
+
+job_categories_name_key
+
+
+View definition
+
+public
+
+job_categories
+
+job_categories_pkey
+
+
+View definition
+
+public
+
+job_category_questions
+
+job_category_questions_category_id_question_order_key
+
+
+View definition
+
+public
+
+job_category_questions
+
+job_category_questions_pkey
+
+
+View definition
+
+public
+
+job_ignores
+
+job_ignores_job_id_helper_id_key
+
+
+View definition
+
+public
+
+job_ignores
+
+job_ignores_pkey
+
+
+View definition
+
+public
+
+job_question_answers
+
+job_question_answers_job_id_question_id_key
+
+
+View definition
+
+public
+
+job_question_answers
+
+job_question_answers_pkey
+
+
+View definition
+
+public
+
+job_reports
+
+job_reports_pkey
+
+
+View definition
+
+public
+
+job_timer_sessions
+
+job_timer_sessions_pkey
+
+
+View definition
+
+public
+
+job_timers
+
+job_timers_pkey
+
+
+View definition
+
+public
+
+jobs
+
+jobs_pkey
+
+
+View definition
+
+public
+
+messages
+
+messages_pkey
+
+
+View definition
+
+public
+
+notification_history
+
+notification_history_pkey
+
+
+View definition
+
+public
+
+notification_templates
+
+notification_templates_pkey
+
+
+View definition
+
+public
+
+notification_templates
+
+notification_templates_template_key_key
+
+
+View definition
+
+public
+
+notifications
+
+notifications_pkey
+
+
+View definition
+
+public
+
+payment_confirmations
+
+payment_confirmations_pkey
+
+
+View definition
+
+public
+
+payment_disputes
+
+payment_disputes_pkey
+
+
+View definition
+
+public
+
+payment_methods
+
+payment_methods_pkey
+
+
+View definition
+
+public
+
+payments
+
+payments_pkey
+
+
+View definition
+
+public
+
+ratings_reviews
+
+ratings_reviews_job_id_reviewer_id_reviewee_id_key
+
+
+View definition
+
+public
+
+ratings_reviews
+
+ratings_reviews_pkey
+
+
+View definition
+
+public
+
+route_permissions
+
+route_permissions_pkey
+
+
+View definition
+
+public
+
+route_permissions
+
+route_permissions_route_pattern_key
+
+
+View definition
+
+public
+
+security_audit_log
+
+security_audit_log_pkey
+
+
+View definition
+
+public
+
+system_analytics
+
+system_analytics_metric_name_metric_date_key
+
+
+View definition
+
+public
+
+system_analytics
+
+system_analytics_pkey
+
+
+View definition
+
+public
+
+job_question_answers
+
+unique_job_question
+
+
+View definition
+
+public
+
+job_timers
+
+unique_job_timer
+
+
+View definition
+
+public
+
+user_authentication
+
+user_authentication_email_key
+
+
+View definition
+
+public
+
+user_authentication
+
+user_authentication_pkey
+
+
+View definition
+
+public
+
+user_authentication
+
+user_authentication_username_key
+
+
+View definition
+
+public
+
+user_availability
+
+user_availability_pkey
+
+
+View definition
+
+public
+
+user_cards
+
+user_cards_pkey
+
+
+View definition
+
+public
+
+user_documents
+
+user_documents_pkey
+
+
+View definition
+
+public
+
+user_notification_preferences
+
+user_notification_preferences_pkey
+
+
+View definition
+
+public
+
+user_notification_preferences
+
+user_notification_preferences_user_id_key
+
+
+View definition
+
+public
+
+user_reports
+
+user_reports_pkey
+
+
+View definition
+
+public
+
+user_sessions
+
+user_sessions_pkey
+
+
+View definition
+
+public
+
+user_sessions
+
+user_sessions_session_token_key
+
+
+View definition
+
+public
+
+user_skills
+
+user_skills_pkey
+
+
+View definition
+
+public
+
+user_skills
+
+user_skills_user_id_category_id_key
+
+
+View definition
+
+public
+
+user_type_switching_log
+
+user_type_switching_log_pkey
+
+
+View definition
+
+public
+
+users
+
+users_email_key
+
+
+View definition
+
+public
+
+users
+
+users_phone_key
+
+
+View definition
+
+public
+
+users
+
+users_pkey
+
+
+View definition
+
+public
+
+users
+
+users_username_key
+
+
+View definition
+

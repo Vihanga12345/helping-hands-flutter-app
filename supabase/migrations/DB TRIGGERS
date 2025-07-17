@@ -1,0 +1,10 @@
+Name	Table	Function	Events	Orientation	Enabled	
+trigger_notify_on_job_creation	
+jobs
+
+notify_helpers_of_new_job
+
+AFTER INSERT
+ROW
+
+

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../models/user_type.dart';
 import 'package:go_router/go_router.dart';
 import '../../utils/app_colors.dart';
 import '../../utils/app_text_styles.dart';
@@ -20,6 +21,8 @@ class _Helpee14DetailedHelperProfilePageState
     extends State<Helpee14DetailedHelperProfilePage> {
   final HelperDataService _helperDataService = HelperDataService();
   Map<String, dynamic>? _helper;
+  Map<String, dynamic>? _helperRatings;
+  List<Map<String, dynamic>> _recentReviews = [];
   bool _isLoading = true;
   String? _error;
 
@@ -37,9 +40,27 @@ class _Helpee14DetailedHelperProfilePageState
 
     try {
       if (widget.helperData != null) {
-        // Use passed helper data
+        // Use passed helper data and fetch ratings/reviews
+        _helper = widget.helperData;
+
+        // Fetch ratings and reviews for this helper
+        if (_helper!['id'] != null) {
+          _helperRatings = await _helperDataService
+              .getHelperRatingsAndReviews(_helper!['id']);
+          _recentReviews = (_helperRatings?['reviews'] as List<dynamic>? ?? [])
+              .cast<Map<String, dynamic>>()
+              .where((review) =>
+                  review['review'] != null &&
+                  review['review'].toString().trim().isNotEmpty)
+              .take(3)
+              .toList();
+
+          print(
+              '✅ Helper ratings loaded: ${_helperRatings?['average_rating']} (${_helperRatings?['total_reviews']} reviews)');
+          print('✅ Recent reviews: ${_recentReviews.length}');
+        }
+
         setState(() {
-          _helper = widget.helperData;
           _isLoading = false;
         });
       } else {
@@ -203,7 +224,7 @@ class _Helpee14DetailedHelperProfilePageState
                     const Icon(Icons.star, color: AppColors.warning, size: 20),
                     const SizedBox(width: 4),
                     Text(
-                      '${_helper!['rating']?.toStringAsFixed(1) ?? '0.0'}',
+                      '${_helperRatings?['average_rating']?.toStringAsFixed(1) ?? '0.0'}',
                       style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
@@ -211,7 +232,7 @@ class _Helpee14DetailedHelperProfilePageState
                     ),
                     const SizedBox(width: 8),
                     Text(
-                      '(${_helper!['total_reviews'] ?? 0} reviews)',
+                      '(${_helperRatings?['total_reviews'] ?? 0} reviews)',
                       style: const TextStyle(
                         color: AppColors.textSecondary,
                       ),
@@ -394,6 +415,11 @@ class _Helpee14DetailedHelperProfilePageState
             ),
           ),
 
+          const SizedBox(height: 20),
+
+          // Recent Reviews Section
+          if (_recentReviews.isNotEmpty) _buildRecentReviewsSection(),
+
           const SizedBox(height: 24),
 
           // Action Buttons
@@ -525,5 +551,163 @@ class _Helpee14DetailedHelperProfilePageState
         );
       },
     );
+  }
+
+  Widget _buildRecentReviewsSection() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: const [
+          BoxShadow(
+            color: AppColors.shadowColorLight,
+            blurRadius: 8,
+            offset: Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.rate_review,
+                  color: AppColors.primaryGreen, size: 20),
+              const SizedBox(width: 8),
+              const Text(
+                'Recent Reviews',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const Spacer(),
+              Text(
+                '${_helperRatings?['total_reviews'] ?? 0} total',
+                style: const TextStyle(
+                  color: AppColors.textSecondary,
+                  fontSize: 14,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          ..._recentReviews.map((review) => _buildReviewItem(review)).toList(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildReviewItem(Map<String, dynamic> review) {
+    final reviewerName = review['reviewer'] != null
+        ? '${review['reviewer']['first_name']} ${review['reviewer']['last_name']?.substring(0, 1)}.'
+        : 'Helpee';
+    final reviewText = review['review'] ?? 'No review text provided';
+    final rating = review['rating'] ?? 0;
+    final date = _formatReviewDate(review['created_at']);
+    final reviewerImageUrl = review['reviewer']?['profile_image_url'];
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.backgroundLight,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.borderLight),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              CircleAvatar(
+                radius: 16,
+                backgroundColor: AppColors.primaryGreen,
+                backgroundImage:
+                    reviewerImageUrl != null && reviewerImageUrl.isNotEmpty
+                        ? NetworkImage(reviewerImageUrl)
+                        : null,
+                child: reviewerImageUrl == null || reviewerImageUrl.isEmpty
+                    ? Text(
+                        reviewerName.isNotEmpty
+                            ? reviewerName[0].toUpperCase()
+                            : 'H',
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      )
+                    : null,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  reviewerName,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 14,
+                  ),
+                ),
+              ),
+              Row(
+                children: List.generate(5, (index) {
+                  return Icon(
+                    index < rating ? Icons.star : Icons.star_border,
+                    size: 14,
+                    color: AppColors.warning,
+                  );
+                }),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Text(
+            reviewText,
+            style: const TextStyle(
+              color: AppColors.textSecondary,
+              fontSize: 14,
+              height: 1.4,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            date,
+            style: const TextStyle(
+              color: AppColors.textSecondary,
+              fontSize: 12,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _formatReviewDate(String? dateString) {
+    if (dateString == null) return 'Unknown date';
+
+    try {
+      final date = DateTime.parse(dateString);
+      final now = DateTime.now();
+      final difference = now.difference(date);
+
+      if (difference.inDays == 0) {
+        return 'Today';
+      } else if (difference.inDays == 1) {
+        return 'Yesterday';
+      } else if (difference.inDays < 7) {
+        return '${difference.inDays} days ago';
+      } else if (difference.inDays < 30) {
+        final weeks = (difference.inDays / 7).floor();
+        return weeks == 1 ? '1 week ago' : '$weeks weeks ago';
+      } else {
+        final months = (difference.inDays / 30).floor();
+        return months == 1 ? '1 month ago' : '$months months ago';
+      }
+    } catch (e) {
+      return 'Unknown date';
+    }
   }
 }

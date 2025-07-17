@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../models/user_type.dart';
 import 'package:go_router/go_router.dart';
 import '../../utils/app_colors.dart';
 import '../../utils/app_text_styles.dart';
@@ -7,6 +8,9 @@ import '../../widgets/common/app_navigation_bar.dart';
 import '../../widgets/common/job_action_buttons.dart';
 import '../../services/job_data_service.dart';
 import '../../services/custom_auth_service.dart';
+import '../../services/localization_service.dart';
+import '../../widgets/common/realtime_app_wrapper.dart';
+import 'dart:async';
 
 class Helper10ActivityPendingPage extends StatefulWidget {
   final int initialTabIndex;
@@ -22,10 +26,19 @@ class Helper10ActivityPendingPage extends StatefulWidget {
 }
 
 class _Helper10ActivityPendingPageState
-    extends State<Helper10ActivityPendingPage> with TickerProviderStateMixin {
+    extends State<Helper10ActivityPendingPage>
+    with TickerProviderStateMixin, RealTimePageMixin {
   late TabController _tabController;
   final JobDataService _jobDataService = JobDataService();
   final CustomAuthService _authService = CustomAuthService();
+
+  // Real-time data streams
+  Map<String, List<Map<String, dynamic>>> _jobsData = {
+    'pending': [],
+    'ongoing': [],
+    'completed': [],
+  };
+  StreamSubscription? _activitySubscription;
 
   @override
   void initState() {
@@ -35,11 +48,52 @@ class _Helper10ActivityPendingPageState
       initialIndex: widget.initialTabIndex,
       vsync: this,
     );
+
+    // Initialize real-time updates
+    _initializeRealTimeUpdates();
+  }
+
+  void _initializeRealTimeUpdates() {
+    // Listen to real-time activity data updates
+    _activitySubscription = liveDataService.activityStream.listen((activities) {
+      if (mounted) {
+        setState(() {
+          // Group activities by status for helper
+          _jobsData['pending'] =
+              activities.where((job) => job['status'] == 'pending').toList();
+          _jobsData['ongoing'] = activities
+              .where((job) => [
+                    'accepted',
+                    'ongoing',
+                    'started',
+                    'in_progress',
+                    'paused',
+                    'confirmed'
+                  ].contains(job['status']))
+              .toList();
+          _jobsData['completed'] =
+              activities.where((job) => job['status'] == 'completed').toList();
+        });
+      }
+    });
+
+    // Initial data load
+    _loadInitialData();
+  }
+
+  void _loadInitialData() async {
+    try {
+      // Load all activities without status filter to get complete data
+      await liveDataService.refreshActivity();
+    } catch (e) {
+      print('❌ Error loading initial helper activity data: $e');
+    }
   }
 
   @override
   void dispose() {
     _tabController.dispose();
+    _activitySubscription?.cancel();
     super.dispose();
   }
 
@@ -49,7 +103,7 @@ class _Helper10ActivityPendingPageState
       body: Column(
         children: [
           AppHeader(
-            title: 'Activities',
+            title: 'Activities'.tr(),
             showMenuButton: true,
             showNotificationButton: true,
             onMenuPressed: () {
@@ -104,10 +158,10 @@ class _Helper10ActivityPendingPageState
                       unselectedLabelStyle: AppTextStyles.buttonMedium.copyWith(
                         fontWeight: FontWeight.w500,
                       ),
-                      tabs: const [
-                        Tab(text: 'Pending'),
-                        Tab(text: 'Ongoing'),
-                        Tab(text: 'Completed'),
+                      tabs: [
+                        Tab(text: 'Pending'.tr()),
+                        Tab(text: 'Ongoing'.tr()),
+                        Tab(text: 'Completed'.tr()),
                       ],
                     ),
                   ),
@@ -144,37 +198,18 @@ class _Helper10ActivityPendingPageState
       return _buildNotLoggedInState();
     }
 
-    // Use the new method for the 'pending' tab
-    final future = status == 'pending'
-        ? _jobDataService.getHelperPendingJobs(currentUser['user_id'])
-        : _jobDataService.getJobsByHelperAndStatus(
-            currentUser['user_id'], status);
+    final jobs = _jobsData[status] ?? [];
 
-    return FutureBuilder<List<Map<String, dynamic>>>(
-      future: future,
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return _buildLoadingState();
-        }
+    if (jobs.isEmpty) {
+      return _buildEmptyState(status);
+    }
 
-        if (snapshot.hasError) {
-          return _buildErrorState(status);
-        }
-
-        final jobs = snapshot.data ?? [];
-
-        if (jobs.isEmpty) {
-          return _buildEmptyState(status);
-        }
-
-        return ListView.builder(
-          padding: const EdgeInsets.symmetric(horizontal: 20),
-          itemCount: jobs.length,
-          itemBuilder: (context, index) {
-            final job = jobs[index];
-            return _buildJobCard(job);
-          },
-        );
+    return ListView.builder(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      itemCount: jobs.length,
+      itemBuilder: (context, index) {
+        final job = jobs[index];
+        return _buildJobCard(job);
       },
     );
   }
@@ -211,7 +246,7 @@ class _Helper10ActivityPendingPageState
                   children: [
                     Expanded(
                       child: Text(
-                        job['title'] ?? 'Unknown Job',
+                        job['title'] ?? 'Unknown Job'.tr(),
                         style: AppTextStyles.heading3.copyWith(
                           fontWeight: FontWeight.w700,
                           color: AppColors.textPrimary,
@@ -249,7 +284,7 @@ class _Helper10ActivityPendingPageState
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: Text(
-                        job['pay'] ?? 'Rate not set',
+                        job['pay'] ?? 'Rate not set'.tr(),
                         style: AppTextStyles.bodyMedium.copyWith(
                           color: AppColors.white,
                           fontWeight: FontWeight.w600,
@@ -261,11 +296,11 @@ class _Helper10ActivityPendingPageState
                 const SizedBox(height: 12),
 
                 // Info pills
-                _buildInfoPill(job['date'] ?? 'Date not set'),
+                _buildInfoPill(job['date'] ?? 'Date not set'.tr()),
                 const SizedBox(height: 8),
-                _buildInfoPill(job['time'] ?? 'Time not set'),
+                _buildInfoPill(job['time'] ?? 'Time not set'.tr()),
                 const SizedBox(height: 8),
-                _buildInfoPill(job['location'] ?? 'Location not set'),
+                _buildInfoPill(job['location'] ?? 'Location not set'.tr()),
                 const SizedBox(height: 16),
 
                 // Dynamic action buttons with timer functionality
@@ -456,19 +491,19 @@ class _Helper10ActivityPendingPageState
 
     switch (status) {
       case 'pending':
-        message = 'No pending jobs\nNew opportunities will appear here';
+        message = 'No pending jobs\nNew job requests will appear here'.tr();
         icon = Icons.pending_actions;
         break;
       case 'ongoing':
-        message = 'No ongoing jobs\nAccepted jobs will appear here';
+        message = 'No ongoing jobs\nActive jobs will appear here'.tr();
         icon = Icons.work_outline;
         break;
       case 'completed':
-        message = 'No completed jobs\nFinished jobs will appear here';
+        message = 'No completed jobs\nFinished jobs will appear here'.tr();
         icon = Icons.check_circle_outline;
         break;
       default:
-        message = 'No jobs found';
+        message = 'No jobs found'.tr();
         icon = Icons.work_off;
     }
 
@@ -513,7 +548,7 @@ class _Helper10ActivityPendingPageState
             ),
             const SizedBox(height: 16),
             Text(
-              'Unable to load $status jobs',
+              'Unable to load $status jobs'.tr(),
               style: const TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w600,
@@ -521,9 +556,9 @@ class _Helper10ActivityPendingPageState
               ),
             ),
             const SizedBox(height: 8),
-            const Text(
-              'Please check your connection and try again',
-              style: TextStyle(
+            Text(
+              'Please check your connection and try again'.tr(),
+              style: const TextStyle(
                 color: AppColors.textSecondary,
               ),
               textAlign: TextAlign.center,
@@ -536,9 +571,9 @@ class _Helper10ActivityPendingPageState
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primaryGreen,
               ),
-              child: const Text(
-                'Retry',
-                style: TextStyle(color: AppColors.white),
+              child: Text(
+                'Retry'.tr(),
+                style: const TextStyle(color: AppColors.white),
               ),
             ),
           ],
@@ -548,21 +583,21 @@ class _Helper10ActivityPendingPageState
   }
 
   Widget _buildNotLoggedInState() {
-    return const Center(
+    return Center(
       child: Padding(
-        padding: EdgeInsets.all(50.0),
+        padding: const EdgeInsets.all(50.0),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
+            const Icon(
               Icons.person_off,
               size: 64,
               color: AppColors.textSecondary,
             ),
-            SizedBox(height: 16),
+            const SizedBox(height: 16),
             Text(
-              'Please log in to view your jobs',
-              style: TextStyle(
+              'Please log in to view your jobs'.tr(),
+              style: const TextStyle(
                 fontSize: 16,
                 color: AppColors.textSecondary,
               ),

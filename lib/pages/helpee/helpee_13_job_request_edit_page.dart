@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../models/user_type.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../utils/app_colors.dart';

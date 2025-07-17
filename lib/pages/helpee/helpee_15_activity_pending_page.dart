@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../models/user_type.dart';
 import 'package:go_router/go_router.dart';
 import '../../utils/app_colors.dart';
 import '../../utils/app_text_styles.dart';
@@ -8,6 +9,9 @@ import '../../services/job_data_service.dart';
 import '../../services/custom_auth_service.dart';
 import '../../widgets/ui_elements/functional_job_card.dart';
 import '../../services/localization_service.dart';
+import '../common/report_page.dart';
+import '../../widgets/common/realtime_app_wrapper.dart';
+import 'dart:async';
 
 class Helpee15ActivityPendingPage extends StatefulWidget {
   final int initialTabIndex;
@@ -23,12 +27,21 @@ class Helpee15ActivityPendingPage extends StatefulWidget {
 }
 
 class _Helpee15ActivityPendingPageState
-    extends State<Helpee15ActivityPendingPage> with TickerProviderStateMixin {
+    extends State<Helpee15ActivityPendingPage>
+    with TickerProviderStateMixin, RealTimePageMixin {
   late TabController _tabController;
   final JobDataService _jobDataService = JobDataService();
   final CustomAuthService _authService = CustomAuthService();
   bool _isDeletingJobId = false;
   String? _deletingJobId;
+
+  // Real-time data streams
+  Map<String, List<Map<String, dynamic>>> _jobsData = {
+    'pending': [],
+    'ongoing': [],
+    'completed': [],
+  };
+  StreamSubscription? _activitySubscription;
 
   @override
   void initState() {
@@ -38,11 +51,65 @@ class _Helpee15ActivityPendingPageState
       initialIndex: widget.initialTabIndex,
       vsync: this,
     );
+
+    // Initialize real-time updates
+    _initializeRealTimeUpdates();
+  }
+
+  void _initializeRealTimeUpdates() {
+    // Listen to real-time activity data updates
+    _activitySubscription = liveDataService.activityStream.listen((activities) {
+      if (mounted) {
+        print(
+            '📱 Activity data received: ${activities.length} total activities');
+
+        setState(() {
+          // Group activities by status
+          _jobsData['pending'] =
+              activities.where((job) => job['status'] == 'pending').toList();
+          _jobsData['ongoing'] = activities
+              .where((job) => [
+                    'accepted',
+                    'ongoing',
+                    'started',
+                    'paused',
+                    'confirmed'
+                  ].contains(job['status']))
+              .toList();
+          _jobsData['completed'] =
+              activities.where((job) => job['status'] == 'completed').toList();
+        });
+
+        print(
+            '📱 Grouped jobs - Pending: ${_jobsData['pending']?.length}, Ongoing: ${_jobsData['ongoing']?.length}, Completed: ${_jobsData['completed']?.length}');
+
+        // Log pending jobs details
+        if (_jobsData['pending']?.isNotEmpty == true) {
+          for (var job in _jobsData['pending']!) {
+            print(
+                '📱 Pending Job: ${job['title']} (${job['id']}) - Status: ${job['status']}');
+          }
+        }
+      }
+    });
+
+    // Initial data load
+    _loadInitialData();
+  }
+
+  void _loadInitialData() async {
+    try {
+      // Load all activities without status filter to get complete data
+      await liveDataService.refreshActivity();
+    } catch (e) {
+      print('❌ Error loading initial activity data: $e');
+    }
   }
 
   @override
   void dispose() {
     _tabController.dispose();
+    _activitySubscription?.cancel();
     super.dispose();
   }
 
@@ -55,7 +122,10 @@ class _Helpee15ActivityPendingPageState
             title: 'Pending Jobs'.tr(),
             showBackButton: true,
             showMenuButton: false,
-            showNotificationButton: false,
+            showNotificationButton: true,
+            onNotificationPressed: () {
+              context.push('/helpee/notifications');
+            },
           ),
           Expanded(
             child: Container(
@@ -139,35 +209,31 @@ class _Helpee15ActivityPendingPageState
   Widget _buildDynamicJobList(String status) {
     final currentUser = _authService.currentUser;
     if (currentUser == null) {
+      print('📱 _buildDynamicJobList($status): No current user');
       return _buildNotLoggedInState();
     }
 
-    return FutureBuilder<List<Map<String, dynamic>>>(
-      future: _jobDataService.getJobsByUserAndStatus(
-          currentUser['user_id'], status),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return _buildLoadingState();
-        }
+    final jobs = _jobsData[status] ?? [];
+    print('📱 _buildDynamicJobList($status): ${jobs.length} jobs in data');
 
-        if (snapshot.hasError) {
-          return _buildErrorState(status);
-        }
+    if (jobs.isEmpty) {
+      print('📱 _buildDynamicJobList($status): Showing empty state');
+      return _buildEmptyState(status);
+    }
 
-        final jobs = snapshot.data ?? [];
+    print(
+        '📱 _buildDynamicJobList($status): Building list with ${jobs.length} items');
+    for (var i = 0; i < jobs.length; i++) {
+      final job = jobs[i];
+      print('📱 Job $i: ${job['title']} (${job['id']}) - ${job['status']}');
+    }
 
-        if (jobs.isEmpty) {
-          return _buildEmptyState(status);
-        }
-
-        return ListView.builder(
-          padding: const EdgeInsets.symmetric(horizontal: 20),
-          itemCount: jobs.length,
-          itemBuilder: (context, index) {
-            final job = jobs[index];
-            return _buildJobCard(job);
-          },
-        );
+    return ListView.builder(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      itemCount: jobs.length,
+      itemBuilder: (context, index) {
+        final job = jobs[index];
+        return _buildJobCard(job);
       },
     );
   }
@@ -285,47 +351,39 @@ class _Helpee15ActivityPendingPageState
                 _buildInfoPill(job['location'] ?? 'Location not set'),
                 const SizedBox(height: 16),
 
-                // Helper Profile Bar - Only show if helper is assigned and not on ongoing/completed tabs
-                if (_shouldShowHelperProfile(job, _tabController.index))
-                  GestureDetector(
-                    onTap: () {
-                      String helperName = job['helper'] ?? '';
-                      if (helperName.isNotEmpty &&
-                          helperName != 'Waiting for Helper') {
-                        context.push('/helpee/helper-profile');
-                      }
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: AppColors.backgroundLight,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Row(
-                        children: [
-                          CircleAvatar(
-                            radius: 20,
-                            backgroundColor: AppColors.primaryGreen,
-                            child: Text(
-                              (job['helper'] ?? 'H')[0].toUpperCase(),
-                              style: AppTextStyles.buttonMedium.copyWith(
-                                color: AppColors.white,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Text(job['helper'] ?? 'Helper',
-                                style: AppTextStyles.bodyMedium.copyWith(
-                                    fontWeight: FontWeight.w600,
-                                    color: AppColors.textPrimary)),
-                          ),
-                          const Icon(Icons.arrow_forward_ios, size: 16),
-                        ],
-                      ),
-                    ),
+                // Public/Private Status Label
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: job['is_private'] == true
+                        ? AppColors.primaryGreen.withOpacity(0.1)
+                        : AppColors.warning.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
                   ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        job['is_private'] == true ? Icons.lock : Icons.public,
+                        size: 16,
+                        color: job['is_private'] == true
+                            ? AppColors.primaryGreen
+                            : AppColors.warning,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        job['is_private'] == true ? 'PRIVATE' : 'PUBLIC',
+                        style: AppTextStyles.bodySmall.copyWith(
+                          color: job['is_private'] == true
+                              ? AppColors.primaryGreen
+                              : AppColors.warning,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
                 const SizedBox(height: 16),
 
                 // Action buttons based on job type
@@ -351,17 +409,6 @@ class _Helpee15ActivityPendingPageState
           style: AppTextStyles.bodyMedium.copyWith(
               color: AppColors.primaryGreen, fontWeight: FontWeight.w600)),
     );
-  }
-
-  /// Determine if helper profile should be shown based on job and tab
-  bool _shouldShowHelperProfile(Map<String, dynamic> job, int tabIndex) {
-    // Only show helper profile for pending jobs (tab 0)
-    // Remove from ongoing (tab 1) and completed (tab 2) tabs as per user requirements
-    if (tabIndex != 0) return false;
-
-    // Check if helper is assigned and not "Waiting for Helper"
-    final helperName = job['helper'] ?? '';
-    return helperName.isNotEmpty && helperName != 'Waiting for Helper';
   }
 
   Widget _buildActionButtons(Map<String, dynamic> job) {
@@ -495,9 +542,9 @@ class _Helpee15ActivityPendingPageState
   void _handleActionButtonPress(String action, Map<String, dynamic> job) {
     switch (action) {
       case 'edit':
-        // Navigate to edit job page
-        context.push('/helpee/job-request', extra: {
-          'isEdit': true,
+        // Navigate to dedicated edit job page
+        context.push('/helpee/job-request-edit', extra: {
+          'jobId': job['id'],
           'jobData': job,
         });
         break;
@@ -505,7 +552,12 @@ class _Helpee15ActivityPendingPageState
         _cancelJob(job);
         break;
       case 'report':
-        _showReportDialog(context, job['title'] ?? 'Job');
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const ReportPage(userType: 'helpee'),
+          ),
+        );
         break;
       default:
         print('⚠️ Unhandled action: $action');
@@ -686,33 +738,6 @@ class _Helpee15ActivityPendingPageState
           ],
         ),
       ),
-    );
-  }
-
-  void _showReportDialog(BuildContext context, String jobTitle) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('Report Job'),
-          content: Text('Report an issue with "$jobTitle"?'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Cancel'),
-            ),
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Report submitted')),
-                );
-              },
-              child: const Text('Report'),
-            ),
-          ],
-        );
-      },
     );
   }
 

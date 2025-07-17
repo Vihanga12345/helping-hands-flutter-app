@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../models/user_type.dart';
 import 'package:go_router/go_router.dart';
 import '../../utils/app_colors.dart';
 import '../../utils/app_text_styles.dart';
@@ -93,28 +94,27 @@ class _Helpee10ProfilePageState extends State<Helpee10ProfilePage> {
                                 'total_jobs': 0,
                                 'rating': 0.0,
                                 'total_reviews': 0,
-                                'member_since': 'Dec 2024',
                               };
 
                           return Column(
                             children: [
-                              // Profile Header
-                              _buildProfileHeader(userProfile, stats),
+                              // Profile Image Section
+                              _buildProfileImageSection(userProfile),
 
                               const SizedBox(height: 20),
 
-                              // Personal Information
-                              _buildPersonalInformation(userProfile),
+                              // Stats Section (Rating | Reviews | Jobs)
+                              _buildStatsSection(stats),
 
-                              const SizedBox(height: 16),
+                              const SizedBox(height: 20),
 
-                              // Emergency Contact
-                              _buildEmergencyContact(userProfile),
+                              // Personal Information Section
+                              _buildPersonalInfoSection(userProfile),
 
-                              const SizedBox(height: 16),
+                              const SizedBox(height: 20),
 
-                              // Preferences
-                              _buildPreferences(userProfile),
+                              // Emergency Contact Section
+                              _buildEmergencyContactSection(userProfile),
 
                               const SizedBox(height: 20),
 
@@ -143,12 +143,10 @@ class _Helpee10ProfilePageState extends State<Helpee10ProfilePage> {
     );
   }
 
-  Widget _buildProfileHeader(
-      Map<String, dynamic> userProfile, Map<String, dynamic> stats) {
+  Widget _buildProfileImageSection(Map<String, dynamic> userProfile) {
     final firstName = userProfile['first_name'] ?? '';
     final lastName = userProfile['last_name'] ?? '';
-    final displayName = userProfile['display_name'] ?? '$firstName $lastName';
-    final memberSince = stats['member_since'] ?? 'Dec 2024';
+    final displayName = '$firstName $lastName'.trim();
 
     return Container(
       padding: const EdgeInsets.all(24),
@@ -165,106 +163,332 @@ class _Helpee10ProfilePageState extends State<Helpee10ProfilePage> {
       ),
       child: Column(
         children: [
-          Stack(
-            children: [
-              CircleAvatar(
-                radius: 50,
-                backgroundColor: AppColors.primaryGreen,
-                child: Text(
-                  displayName.isNotEmpty ? displayName[0].toUpperCase() : 'U',
-                  style: const TextStyle(
-                    fontSize: 36,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.white,
-                  ),
-                ),
+          // Profile Picture
+          Container(
+            width: 120,
+            height: 120,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: AppColors.primaryGreen,
+                width: 3,
               ),
-              Positioned(
-                bottom: 0,
-                right: 0,
-                child: Container(
-                  width: 32,
-                  height: 32,
-                  decoration: const BoxDecoration(
-                    color: AppColors.primaryGreen,
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    Icons.camera_alt,
-                    color: AppColors.white,
-                    size: 16,
-                  ),
-                ),
-              ),
-            ],
+            ),
+            child: CircleAvatar(
+              radius: 57,
+              backgroundColor: AppColors.primaryGreen,
+              backgroundImage: userProfile['profile_image_url'] != null
+                  ? NetworkImage(userProfile['profile_image_url'])
+                  : null,
+              child: userProfile['profile_image_url'] == null
+                  ? Text(
+                      displayName.isNotEmpty
+                          ? displayName[0].toUpperCase()
+                          : 'U',
+                      style: const TextStyle(
+                        fontSize: 36,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.white,
+                      ),
+                    )
+                  : null,
+            ),
           ),
           const SizedBox(height: 16),
+
+          // User Name
           Text(
             displayName.isNotEmpty ? displayName : 'User',
-            style: const TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.w600,
+            style: AppTextStyles.heading2.copyWith(
+              fontWeight: FontWeight.w700,
+              color: AppColors.textPrimary,
             ),
-          ),
-          Text(
-            'Helpee since $memberSince',
-            style: const TextStyle(
-              color: AppColors.textSecondary,
-              fontSize: 14,
-            ),
-          ),
-          const SizedBox(height: 16),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              _buildStatItem('Jobs', '${stats['total_jobs']}'),
-              _buildStatItem('Rating', '${stats['rating'].toStringAsFixed(1)}'),
-              _buildStatItem('Reviews', '${stats['total_reviews']}'),
-            ],
+            textAlign: TextAlign.center,
           ),
         ],
       ),
     );
   }
 
-  Widget _buildPersonalInformation(Map<String, dynamic> userProfile) {
-    return _buildInfoSection(
-      title: 'Personal Information',
-      items: [
-        _buildInfoItem('Email', userProfile['email'] ?? 'Not provided'),
-        _buildInfoItem('Phone', userProfile['phone'] ?? 'Not provided'),
-        _buildInfoItem(
-            'Address', userProfile['location_address'] ?? 'Not provided'),
-        _buildInfoItem(
-            'Date of Birth', _formatDateOfBirth(userProfile['date_of_birth'])),
+  Widget _buildStatsSection(Map<String, dynamic> stats) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: const [
+          BoxShadow(
+            color: AppColors.shadowColorLight,
+            blurRadius: 8,
+            offset: Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        children: [
+          _buildStatItem(
+            'Rating',
+            '${(stats['rating'] ?? 0.0).toStringAsFixed(1)}',
+            Icons.star,
+            AppColors.warning,
+          ),
+          _buildStatDivider(),
+          _buildStatItem(
+            'Reviews',
+            '${stats['total_reviews'] ?? 0}',
+            Icons.rate_review,
+            AppColors.primaryGreen,
+          ),
+          _buildStatDivider(),
+          _buildStatItem(
+            'Jobs',
+            '${stats['total_jobs'] ?? 0}',
+            Icons.work,
+            AppColors.info,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPersonalInfoSection(Map<String, dynamic> userProfile) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: const [
+          BoxShadow(
+            color: AppColors.shadowColorLight,
+            blurRadius: 8,
+            offset: Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Personal Information',
+            style: AppTextStyles.heading3.copyWith(
+              fontWeight: FontWeight.w700,
+              color: AppColors.primaryGreen,
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          // About Me
+          _buildInfoSection(
+            'About me',
+            userProfile['about_me'] ?? 'No bio available',
+            isMultiLine: true,
+          ),
+          const SizedBox(height: 16),
+
+          // Email
+          _buildInfoRow(
+            'Email',
+            userProfile['email'] ?? 'Not provided',
+            Icons.email,
+          ),
+          const SizedBox(height: 12),
+
+          // Phone Number
+          _buildInfoRow(
+            'Phone Number',
+            userProfile['phone'] ?? 'Not provided',
+            Icons.phone,
+          ),
+          const SizedBox(height: 12),
+
+          // Location
+          _buildInfoRow(
+            'Location',
+            userProfile['location_city'] ??
+                userProfile['location_address'] ??
+                'Not provided',
+            Icons.location_on,
+          ),
+          const SizedBox(height: 12),
+
+          // Age
+          _buildInfoRow(
+            'Age',
+            _calculateAge(userProfile['date_of_birth']),
+            Icons.calendar_today,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEmergencyContactSection(Map<String, dynamic> userProfile) {
+    final emergencyName = userProfile['emergency_contact_name'];
+    final emergencyPhone = userProfile['emergency_contact_phone'];
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: const [
+          BoxShadow(
+            color: AppColors.shadowColorLight,
+            blurRadius: 8,
+            offset: Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Emergency Contact',
+            style: AppTextStyles.heading3.copyWith(
+              fontWeight: FontWeight.w700,
+              color: AppColors.primaryGreen,
+            ),
+          ),
+          const SizedBox(height: 16),
+          if (emergencyName != null || emergencyPhone != null) ...[
+            // Name
+            _buildInfoRow(
+              'Name',
+              emergencyName ?? 'Not provided',
+              Icons.person,
+            ),
+            const SizedBox(height: 12),
+
+            // Phone
+            _buildInfoRow(
+              'Phone',
+              emergencyPhone ?? 'Not provided',
+              Icons.phone,
+            ),
+          ] else ...[
+            Center(
+              child: Column(
+                children: [
+                  Icon(
+                    Icons.contact_emergency_outlined,
+                    size: 48,
+                    color: AppColors.textSecondary,
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    'No emergency contact added',
+                    style: AppTextStyles.bodyMedium.copyWith(
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatItem(
+      String label, String value, IconData icon, Color color) {
+    return Expanded(
+      child: Column(
+        children: [
+          Icon(
+            icon,
+            color: color,
+            size: 24,
+          ),
+          const SizedBox(height: 8),
+          Text(
+            value,
+            style: AppTextStyles.heading3.copyWith(
+              color: color,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            label,
+            style: AppTextStyles.bodySmall.copyWith(
+              color: AppColors.textSecondary,
+              fontWeight: FontWeight.w500,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatDivider() {
+    return Container(
+      width: 1,
+      height: 40,
+      color: AppColors.borderLight,
+      margin: const EdgeInsets.symmetric(horizontal: 8),
+    );
+  }
+
+  Widget _buildInfoSection(String label, String value,
+      {bool isMultiLine = false}) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: AppTextStyles.bodyMedium.copyWith(
+            fontWeight: FontWeight.w600,
+            color: AppColors.textPrimary,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          value,
+          style: AppTextStyles.bodyMedium.copyWith(
+            color: AppColors.textSecondary,
+            height: isMultiLine ? 1.5 : 1.0,
+          ),
+        ),
       ],
     );
   }
 
-  Widget _buildEmergencyContact(Map<String, dynamic> userProfile) {
-    return _buildInfoSection(
-      title: 'Emergency Contact',
-      items: [
-        _buildInfoItem(
-            'Name', userProfile['emergency_contact_name'] ?? 'Not provided'),
-        _buildInfoItem(
-            'Phone', userProfile['emergency_contact_phone'] ?? 'Not provided'),
-      ],
-    );
-  }
-
-  Widget _buildPreferences(Map<String, dynamic> userProfile) {
-    return _buildInfoSection(
-      title: 'Preferences',
-      items: [
-        _buildInfoItem(
-            'Language', userProfile['preferred_language'] ?? 'English'),
-        _buildInfoItem('Currency', userProfile['preferred_currency'] ?? 'LKR'),
-        _buildInfoItem(
-            'Notifications',
-            userProfile['notifications_enabled'] == true
-                ? 'Enabled'
-                : 'Disabled'),
+  Widget _buildInfoRow(String label, String value, IconData icon) {
+    return Row(
+      children: [
+        Icon(
+          icon,
+          color: AppColors.primaryGreen,
+          size: 20,
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: AppTextStyles.bodySmall.copyWith(
+                  color: AppColors.textSecondary,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                value,
+                style: AppTextStyles.bodyMedium.copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+            ],
+          ),
+        ),
       ],
     );
   }
@@ -307,6 +531,33 @@ class _Helpee10ProfilePageState extends State<Helpee10ProfilePage> {
         ),
       ],
     );
+  }
+
+  String _calculateAge(dynamic dateOfBirth) {
+    if (dateOfBirth == null) return 'Not provided';
+
+    try {
+      DateTime birthDate;
+      if (dateOfBirth is String) {
+        birthDate = DateTime.parse(dateOfBirth);
+      } else if (dateOfBirth is DateTime) {
+        birthDate = dateOfBirth;
+      } else {
+        return 'Not provided';
+      }
+
+      final now = DateTime.now();
+      int age = now.year - birthDate.year;
+
+      if (now.month < birthDate.month ||
+          (now.month == birthDate.month && now.day < birthDate.day)) {
+        age--;
+      }
+
+      return '$age years old';
+    } catch (e) {
+      return 'Not provided';
+    }
   }
 
   Widget _buildLoadingState() {
@@ -366,142 +617,6 @@ class _Helpee10ProfilePageState extends State<Helpee10ProfilePage> {
         ),
       ),
     );
-  }
-
-  Widget _buildStatItem(String label, String value) {
-    return Column(
-      children: [
-        Text(
-          value,
-          style: const TextStyle(
-            color: AppColors.primaryGreen,
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        Text(
-          label,
-          style: const TextStyle(
-            fontSize: 14,
-            color: AppColors.textSecondary,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildInfoSection({
-    required String title,
-    required List<Widget> items,
-  }) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: AppColors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: const [
-          BoxShadow(
-            color: AppColors.shadowColorLight,
-            blurRadius: 8,
-            offset: Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            title,
-            style: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          const SizedBox(height: 16),
-          ...items,
-        ],
-      ),
-    );
-  }
-
-  Widget _buildInfoItem(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: 100,
-            child: Text(
-              label,
-              style: const TextStyle(
-                color: AppColors.textSecondary,
-                fontSize: 14,
-              ),
-            ),
-          ),
-          Expanded(
-            child: Text(
-              value,
-              style: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  String _formatDateOfBirth(dynamic dateOfBirth) {
-    if (dateOfBirth == null) return 'Not provided';
-
-    try {
-      DateTime date;
-      if (dateOfBirth is String) {
-        date = DateTime.parse(dateOfBirth);
-      } else if (dateOfBirth is DateTime) {
-        date = dateOfBirth;
-      } else {
-        return 'Not provided';
-      }
-
-      final months = [
-        'January',
-        'February',
-        'March',
-        'April',
-        'May',
-        'June',
-        'July',
-        'August',
-        'September',
-        'October',
-        'November',
-        'December'
-      ];
-
-      final day = date.day;
-      final suffix = _getDaySuffix(day);
-      return '${day}${suffix} ${months[date.month - 1]} ${date.year}';
-    } catch (e) {
-      return 'Not provided';
-    }
-  }
-
-  String _getDaySuffix(int day) {
-    if (day >= 11 && day <= 13) return 'th';
-    switch (day % 10) {
-      case 1:
-        return 'st';
-      case 2:
-        return 'nd';
-      case 3:
-        return 'rd';
-      default:
-        return 'th';
-    }
   }
 
   void _showLogoutDialog(BuildContext context) {

@@ -1,0 +1,617 @@
+Name	Arguments	Return type	Security	
+
+admin_add_category_question
+p_category_id uuid, p_question text, p_admin_id uuid, p_is_required boolean DEFAULT true, p_placeholder_text text DEFAULT NULL::text
+
+uuid
+
+Invoker	
+
+
+admin_create_job_category
+p_name character varying, p_description text, p_default_hourly_rate numeric, p_admin_id uuid, p_icon_name character varying DEFAULT NULL::character varying
+
+uuid
+
+Invoker	
+
+
+admin_delete_category_question
+p_question_id uuid, p_admin_id uuid
+
+boolean
+
+Invoker	
+
+
+admin_get_all_categories
+-
+
+TABLE(id uuid, name character varying, description text, default_hourly_rate numeric, icon_name character varying, is_active boolean, created_at timestamp with time zone, updated_at timestamp with time zone, question_count bigint)
+
+Invoker	
+
+
+admin_get_category_questions
+p_category_id uuid
+
+TABLE(id uuid, question text, question_order integer, is_required boolean, placeholder_text text, created_at timestamp with time zone, updated_at timestamp with time zone)
+
+Invoker	
+
+
+admin_update_category_question
+p_question_id uuid, p_question text, p_admin_id uuid, p_is_required boolean DEFAULT true, p_placeholder_text text DEFAULT NULL::text
+
+boolean
+
+Invoker	
+
+
+admin_update_job_category
+p_category_id uuid, p_name character varying, p_description text, p_default_hourly_rate numeric, p_admin_id uuid, p_icon_name character varying DEFAULT NULL::character varying
+
+boolean
+
+Invoker	
+
+
+assign_helper_to_job
+p_job_id uuid, p_helper_id uuid
+
+boolean
+
+Invoker	
+
+
+authenticate_admin
+p_username character varying, p_password_hash character varying, p_ip_address inet DEFAULT NULL::inet, p_user_agent text DEFAULT NULL::text
+
+TABLE(success boolean, admin_id uuid, session_token character varying, error_message text)
+
+Definer	
+
+
+auto_populate_job_category_name
+-
+
+trigger
+
+Invoker	
+
+
+calculate_job_elapsed_time
+job_id uuid
+
+integer
+
+Invoker	
+
+
+calculate_job_payment_amount
+job_id_param uuid
+
+numeric
+
+Invoker	
+
+
+calculate_session_elapsed_time
+job_id uuid
+
+integer
+
+Invoker	
+
+
+check_route_permission
+p_route character varying, p_user_type character varying
+
+boolean
+
+Definer	
+
+
+cleanup_admin_data
+-
+
+void
+
+Definer	
+
+
+cleanup_expired_sessions
+-
+
+trigger
+
+Invoker	
+
+
+complete_job
+job_id uuid
+
+boolean
+
+Definer	
+
+
+complete_job_no_triggers
+p_job_id uuid
+
+boolean
+
+Definer	
+
+
+complete_job_simple
+job_id uuid
+
+boolean
+
+Definer	
+
+
+complete_job_timer
+p_job_id uuid
+
+jsonb
+
+Invoker	
+
+
+confirm_helpee_payment
+job_id_param uuid, helpee_id_param uuid, notes_param text DEFAULT ''::text
+
+json
+
+Invoker	
+
+
+confirm_helper_payment_received
+job_id_param uuid, helper_id_param uuid, notes_param text DEFAULT ''::text
+
+json
+
+Invoker	
+
+
+create_default_notification_preferences
+-
+
+trigger
+
+Invoker	
+
+
+create_job_with_helpee_details
+p_helpee_id uuid, p_category_id uuid, p_job_category_name character varying, p_title character varying, p_description text, p_job_type character varying, p_hourly_rate numeric, p_scheduled_date date, p_scheduled_start_time time without time zone, p_location_latitude numeric, p_location_longitude numeric, p_location_address text
+
+uuid
+
+Invoker	
+
+
+create_notification
+p_user_id uuid, p_title text, p_message text, p_notification_type text, p_related_job_id uuid DEFAULT NULL::uuid, p_related_user_id uuid DEFAULT NULL::uuid, p_action_url text DEFAULT NULL::text
+
+uuid
+
+Invoker	
+
+
+create_user_with_auth
+p_username character varying, p_email character varying, p_password_hash character varying, p_user_type character varying, p_first_name character varying, p_last_name character varying, p_phone character varying
+
+uuid
+
+Invoker	
+
+
+debug_all_public_jobs
+-
+
+TABLE(job_id uuid, job_title character varying, job_category character varying, category_id uuid, status character varying, is_private boolean)
+
+Definer	
+
+
+debug_helper_categories
+p_helper_id uuid
+
+TABLE(category_id uuid, category_name character varying, is_active boolean, hourly_rate numeric)
+
+Definer	
+
+
+direct_job_completion
+job_id uuid
+
+boolean
+
+Definer	
+
+
+ensure_single_default_card
+-
+
+trigger
+
+Invoker	
+
+
+ensure_single_default_payment_method
+-
+
+trigger
+
+Invoker	
+
+
+find_helpers_for_job_category
+p_job_category_name text, p_exclude_user_id uuid DEFAULT NULL::uuid
+
+TABLE(helper_user_id uuid, helper_name text)
+
+Definer	
+
+
+format_elapsed_time
+seconds integer
+
+text
+
+Invoker	
+
+
+format_session_time
+seconds integer
+
+text
+
+Invoker	
+
+
+get_admin_dashboard_stats
+-
+
+jsonb
+
+Definer	
+
+
+get_helpee_statistics
+p_helpee_id uuid
+
+TABLE(total_jobs bigint, completed_jobs bigint, pending_jobs bigint, total_spent numeric, average_rating numeric)
+
+Definer	
+
+
+get_helper_assigned_jobs_by_status
+p_helper_id uuid, p_statuses text[]
+
+TABLE(id uuid, title character varying, description text, job_category_name character varying, hourly_rate numeric, scheduled_date date, scheduled_start_time time without time zone, location_address text, status character varying, timer_status character varying, created_at timestamp with time zone, helpee_first_name character varying, helpee_last_name character varying, helpee_location_city character varying)
+
+Definer	
+
+
+get_helper_assigned_jobs_for_calendar
+p_helper_id uuid
+
+TABLE(id uuid, title character varying, scheduled_date date, scheduled_start_time time without time zone, status character varying, is_private boolean, helpee_first_name character varying, helpee_last_name character varying)
+
+Definer	
+
+
+get_helper_job_categories
+p_helper_id uuid
+
+TABLE(category_id uuid, category_name character varying)
+
+Definer	
+
+
+get_helper_statistics
+p_helper_id uuid
+
+TABLE(total_jobs bigint, completed_jobs bigint, pending_jobs bigint, total_earnings numeric, average_rating numeric)
+
+Definer	
+
+
+get_job_timer_status
+p_job_id uuid
+
+jsonb
+
+Invoker	
+
+
+get_private_jobs_for_helper
+p_helper_id uuid
+
+TABLE(id uuid, title character varying, description text, hourly_rate numeric, scheduled_date date, scheduled_time time without time zone, location_address text, status character varying, created_at timestamp with time zone, is_private boolean, job_category_name character varying, helpee_id uuid, helpee_first_name character varying, helpee_last_name character varying, helpee_location_city character varying, category_id uuid)
+
+Definer	
+
+
+get_public_jobs_for_helper
+p_helper_id uuid
+
+TABLE(id uuid, title character varying, description text, hourly_rate numeric, scheduled_date date, scheduled_time time without time zone, location_address text, status character varying, created_at timestamp with time zone, is_private boolean, job_category_name character varying, helpee_id uuid, helpee_first_name character varying, helpee_last_name character varying, helpee_location_city character varying, category_id uuid)
+
+Definer	
+
+
+get_user_notification_preferences
+p_user_id uuid
+
+TABLE(job_requests boolean, job_updates boolean, job_completions boolean, payment_reminders boolean, rating_reminders boolean, system_updates boolean, marketing_notifications boolean, push_notifications boolean, email_notifications boolean, sms_notifications boolean)
+
+Invoker	
+
+
+handle_job_completion_notifications
+-
+
+trigger
+
+Definer	
+
+
+initiate_cash_payment_confirmation
+job_id_param uuid
+
+TABLE(success integer, message text, payment_amount_calculated numeric, helpee_id uuid, helpee_first_name text, helpee_last_name text, helper_id uuid, helper_first_name text, helper_last_name text)
+
+Invoker	
+
+
+invalidate_user_sessions
+p_user_id uuid, p_reason character varying DEFAULT 'security_policy'::character varying
+
+integer
+
+Definer	
+
+
+is_admin
+user_id uuid
+
+boolean
+
+Definer	
+
+
+log_admin_action
+p_admin_id uuid, p_session_token character varying, p_action_type character varying, p_entity_type character varying, p_entity_id uuid DEFAULT NULL::uuid, p_entity_name character varying DEFAULT NULL::character varying, p_action_details jsonb DEFAULT NULL::jsonb, p_old_values jsonb DEFAULT NULL::jsonb, p_new_values jsonb DEFAULT NULL::jsonb
+
+uuid
+
+Definer	
+
+
+log_notification_history
+p_user_id uuid, p_title character varying, p_body text, p_notification_type character varying, p_notification_id uuid DEFAULT NULL::uuid, p_firebase_message_id character varying DEFAULT NULL::character varying, p_device_type character varying DEFAULT 'unknown'::character varying, p_app_version character varying DEFAULT '1.0.0'::character varying
+
+uuid
+
+Invoker	
+
+
+log_security_event
+p_user_id uuid, p_session_token character varying, p_event_type character varying, p_attempted_route character varying, p_expected_user_type character varying, p_actual_user_type character varying, p_ip_address inet DEFAULT NULL::inet, p_user_agent text DEFAULT NULL::text, p_event_details jsonb DEFAULT NULL::jsonb, p_severity character varying DEFAULT 'medium'::character varying
+
+uuid
+
+Definer	
+
+
+logout_admin_session
+p_session_token character varying
+
+boolean
+
+Definer	
+
+
+manual_complete_job
+job_id uuid
+
+boolean
+
+Definer	
+
+
+notify_helpers_of_new_job
+-
+
+trigger
+
+Definer	
+
+
+notify_job_application
+-
+
+trigger
+
+Invoker	
+
+
+notify_job_status_change
+-
+
+trigger
+
+Invoker	
+
+
+notify_on_job_status_update
+-
+
+trigger
+
+Invoker	
+
+
+notify_payment_status_change
+-
+
+trigger
+
+Invoker	
+
+
+notify_rating_received
+-
+
+trigger
+
+Invoker	
+
+
+pause_job_timer
+p_job_id uuid
+
+jsonb
+
+Invoker	
+
+
+report_payment_dispute
+job_id_param uuid, reporter_id_param uuid, dispute_type_param character varying, description_param text, amount_disputed_param numeric DEFAULT NULL::numeric
+
+json
+
+Invoker	
+
+
+safe_update_updated_at_column
+-
+
+trigger
+
+Invoker	
+
+
+start_job_timer
+p_job_id uuid
+
+jsonb
+
+Invoker	
+
+
+sync_job_description
+-
+
+trigger
+
+Invoker	
+
+
+sync_scheduled_time
+-
+
+trigger
+
+Invoker	
+
+
+trigger_test_notification
+p_user_id uuid, p_notification_type text DEFAULT 'test'::text
+
+uuid
+
+Invoker	
+
+
+update_fcm_token_timestamp
+-
+
+trigger
+
+Invoker	
+
+
+update_job_question_answers_updated_at
+-
+
+trigger
+
+Invoker	
+
+
+update_job_timer_updated_at
+-
+
+trigger
+
+Invoker	
+
+
+update_job_with_questions
+p_job_id uuid, p_title character varying, p_description text, p_category_id uuid, p_hourly_rate numeric, p_scheduled_date date, p_scheduled_time time without time zone, p_location_address text, p_is_private boolean, p_notes text, p_question_answers jsonb DEFAULT '[]'::jsonb
+
+boolean
+
+Invoker	
+
+
+update_notification_delivery_status
+p_history_id uuid, p_status character varying, p_error_message text DEFAULT NULL::text
+
+boolean
+
+Invoker	
+
+
+update_timer_status_on_status_change
+-
+
+trigger
+
+Invoker	
+
+
+update_updated_at_column
+-
+
+trigger
+
+Invoker	
+
+
+validate_admin_session
+p_session_token character varying
+
+TABLE(is_valid boolean, admin_id uuid, admin_username character varying, admin_name character varying)
+
+Definer	
+
+
+validate_job_data_simple
+-
+
+trigger
+
+Invoker	
+
+
+validate_job_data_with_category_name
+-
+
+trigger
+
+Invoker	
+
+
+validate_user_session_and_type
+p_session_token character varying, p_required_user_type character varying
+
+TABLE(is_valid boolean, user_id uuid, user_type character varying, error_message text)
+
+Definer	
+

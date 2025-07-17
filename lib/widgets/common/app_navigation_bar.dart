@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../utils/app_colors.dart';
-
-enum UserType { helpee, helper }
+import '../../models/user_type.dart';
 
 enum NavigationTab { home, calendar, activity, profile, search, requests }
 
@@ -144,6 +143,28 @@ class AppNavigationBar extends StatelessWidget {
             break;
           case NavigationTab.requests:
             route = '/helper/view-requests/private';
+            break;
+        }
+        break;
+      case UserType.admin:
+        switch (tab) {
+          case NavigationTab.home:
+            route = '/admin/home';
+            break;
+          case NavigationTab.calendar:
+            route = '/admin/reports';
+            break;
+          case NavigationTab.activity:
+            route = '/admin/reports/job';
+            break;
+          case NavigationTab.profile:
+            route = '/admin/profile';
+            break;
+          case NavigationTab.search:
+            route = '/admin/home'; // Default for admin
+            break;
+          case NavigationTab.requests:
+            route = '/admin/reports/user';
             break;
         }
         break;

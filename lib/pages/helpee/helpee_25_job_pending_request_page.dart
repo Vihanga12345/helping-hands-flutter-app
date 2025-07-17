@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../models/user_type.dart';
 import 'package:go_router/go_router.dart';
 import '../../utils/app_colors.dart';
 import '../../utils/app_text_styles.dart';
@@ -444,7 +445,12 @@ class _Helpee25JobPendingRequestPageState
   }
 
   void _editRequest(BuildContext context) {
-    context.go('/helpee/job-request/edit');
+    // Navigate to dedicated edit job page with job data
+    context.push('/helpee/job-request-edit', extra: {
+      'jobId':
+          'pending-job', // This page seems to be for a specific pending job
+      'jobData': {}, // Add actual job data here if available
+    });
   }
 
   void _cancelRequest(BuildContext context) {

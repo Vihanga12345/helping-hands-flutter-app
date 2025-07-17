@@ -55,7 +55,7 @@ dependencies:
   file_picker: ^8.0.7
   
   # WebRTC Calling (FREE Alternative) & Permissions
-  # flutter_webrtc: ^0.9.47 # Temporarily disabled for faster install
+  flutter_webrtc: ^0.9.47 # Re-enabled for messaging and calling features
   permission_handler: ^11.0.1
   
   # Notifications
@@ -66,6 +66,9 @@ dependencies:
   uuid: ^4.4.0
   timeago: ^3.7.1
   url_launcher: ^6.3.1
+  
+  # Real-time Communication
+  socket_io_client: ^2.0.3+1
   
 dev_dependencies:
   flutter_test:

@@ -25,8 +25,8 @@ import '../pages/helpee/helpee_12_job_request_view_page.dart';
 import '../pages/helpee/helpee_13_job_request_edit_page.dart';
 import '../pages/helpee/helpee_14_helper_profile_page.dart';
 import '../pages/helpee/helpee_15_activity_pending_page.dart';
-import '../pages/helpee/helpee_16_activity_ongoing_page.dart';
-import '../pages/helpee/helpee_17_activity_completed_page.dart';
+import 'payment_flow_service.dart';
+import 'popup_manager_service.dart';
 import '../pages/helpee/helpee_18_ai_bot_page.dart';
 import '../pages/helpee/helpee_19_helper_rating_page.dart';
 import '../pages/helpee/helpee_20_about_us_page.dart';
@@ -35,11 +35,22 @@ import '../pages/helpee/helpee_job_detail_pending.dart';
 import '../pages/helpee/helpee_job_detail_ongoing.dart';
 import '../pages/helpee/helpee_job_detail_completed.dart';
 import '../pages/helpee/helpee_23_help_support_my_jobs_page.dart';
+import '../pages/helpee/helpee_payment_confirmation_page.dart';
+import '../pages/helpee/helpee_rating_page.dart';
+
+// Shared Pages (Chat & Calling)
+import '../pages/shared/chat_page.dart';
+import '../pages/shared/call_page.dart';
+import '../pages/shared/conversations_page.dart';
+import '../services/webrtc_calling_service.dart';
+import '../models/user_type.dart';
 
 // Helper Pages
 import '../pages/helper/helper_1_auth_page.dart';
 import '../pages/helper/helper_2_login_page.dart';
 import '../pages/helper/helper_3_registration_page_1.dart';
+import '../pages/helper/helper_4_registration_page_2.dart';
+import '../pages/helper/helper_5_registration_page_3.dart';
 import '../pages/helper/helper_7_home_page.dart';
 import '../pages/helper/helper_8_view_requests_page.dart';
 import '../pages/helper/helper_10_activity_pending_page.dart';
@@ -57,6 +68,8 @@ import '../pages/helper/helper_terms_conditions_page.dart';
 import '../pages/helper/helper_privacy_policy_page.dart';
 import '../pages/helper/helper_helpee_profile_page.dart';
 import '../pages/helper/helper_comprehensive_job_detail_page.dart';
+import '../pages/helper/helper_payment_confirmation_page.dart';
+import '../pages/helper/helper_rating_page.dart';
 
 // Admin Pages
 import '../pages/admin/admin_start_page.dart';
@@ -65,9 +78,22 @@ import '../pages/admin/admin_home_page.dart';
 import '../pages/admin/admin_manage_jobs_page.dart';
 import '../pages/admin/admin_job_details_page.dart';
 import '../pages/admin/admin_analytics_page.dart';
+import '../pages/admin/admin_reports_page.dart'; // Import reports page
+import '../pages/admin/admin_report_list_page.dart'; // Import report list page
 
 class NavigationService {
+  // Global navigator key for notifications
+  static final GlobalKey<NavigatorState> navigatorKey =
+      GlobalKey<NavigatorState>();
+
+  // Initialize all services that need navigator key
+  static void initializeServices() {
+    PopupManagerService.setNavigatorKey(navigatorKey);
+    PaymentFlowService.setNavigatorKey(navigatorKey);
+  }
+
   static final GoRouter router = GoRouter(
+    navigatorKey: navigatorKey,
     initialLocation: '/',
     redirect: (context, state) => RouteGuard.guardRoute(context, state),
     routes: [
@@ -132,13 +158,7 @@ class NavigationService {
       GoRoute(
         path: '/helpee/job-request',
         name: 'helpee-job-request',
-        builder: (context, state) {
-          final extra = state.extra as Map<String, dynamic>?;
-          return Helpee7JobRequestPage(
-            isEdit: extra?['isEdit'] ?? false,
-            jobData: extra?['jobData'],
-          );
-        },
+        builder: (context, state) => const Helpee7JobRequestPage(),
       ),
       GoRoute(
         path: '/helpee/calendar',
@@ -148,7 +168,14 @@ class NavigationService {
       GoRoute(
         path: '/helpee/search-helper',
         name: 'helpee-search-helper',
-        builder: (context, state) => const Helpee9SearchHelperPage(),
+        builder: (context, state) {
+          final extra = state.extra as Map<String, dynamic>?;
+          return Helpee9SearchHelperPage(
+            isSelectionMode: extra?['isSelectionMode'] ?? false,
+            selectedCategoryId: extra?['selectedCategoryId'],
+            returnRoute: extra?['returnRoute'],
+          );
+        },
       ),
       GoRoute(
         path: '/helpee/profile',
@@ -158,17 +185,20 @@ class NavigationService {
       GoRoute(
         path: '/helpee/activity/pending',
         name: 'helpee-activity-pending',
-        builder: (context, state) => const Helpee15ActivityPendingPage(),
+        builder: (context, state) =>
+            const Helpee15ActivityPendingPage(initialTabIndex: 0),
       ),
       GoRoute(
         path: '/helpee/activity/ongoing',
         name: 'helpee-activity-ongoing',
-        builder: (context, state) => const Helpee16ActivityOngoingPage(),
+        builder: (context, state) =>
+            const Helpee15ActivityPendingPage(initialTabIndex: 1),
       ),
       GoRoute(
         path: '/helpee/activity/completed',
         name: 'helpee-activity-completed',
-        builder: (context, state) => const Helpee17ActivityCompletedPage(),
+        builder: (context, state) =>
+            const Helpee15ActivityPendingPage(initialTabIndex: 2),
       ),
       GoRoute(
         path: '/helpee/helper-profile',
@@ -178,6 +208,8 @@ class NavigationService {
           return Helpee14HelperProfilePage(
             helperId: extra?['helperId'],
             helperData: extra?['helperData'],
+            isSelectionMode: extra?['isSelectionMode'] ?? false,
+            returnRoute: extra?['returnRoute'],
           );
         },
       ),
@@ -242,6 +274,22 @@ class NavigationService {
         builder: (context, state) => const Helpee23HelpSupportMyJobsPage(),
       ),
       GoRoute(
+        path: '/helpee/payment-confirmation/:jobId',
+        name: 'helpee-payment-confirmation',
+        builder: (context, state) {
+          final jobId = state.pathParameters['jobId']!;
+          return HelpeePaymentConfirmationPage(jobId: jobId);
+        },
+      ),
+      GoRoute(
+        path: '/helpee/rating/:jobId',
+        name: 'helpee-rating',
+        builder: (context, state) {
+          final jobId = state.pathParameters['jobId']!;
+          return HelpeeRatingPage(jobId: jobId);
+        },
+      ),
+      GoRoute(
         path: '/helpee/profile/edit',
         name: 'helpee-profile-edit',
         builder: (context, state) => const Helpee11ProfileEditPage(),
@@ -256,6 +304,11 @@ class NavigationService {
             jobData: extra?['jobData'],
           );
         },
+      ),
+      GoRoute(
+        path: '/helpee/ai-bot',
+        name: 'helpee-ai-bot',
+        builder: (context, state) => const Helpee18AIBotPage(),
       ),
 
       // Helper Routes
@@ -273,6 +326,22 @@ class NavigationService {
         path: '/helper-register',
         name: 'helperRegister',
         builder: (context, state) => const Helper3RegistrationPage1(),
+      ),
+      GoRoute(
+        path: '/helper-register-2',
+        name: 'helperRegister2',
+        builder: (context, state) {
+          final registrationData = state.extra as Map<String, dynamic>?;
+          return Helper4RegistrationPage2(registrationData: registrationData);
+        },
+      ),
+      GoRoute(
+        path: '/helper-register-3',
+        name: 'helperRegister3',
+        builder: (context, state) {
+          final registrationData = state.extra as Map<String, dynamic>?;
+          return Helper5RegistrationPage3(registrationData: registrationData);
+        },
       ),
       GoRoute(
         path: '/helper/home',
@@ -396,6 +465,22 @@ class NavigationService {
         name: 'helper-privacy-policy',
         builder: (context, state) => const HelperPrivacyPolicyPage(),
       ),
+      GoRoute(
+        path: '/helper/payment-confirmation/:jobId',
+        name: 'helper-payment-confirmation',
+        builder: (context, state) {
+          final jobId = state.pathParameters['jobId']!;
+          return HelperPaymentConfirmationPage(jobId: jobId);
+        },
+      ),
+      GoRoute(
+        path: '/helper/rating/:jobId',
+        name: 'helper-rating',
+        builder: (context, state) {
+          final jobId = state.pathParameters['jobId']!;
+          return HelperRatingPage(jobId: jobId);
+        },
+      ),
 
       // Admin Routes
       GoRoute(
@@ -434,6 +519,79 @@ class NavigationService {
         path: '/admin/analytics',
         name: 'admin-analytics',
         builder: (context, state) => const AdminAnalyticsPage(),
+      ),
+
+      // Admin Reports Routes
+      GoRoute(
+        path: '/admin/reports',
+        name: 'admin-reports',
+        builder: (context, state) => const AdminReportsPage(),
+      ),
+      GoRoute(
+        path: '/admin/reports/job',
+        name: 'admin-reports-job',
+        builder: (context, state) =>
+            const AdminReportListPage(reportType: 'job'),
+      ),
+      GoRoute(
+        path: '/admin/reports/user',
+        name: 'admin-reports-user',
+        builder: (context, state) =>
+            const AdminReportListPage(reportType: 'user'),
+      ),
+      GoRoute(
+        path: '/admin/reports/general',
+        name: 'admin-reports-general',
+        builder: (context, state) =>
+            const AdminReportListPage(reportType: 'general'),
+      ),
+
+      // Shared Chat & Calling Routes
+      GoRoute(
+        path: '/chat',
+        name: 'chat',
+        builder: (context, state) {
+          final extra = state.extra as Map<String, dynamic>?;
+          return ChatPage(
+            conversationId: extra?['conversationId'] ?? '',
+            jobId: extra?['jobId'],
+            otherUserId: extra?['otherUserId'],
+            otherUserName: extra?['otherUserName'],
+            jobTitle: extra?['jobTitle'],
+          );
+        },
+      ),
+      GoRoute(
+        path: '/call',
+        name: 'call',
+        builder: (context, state) {
+          final extra = state.extra as Map<String, dynamic>?;
+          final callTypeString = extra?['callType'] ?? 'audio';
+          final callType =
+              callTypeString == 'video' ? CallType.video : CallType.audio;
+
+          return CallPage(
+            callType: callType,
+            isIncoming: extra?['isIncoming'] ?? false,
+            otherUserName: extra?['otherUserName'],
+            callId: extra?['callId'],
+            conversationId: extra?['conversationId'],
+            callerId: extra?['callerId'],
+            offer: extra?['offer'],
+          );
+        },
+      ),
+      GoRoute(
+        path: '/conversations/helper',
+        name: 'conversations-helper',
+        builder: (context, state) =>
+            const ConversationsPage(userType: UserType.helper),
+      ),
+      GoRoute(
+        path: '/conversations/helpee',
+        name: 'conversations-helpee',
+        builder: (context, state) =>
+            const ConversationsPage(userType: UserType.helpee),
       ),
     ],
   );

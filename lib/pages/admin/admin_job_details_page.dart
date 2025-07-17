@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../models/user_type.dart';
 import 'package:go_router/go_router.dart';
 import '../../utils/app_colors.dart';
 import '../../services/admin_auth_service.dart';
@@ -484,7 +485,7 @@ class _AdminJobDetailsPageState extends State<AdminJobDetailsPage> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Q: ${qa['question'] ?? 'No question'}',
+                        'Q: ${qa['question']?['question'] ?? qa['question']?.toString() ?? 'No question'}',
                         style: const TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w600,
@@ -493,7 +494,7 @@ class _AdminJobDetailsPageState extends State<AdminJobDetailsPage> {
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        'A: ${qa['answer'] ?? 'No answer provided'}',
+                        'A: ${qa['processed_answer'] ?? qa['answer'] ?? 'No answer provided'}',
                         style: TextStyle(
                           fontSize: 14,
                           color: AppColors.textSecondary,

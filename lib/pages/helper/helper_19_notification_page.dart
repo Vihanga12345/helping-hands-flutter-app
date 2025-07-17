@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../models/user_type.dart';
 import 'package:go_router/go_router.dart';
 import 'package:timeago/timeago.dart' as timeago;
 import '../../services/user_data_service.dart';
@@ -25,6 +26,14 @@ class _Helper19NotificationPageState extends State<Helper19NotificationPage> {
     _notificationsFuture = _userDataService.getNotifications();
   }
 
+  void _handleBackNavigation() {
+    if (context.canPop()) {
+      context.pop();
+    } else {
+      context.goNamed('helper_home');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -45,11 +54,15 @@ class _Helper19NotificationPageState extends State<Helper19NotificationPage> {
               AppHeader(
                 title: 'Notifications',
                 showBackButton: true,
-                onBackPressed: () => context.pop(),
+                onBackPressed: _handleBackNavigation,
                 rightWidget: IconButton(
                   icon: const Icon(Icons.mark_email_read),
-                  onPressed: () {
-                    // TODO: Implement mark all as read
+                  onPressed: () async {
+                    await _userDataService.markAllNotificationsAsRead();
+                    setState(() {
+                      _notificationsFuture =
+                          _userDataService.getNotifications();
+                    });
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
                           content: Text('All notifications marked as read')),
@@ -189,13 +202,40 @@ class _Helper19NotificationPageState extends State<Helper19NotificationPage> {
                                       shape: BoxShape.circle,
                                     ),
                                   ),
-                            onTap: () {
-                              // TODO: Implement mark as read and navigation
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                    content: Text(
-                                        'Opening ${notification['title']}')),
-                              );
+                            onTap: () async {
+                              // Mark notification as read
+                              await _userDataService
+                                  .markNotificationAsRead(notification['id']);
+
+                              // Handle navigation based on notification type
+                              final notificationType =
+                                  notification['notification_type'] as String;
+                              final jobId = notification['related_job_id'];
+
+                              if (jobId != null) {
+                                switch (notificationType) {
+                                  case 'job_accepted':
+                                  case 'job_started':
+                                    context.push('/helper/job-detail/ongoing',
+                                        extra: {'jobId': jobId});
+                                    break;
+                                  case 'job_completed':
+                                    context.push('/helper/job-detail/completed',
+                                        extra: {'jobId': jobId});
+                                    break;
+                                  case 'job_cancelled':
+                                    context.push('/helper/activity/pending');
+                                    break;
+                                  default:
+                                    context.push('/helper/home');
+                                }
+                              }
+
+                              // Refresh notifications
+                              setState(() {
+                                _notificationsFuture =
+                                    _userDataService.getNotifications();
+                              });
                             },
                           ),
                         );

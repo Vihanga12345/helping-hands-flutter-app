@@ -160,20 +160,29 @@ class CustomAuthService {
         );
       }
 
-      // Check if username or email already exists
-      final existingUser = await _supabase
+      // Check if username already exists for the same user type
+      final existingUsername = await _supabase
           .from('user_authentication')
-          .select('username, email')
-          .or('username.eq.$username,email.eq.$email')
+          .select('id')
+          .eq('username', username)
+          .eq('user_type', userType)
           .maybeSingle();
 
-      if (existingUser != null) {
-        if (existingUser['username'] == username) {
-          return {'success': false, 'error': 'Username already exists'};
-        }
-        if (existingUser['email'] == email) {
-          return {'success': false, 'error': 'Email already exists'};
-        }
+      if (existingUsername != null) {
+        return {
+          'success': false,
+          'error': 'Username already exists for ${userType}s'
+        };
+      }
+
+      final existingEmail = await _supabase
+          .from('user_authentication')
+          .select('id')
+          .eq('email', email)
+          .maybeSingle();
+
+      if (existingEmail != null) {
+        return {'success': false, 'error': 'Email already exists'};
       }
 
       // Hash password
@@ -220,19 +229,26 @@ class CustomAuthService {
     required String lastName,
     required String phone,
   }) async {
-    // Check if username or email already exists
-    final existingAuth = _mockTables['user_authentication']!
-        .where((auth) => auth['username'] == username || auth['email'] == email)
+    // Check if username already exists for the same user type
+    final existingUsername = _mockTables['user_authentication']!
+        .where((auth) =>
+            auth['username'] == username && auth['user_type'] == userType)
         .toList();
 
-    if (existingAuth.isNotEmpty) {
-      final existing = existingAuth.first;
-      if (existing['username'] == username) {
-        return {'success': false, 'error': 'Username already exists'};
-      }
-      if (existing['email'] == email) {
-        return {'success': false, 'error': 'Email already exists'};
-      }
+    if (existingUsername.isNotEmpty) {
+      return {
+        'success': false,
+        'error': 'Username already exists for ${userType}s'
+      };
+    }
+
+    // Check if email already exists (email should be unique across all user types)
+    final existingEmail = _mockTables['user_authentication']!
+        .where((auth) => auth['email'] == email)
+        .toList();
+
+    if (existingEmail.isNotEmpty) {
+      return {'success': false, 'error': 'Email already exists'};
     }
 
     // Create user
@@ -294,30 +310,48 @@ class CustomAuthService {
       // Hash the provided password
       final passwordHash = _hashPassword(password);
 
-      // Query authentication table
-      final authQuery = _supabase
-          .from('user_authentication')
-          .select('''
-            id, username, email, user_type, user_id, is_active, login_attempts, account_locked_until,
+      // Step 1: Find user by username/email and user_type first
+      print('🔍 Looking for user: $usernameOrEmail, type: $userType');
+
+      final baseSelect = '''
+            id, username, email, user_type, user_id, is_active, login_attempts, account_locked_until, password_hash,
             users!inner(id, first_name, last_name, display_name, profile_image_url, phone, location_city)
-          ''')
-          .eq('user_type', userType)
-          .eq('password_hash', passwordHash)
-          .eq('is_active', true);
+          ''';
 
-      // Check if login is by email or username
-      if (usernameOrEmail.contains('@')) {
-        authQuery.eq('email', usernameOrEmail);
-      } else {
-        authQuery.eq('username', usernameOrEmail);
-      }
-
-      final authResult = await authQuery.maybeSingle();
+      // Build query based on login type
+      final authResult = await (() async {
+        if (usernameOrEmail.contains('@')) {
+          print('🔍 Searching by email: $usernameOrEmail');
+          return await _supabase
+              .from('user_authentication')
+              .select(baseSelect)
+              .eq('user_type', userType)
+              .eq('is_active', true)
+              .eq('email', usernameOrEmail)
+              .maybeSingle();
+        } else {
+          print('🔍 Searching by username: $usernameOrEmail');
+          return await _supabase
+              .from('user_authentication')
+              .select(baseSelect)
+              .eq('user_type', userType)
+              .eq('is_active', true)
+              .eq('username', usernameOrEmail)
+              .maybeSingle();
+        }
+      })();
 
       if (authResult == null) {
-        // Increment login attempts for security
+        // User not found
         await _incrementLoginAttempts(usernameOrEmail, userType);
-        return {'success': false, 'error': 'Invalid credentials'};
+        return {'success': false, 'error': 'Invalid username or password'};
+      }
+
+      // Step 2: Verify password hash matches
+      if (authResult['password_hash'] != passwordHash) {
+        // Password doesn't match
+        await _incrementLoginAttempts(usernameOrEmail, userType);
+        return {'success': false, 'error': 'Invalid username or password'};
       }
 
       // Check if account is locked
@@ -467,21 +501,28 @@ class CustomAuthService {
     }
   }
 
-  /// Check if username is available
-  Future<bool> isUsernameAvailable(String username) async {
+  /// Check if username is available for a specific user type
+  Future<bool> isUsernameAvailable(String username, {String? userType}) async {
     try {
       if (_useMockData) {
         final existing = _mockTables['user_authentication']!
-            .where((auth) => auth['username'] == username)
+            .where((auth) =>
+                auth['username'] == username &&
+                (userType == null || auth['user_type'] == userType))
             .toList();
         return existing.isEmpty;
       }
 
-      final result = await _supabase
+      var query = _supabase
           .from('user_authentication')
           .select('username')
-          .eq('username', username)
-          .maybeSingle();
+          .eq('username', username);
+
+      if (userType != null) {
+        query = query.eq('user_type', userType);
+      }
+
+      final result = await query.maybeSingle();
 
       return result == null;
     } catch (e) {

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../models/user_type.dart';
 import 'package:go_router/go_router.dart';
 import '../../utils/app_colors.dart';
 import '../../utils/app_text_styles.dart';
@@ -41,32 +42,70 @@ class _HelpeeJobDetailPendingPageState
   }
 
   Future<void> _loadJobDetails() async {
-    setState(() {
-      _isLoading = true;
-      _error = null;
-    });
+    if (mounted) {
+      setState(() {
+        _isLoading = true;
+        _error = null;
+        _jobDetails = null; // Clear previous data
+      });
+    }
 
-    try {
-      final jobId =
-          widget.jobId ?? widget.jobData?['jobId'] ?? widget.jobData?['id'];
-      if (jobId == null) {
-        throw Exception('No job ID provided');
+    if (widget.jobId != null) {
+      try {
+        final jobDetails =
+            await _jobDetailService.getCompleteJobDetails(widget.jobId!);
+
+        if (jobDetails == null) {
+          if (mounted) {
+            setState(() {
+              _error = 'Job not found or access denied';
+              _isLoading = false;
+            });
+          }
+          return;
+        }
+
+        if (mounted) {
+          setState(() {
+            _jobDetails = jobDetails;
+            _isLoading = false;
+          });
+        }
+      } catch (e) {
+        print('❌ Error loading job details: $e');
+        if (mounted) {
+          setState(() {
+            _error = 'Failed to load job details. Please try again.';
+            _isLoading = false;
+          });
+        }
+      }
+    } else if (widget.jobData != null) {
+      // Validate widget.jobData has required fields
+      final jobData = widget.jobData!;
+      if (jobData['id'] == null) {
+        if (mounted) {
+          setState(() {
+            _error = 'Invalid job data provided';
+            _isLoading = false;
+          });
+        }
+        return;
       }
 
-      final details = await _jobDetailService.getCompleteJobDetails(jobId);
-      if (details == null) {
-        throw Exception('Job not found');
+      if (mounted) {
+        setState(() {
+          _jobDetails = jobData;
+          _isLoading = false;
+        });
       }
-
-      setState(() {
-        _jobDetails = details;
-        _isLoading = false;
-      });
-    } catch (e) {
-      setState(() {
-        _error = e.toString();
-        _isLoading = false;
-      });
+    } else {
+      if (mounted) {
+        setState(() {
+          _error = 'No job ID or data provided';
+          _isLoading = false;
+        });
+      }
     }
   }
 
@@ -199,7 +238,8 @@ class _HelpeeJobDetailPendingPageState
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'We\'re finding the best helpers for you. You\'ll be notified once someone accepts.'.tr(),
+                  'We\'re finding the best helpers for you. You\'ll be notified once someone accepts.'
+                      .tr(),
                   style: AppTextStyles.bodySmall.copyWith(
                     color: AppColors.warning,
                   ),
@@ -271,6 +311,42 @@ class _HelpeeJobDetailPendingPageState
                     color: AppColors.white,
                     fontWeight: FontWeight.w600,
                   ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              // Public/Private Status Label
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: _jobDetails!['is_private'] == true
+                      ? AppColors.primaryGreen.withOpacity(0.1)
+                      : AppColors.warning.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      _jobDetails!['is_private'] == true
+                          ? Icons.lock
+                          : Icons.public,
+                      size: 14,
+                      color: _jobDetails!['is_private'] == true
+                          ? AppColors.primaryGreen
+                          : AppColors.warning,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      _jobDetails!['is_private'] == true ? 'PRIVATE' : 'PUBLIC',
+                      style: AppTextStyles.bodySmall.copyWith(
+                        color: _jobDetails!['is_private'] == true
+                            ? AppColors.primaryGreen
+                            : AppColors.warning,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
@@ -388,8 +464,16 @@ class _HelpeeJobDetailPendingPageState
             ...questions.asMap().entries.map((entry) {
               final index = entry.key;
               final qa = entry.value;
-              final question = qa['question'] ?? 'Question not available'.tr();
-              final answer = qa['answer'] ?? 'No answer provided'.tr();
+
+              // Extract clean question text from the nested question object
+              final questionText = qa['question']?['question'] ??
+                  qa['question']?.toString() ??
+                  'Question not available'.tr();
+
+              // Use the processed answer that was set in JobDetailService
+              final answerText = qa['processed_answer'] ??
+                  qa['answer'] ??
+                  'No answer provided'.tr();
 
               return Padding(
                 padding: EdgeInsets.only(
@@ -404,7 +488,7 @@ class _HelpeeJobDetailPendingPageState
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Q${index + 1}: $question',
+                        'Q${index + 1}: $questionText',
                         style: AppTextStyles.bodyMedium.copyWith(
                           fontWeight: FontWeight.w600,
                           color: AppColors.textPrimary,
@@ -412,7 +496,7 @@ class _HelpeeJobDetailPendingPageState
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        'A: $answer',
+                        'A: $answerText',
                         style: AppTextStyles.bodyMedium.copyWith(
                           color: AppColors.textSecondary,
                           height: 1.4,
@@ -591,12 +675,12 @@ class _HelpeeJobDetailPendingPageState
             ],
           ),
           const SizedBox(height: 16),
-          _buildStatusInfoRow(
-              'Request Created'.tr(), _formatDateTime(_jobDetails!['created_at'])),
+          _buildStatusInfoRow('Request Created'.tr(),
+              _formatDateTime(_jobDetails!['created_at'])),
           _buildStatusInfoRow('Priority'.tr(),
               (_jobDetails!['priority'] ?? 'standard').toUpperCase()),
-          _buildStatusInfoRow(
-              'Visibility'.tr(), _jobDetails!['is_private'] ? 'Private'.tr() : 'Public'.tr()),
+          _buildStatusInfoRow('Visibility'.tr(),
+              _jobDetails!['is_private'] ? 'Private'.tr() : 'Public'.tr()),
           _buildStatusInfoRow('Estimated Response'.tr(), 'Within 2 hours'.tr()),
         ],
       ),
@@ -737,7 +821,8 @@ class _HelpeeJobDetailPendingPageState
       ];
       final day = dt.day;
       final suffix = _getDaySuffix(day);
-      return '${day}${suffix} ${months[dt.month - 1]} ${dt.year} at ${dt.hour}:${dt.minute.toString().padLeft(2, '0')}'.tr();
+      return '${day}${suffix} ${months[dt.month - 1]} ${dt.year} at ${dt.hour}:${dt.minute.toString().padLeft(2, '0')}'
+          .tr();
     } catch (e) {
       return dateTime;
     }
@@ -816,7 +901,8 @@ class _HelpeeJobDetailPendingPageState
         return AlertDialog(
           title: Text('Cancel Request'.tr()),
           content: Text(
-              'Are you sure you want to cancel "${_jobDetails!['title'] ?? 'this job'}"? This action cannot be undone and the job will be permanently deleted.'.tr()),
+              'Are you sure you want to cancel "${_jobDetails!['title'] ?? 'this job'}"? This action cannot be undone and the job will be permanently deleted.'
+                  .tr()),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),

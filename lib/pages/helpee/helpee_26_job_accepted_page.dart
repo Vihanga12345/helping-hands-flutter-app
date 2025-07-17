@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../models/user_type.dart';
 import 'package:go_router/go_router.dart';
 import '../../utils/app_colors.dart';
 import '../../utils/app_text_styles.dart';
@@ -10,26 +11,28 @@ class Helpee26JobAcceptedPage extends StatefulWidget {
   const Helpee26JobAcceptedPage({super.key});
 
   @override
-  State<Helpee26JobAcceptedPage> createState() => _Helpee26JobAcceptedPageState();
+  State<Helpee26JobAcceptedPage> createState() =>
+      _Helpee26JobAcceptedPageState();
 }
 
 class _Helpee26JobAcceptedPageState extends State<Helpee26JobAcceptedPage> {
   @override
   Widget build(BuildContext context) {
-    final jobData = GoRouterState.of(context).extra as Map<String, dynamic>? ?? {
-      'jobId': 'JOB1001',
-      'jobTitle': 'House Cleaning',
-      'helperName': 'Saman Perera',
-      'helperRating': '4.8',
-      'helperImage': 'assets/images/helper_avatar.png',
-      'scheduledDate': '15 Dec 2024',
-      'scheduledTime': '10:00 AM',
-      'duration': '3 hours',
-      'address': '123 Galle Road, Colombo 03',
-      'price': 'LKR 2,500',
-      'helperPhone': '+94 77 123 4567',
-      'acceptedAt': '13 Dec 2024, 4:45 PM',
-    };
+    final jobData = GoRouterState.of(context).extra as Map<String, dynamic>? ??
+        {
+          'jobId': 'JOB1001',
+          'jobTitle': 'House Cleaning',
+          'helperName': 'Saman Perera',
+          'helperRating': '4.8',
+          'helperImage': 'assets/images/helper_avatar.png',
+          'scheduledDate': '15 Dec 2024',
+          'scheduledTime': '10:00 AM',
+          'duration': '3 hours',
+          'address': '123 Galle Road, Colombo 03',
+          'price': 'LKR 2,500',
+          'helperPhone': '+94 77 123 4567',
+          'acceptedAt': '13 Dec 2024, 4:45 PM',
+        };
 
     return Scaffold(
       body: Column(
@@ -41,7 +44,7 @@ class _Helpee26JobAcceptedPageState extends State<Helpee26JobAcceptedPage> {
             showMenuButton: false,
             showNotificationButton: false,
           ),
-          
+
           // Body Content
           Expanded(
             child: Container(
@@ -67,7 +70,8 @@ class _Helpee26JobAcceptedPageState extends State<Helpee26JobAcceptedPage> {
                         decoration: BoxDecoration(
                           color: AppColors.success.withOpacity(0.1),
                           borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: AppColors.success.withOpacity(0.3)),
+                          border: Border.all(
+                              color: AppColors.success.withOpacity(0.3)),
                         ),
                         child: const Column(
                           children: [
@@ -97,9 +101,9 @@ class _Helpee26JobAcceptedPageState extends State<Helpee26JobAcceptedPage> {
                           ],
                         ),
                       ),
-                      
+
                       const SizedBox(height: 20),
-                      
+
                       // Helper Information Card
                       Container(
                         width: double.infinity,
@@ -126,7 +130,6 @@ class _Helpee26JobAcceptedPageState extends State<Helpee26JobAcceptedPage> {
                               ),
                             ),
                             const SizedBox(height: 16),
-                            
                             Row(
                               children: [
                                 // Helper Avatar
@@ -134,10 +137,12 @@ class _Helpee26JobAcceptedPageState extends State<Helpee26JobAcceptedPage> {
                                   width: 60,
                                   height: 60,
                                   decoration: BoxDecoration(
-                                    color: AppColors.primaryGreen.withOpacity(0.1),
+                                    color:
+                                        AppColors.primaryGreen.withOpacity(0.1),
                                     borderRadius: BorderRadius.circular(30),
                                     border: Border.all(
-                                      color: AppColors.primaryGreen.withOpacity(0.3),
+                                      color: AppColors.primaryGreen
+                                          .withOpacity(0.3),
                                       width: 2,
                                     ),
                                   ),
@@ -147,13 +152,14 @@ class _Helpee26JobAcceptedPageState extends State<Helpee26JobAcceptedPage> {
                                     size: 30,
                                   ),
                                 ),
-                                
+
                                 const SizedBox(width: 16),
-                                
+
                                 // Helper Details
                                 Expanded(
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       Text(
                                         jobData['helperName'],
@@ -192,49 +198,14 @@ class _Helpee26JobAcceptedPageState extends State<Helpee26JobAcceptedPage> {
                                     ],
                                   ),
                                 ),
-                                
-                                // Contact Buttons
-                                Column(
-                                  children: [
-                                    Container(
-                                      decoration: BoxDecoration(
-                                        color: AppColors.primaryGreen,
-                                        borderRadius: BorderRadius.circular(20),
-                                      ),
-                                      child: IconButton(
-                                        onPressed: () => _callHelper(context),
-                                        icon: const Icon(
-                                          Icons.phone,
-                                          color: AppColors.white,
-                                          size: 20,
-                                        ),
-                                      ),
-                                    ),
-                                    const SizedBox(height: 8),
-                                    Container(
-                                      decoration: BoxDecoration(
-                                        color: AppColors.primaryGreen.withOpacity(0.1),
-                                        borderRadius: BorderRadius.circular(20),
-                                      ),
-                                      child: IconButton(
-                                        onPressed: () => _messageHelper(context),
-                                        icon: const Icon(
-                                          Icons.message,
-                                          color: AppColors.primaryGreen,
-                                          size: 20,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
                               ],
                             ),
                           ],
                         ),
                       ),
-                      
+
                       const SizedBox(height: 20),
-                      
+
                       // Job Details Card
                       Container(
                         width: double.infinity,
@@ -258,7 +229,8 @@ class _Helpee26JobAcceptedPageState extends State<Helpee26JobAcceptedPage> {
                                 Container(
                                   padding: const EdgeInsets.all(8),
                                   decoration: BoxDecoration(
-                                    color: AppColors.primaryGreen.withOpacity(0.1),
+                                    color:
+                                        AppColors.primaryGreen.withOpacity(0.1),
                                     borderRadius: BorderRadius.circular(8),
                                   ),
                                   child: const Icon(
@@ -270,7 +242,8 @@ class _Helpee26JobAcceptedPageState extends State<Helpee26JobAcceptedPage> {
                                 const SizedBox(width: 12),
                                 Expanded(
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       Text(
                                         jobData['jobTitle'],
@@ -299,21 +272,26 @@ class _Helpee26JobAcceptedPageState extends State<Helpee26JobAcceptedPage> {
                                 ),
                               ],
                             ),
-                            
+
                             const SizedBox(height: 20),
-                            
+
                             // Job Schedule
-                            _buildDetailRow(Icons.calendar_today, 'Date', jobData['scheduledDate']),
-                            _buildDetailRow(Icons.access_time, 'Time', jobData['scheduledTime']),
-                            _buildDetailRow(Icons.timer, 'Duration', jobData['duration']),
-                            _buildDetailRow(Icons.location_on, 'Location', jobData['address']),
-                            _buildDetailRow(Icons.done, 'Accepted', jobData['acceptedAt']),
+                            _buildDetailRow(Icons.calendar_today, 'Date',
+                                jobData['scheduledDate']),
+                            _buildDetailRow(Icons.access_time, 'Time',
+                                jobData['scheduledTime']),
+                            _buildDetailRow(
+                                Icons.timer, 'Duration', jobData['duration']),
+                            _buildDetailRow(Icons.location_on, 'Location',
+                                jobData['address']),
+                            _buildDetailRow(
+                                Icons.done, 'Accepted', jobData['acceptedAt']),
                           ],
                         ),
                       ),
-                      
+
                       const SizedBox(height: 20),
-                      
+
                       // Next Steps Card
                       Container(
                         width: double.infinity,
@@ -340,28 +318,24 @@ class _Helpee26JobAcceptedPageState extends State<Helpee26JobAcceptedPage> {
                               ),
                             ),
                             const SizedBox(height: 16),
-                            
                             _buildNextStepItem(
                               Icons.schedule,
                               'Prepare for the service',
                               'Make sure you\'re available at the scheduled time',
                               true,
                             ),
-                            
                             _buildNextStepItem(
                               Icons.location_on,
                               'Confirm your location',
                               'Ensure your address details are accurate',
                               false,
                             ),
-                            
                             _buildNextStepItem(
                               Icons.person,
                               'Meet your helper',
                               'Your helper will arrive at the scheduled time',
                               false,
                             ),
-                            
                             _buildNextStepItem(
                               Icons.payment,
                               'Payment after completion',
@@ -371,9 +345,9 @@ class _Helpee26JobAcceptedPageState extends State<Helpee26JobAcceptedPage> {
                           ],
                         ),
                       ),
-                      
+
                       const SizedBox(height: 20),
-                      
+
                       // Action Buttons
                       Row(
                         children: [
@@ -384,8 +358,10 @@ class _Helpee26JobAcceptedPageState extends State<Helpee26JobAcceptedPage> {
                               label: const Text('Reschedule'),
                               style: OutlinedButton.styleFrom(
                                 foregroundColor: AppColors.primaryGreen,
-                                side: const BorderSide(color: AppColors.primaryGreen),
-                                padding: const EdgeInsets.symmetric(vertical: 12),
+                                side: const BorderSide(
+                                    color: AppColors.primaryGreen),
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 12),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(12),
                                 ),
@@ -401,7 +377,8 @@ class _Helpee26JobAcceptedPageState extends State<Helpee26JobAcceptedPage> {
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: AppColors.primaryGreen,
                                 foregroundColor: AppColors.white,
-                                padding: const EdgeInsets.symmetric(vertical: 12),
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 12),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(12),
                                 ),
@@ -410,7 +387,7 @@ class _Helpee26JobAcceptedPageState extends State<Helpee26JobAcceptedPage> {
                           ),
                         ],
                       ),
-                      
+
                       const SizedBox(height: 20),
                     ],
                   ),
@@ -418,7 +395,7 @@ class _Helpee26JobAcceptedPageState extends State<Helpee26JobAcceptedPage> {
               ),
             ),
           ),
-          
+
           // Navigation Bar
           const AppNavigationBar(
             currentTab: NavigationTab.home,
@@ -458,7 +435,8 @@ class _Helpee26JobAcceptedPageState extends State<Helpee26JobAcceptedPage> {
     );
   }
 
-  Widget _buildNextStepItem(IconData icon, String title, String description, bool isActive) {
+  Widget _buildNextStepItem(
+      IconData icon, String title, String description, bool isActive) {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       child: Row(
@@ -467,14 +445,15 @@ class _Helpee26JobAcceptedPageState extends State<Helpee26JobAcceptedPage> {
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: isActive 
-                ? AppColors.primaryGreen.withOpacity(0.1)
-                : AppColors.lightGrey.withOpacity(0.5),
+              color: isActive
+                  ? AppColors.primaryGreen.withOpacity(0.1)
+                  : AppColors.lightGrey.withOpacity(0.5),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Icon(
               icon,
-              color: isActive ? AppColors.primaryGreen : AppColors.textSecondary,
+              color:
+                  isActive ? AppColors.primaryGreen : AppColors.textSecondary,
               size: 20,
             ),
           ),
@@ -488,7 +467,9 @@ class _Helpee26JobAcceptedPageState extends State<Helpee26JobAcceptedPage> {
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
-                    color: isActive ? AppColors.primaryGreen : AppColors.textPrimary,
+                    color: isActive
+                        ? AppColors.primaryGreen
+                        : AppColors.textPrimary,
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -537,4 +518,4 @@ class _Helpee26JobAcceptedPageState extends State<Helpee26JobAcceptedPage> {
   void _viewHelperProfile(BuildContext context) {
     context.go('/helpee/helper-profile');
   }
-} 
+}

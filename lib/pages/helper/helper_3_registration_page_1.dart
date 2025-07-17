@@ -1,8 +1,14 @@
 import 'package:flutter/material.dart';
+import '../../models/user_type.dart';
 import 'package:go_router/go_router.dart';
 import '../../utils/app_colors.dart';
 import '../../utils/app_text_styles.dart';
 import '../../services/custom_auth_service.dart';
+import '../../services/localization_service.dart';
+import '../../widgets/common/universal_page_header.dart';
+import '../../widgets/common/custom_text_field.dart';
+import '../../widgets/common/custom_button.dart';
+import '../../widgets/common/progress_indicator.dart' as custom;
 
 class Helper3RegistrationPage1 extends StatefulWidget {
   const Helper3RegistrationPage1({super.key});
@@ -29,403 +35,346 @@ class _Helper3RegistrationPage1State extends State<Helper3RegistrationPage1> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Helper Registration'),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () {
-            if (context.canPop()) {
-              context.pop();
-            } else {
-              context.go('/');
-            }
-          },
-        ),
-      ),
-      body: Container(
-        width: double.infinity,
-        height: double.infinity,
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment(0.50, 0.00),
-            end: Alignment(0.50, 1.00),
-            colors: AppColors.backgroundGradient,
+      backgroundColor: const Color(0xFFF8F9FA),
+      body: Column(
+        children: [
+          // Universal Page Header
+          UniversalPageHeader(
+            title: 'Helper Registration'.tr(),
+            subtitle: 'Step 1 of 3'.tr(),
+            onBackPressed: () {
+              if (context.canPop()) {
+                context.pop();
+              } else {
+                context.go('/');
+              }
+            },
           ),
-        ),
-        child: SafeArea(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24.0),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                children: [
-                  const SizedBox(height: 20),
 
-                  // Logo
-                  Container(
-                    width: 80,
-                    height: 80,
-                    padding: const EdgeInsets.all(10),
-                    child: Image.asset(
-                      'assets/images/logo.png',
-                      width: 60,
-                      height: 60,
-                      fit: BoxFit.contain,
+          // Body Content
+          Expanded(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(24.0),
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  children: [
+                    const SizedBox(height: 16),
+
+                    // Progress Indicator
+                    custom.ProgressIndicator(
+                      totalSteps: 3,
+                      currentStep: 1,
+                      stepTitles: [
+                        'Personal Info'.tr(),
+                        'Select Services'.tr(),
+                        'Upload Documents'.tr()
+                      ],
+                      onStepTapped: (step) {
+                        // Handle step navigation
+                        if (step == 1) {
+                          // Already on step 1
+                          return;
+                        } else if (step == 2) {
+                          context.go('/helper-register-2');
+                        } else if (step == 3) {
+                          context.go('/helper-register-3');
+                        }
+                      },
+                      enableNavigation: true,
                     ),
-                  ),
 
-                  const SizedBox(height: 16),
+                    const SizedBox(height: 24),
 
-                  // App Name
-                  const Text(
-                    'Helping Hands',
-                    style: TextStyle(
-                      color: AppColors.darkGreen,
-                      fontSize: 22,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-
-                  const SizedBox(height: 20),
-
-                  // Role Confirmation Text
-                  const Text(
-                    "I'm a helper",
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.textPrimary,
-                    ),
-                  ),
-
-                  const SizedBox(height: 32),
-
-                  // Progress Indicator
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      _buildProgressBubble(true, 1), // Current page
-                      _buildProgressLine(),
-                      _buildProgressBubble(false, 2),
-                      _buildProgressLine(),
-                      _buildProgressBubble(false, 3),
-                    ],
-                  ),
-
-                  const SizedBox(height: 32),
-
-                  // First Name Field
-                  TextFormField(
-                    controller: _firstNameController,
-                    decoration: InputDecoration(
-                      labelText: 'First Name',
-                      hintText: 'Enter your first name',
-                      prefixIcon: const Icon(Icons.person),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide:
-                            const BorderSide(color: AppColors.lightGrey),
-                      ),
-                      filled: true,
-                      fillColor: AppColors.white,
-                    ),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Please enter your first name';
-                      }
-                      return null;
-                    },
-                  ),
-
-                  const SizedBox(height: 16),
-
-                  // Last Name Field
-                  TextFormField(
-                    controller: _lastNameController,
-                    decoration: InputDecoration(
-                      labelText: 'Last Name',
-                      hintText: 'Enter your last name',
-                      prefixIcon: const Icon(Icons.person),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide:
-                            const BorderSide(color: AppColors.lightGrey),
-                      ),
-                      filled: true,
-                      fillColor: AppColors.white,
-                    ),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Please enter your last name';
-                      }
-                      return null;
-                    },
-                  ),
-
-                  const SizedBox(height: 16),
-
-                  // Username Field
-                  TextFormField(
-                    controller: _usernameController,
-                    decoration: InputDecoration(
-                      labelText: 'Username',
-                      hintText: 'Choose a unique username',
-                      prefixIcon: const Icon(Icons.account_circle),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide:
-                            const BorderSide(color: AppColors.lightGrey),
-                      ),
-                      filled: true,
-                      fillColor: AppColors.white,
-                    ),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Please enter a username';
-                      }
-                      if (value.length < 3) {
-                        return 'Username must be at least 3 characters';
-                      }
-                      return null;
-                    },
-                  ),
-
-                  const SizedBox(height: 16),
-
-                  // Email Field
-                  TextFormField(
-                    controller: _emailController,
-                    keyboardType: TextInputType.emailAddress,
-                    decoration: InputDecoration(
-                      labelText: 'Email',
-                      hintText: 'Enter your email address',
-                      prefixIcon: const Icon(Icons.email),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide:
-                            const BorderSide(color: AppColors.lightGrey),
-                      ),
-                      filled: true,
-                      fillColor: AppColors.white,
-                    ),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Please enter your email';
-                      }
-                      if (!value.contains('@')) {
-                        return 'Please enter a valid email address';
-                      }
-                      return null;
-                    },
-                  ),
-
-                  const SizedBox(height: 16),
-
-                  // Phone Field
-                  TextFormField(
-                    controller: _phoneController,
-                    keyboardType: TextInputType.phone,
-                    decoration: InputDecoration(
-                      labelText: 'Phone Number',
-                      hintText: 'Enter your phone number',
-                      prefixIcon: const Icon(Icons.phone),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide:
-                            const BorderSide(color: AppColors.lightGrey),
-                      ),
-                      filled: true,
-                      fillColor: AppColors.white,
-                    ),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Please enter your phone number';
-                      }
-                      return null;
-                    },
-                  ),
-
-                  const SizedBox(height: 16),
-
-                  // Birthday Field
-                  GestureDetector(
-                    onTap: _selectDate,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 16),
+                    // Registration Form
+                    Container(
+                      padding: const EdgeInsets.all(24),
                       decoration: BoxDecoration(
-                        border: Border.all(color: AppColors.lightGrey),
-                        borderRadius: BorderRadius.circular(12),
-                        color: AppColors.white,
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(20),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.05),
+                            blurRadius: 10,
+                            offset: const Offset(0, 5),
+                          ),
+                        ],
                       ),
-                      child: Row(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Icon(Icons.calendar_today, color: Colors.grey),
-                          const SizedBox(width: 12),
+                          // Form Title
                           Text(
-                            _selectedDate != null
-                                ? '${_selectedDate!.day}/${_selectedDate!.month}/${_selectedDate!.year}'
-                                : 'Select your birthday',
-                            style: TextStyle(
-                              fontSize: 16,
-                              color: _selectedDate != null
-                                  ? Colors.black
-                                  : Colors.grey,
+                            'Personal Information'.tr(),
+                            style: const TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.textPrimary,
                             ),
+                          ),
+                          const SizedBox(height: 20),
+
+                          // First Name Field
+                          CustomTextField(
+                            label: 'First Name'.tr(),
+                            hint: 'Enter your first name'.tr(),
+                            controller: _firstNameController,
+                            prefixIcon: const Icon(Icons.person_outline),
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return 'Please enter your first name'.tr();
+                              }
+                              return null;
+                            },
+                          ),
+
+                          // Last Name Field
+                          CustomTextField(
+                            label: 'Last Name'.tr(),
+                            hint: 'Enter your last name'.tr(),
+                            controller: _lastNameController,
+                            prefixIcon: const Icon(Icons.person_outline),
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return 'Please enter your last name'.tr();
+                              }
+                              return null;
+                            },
+                          ),
+
+                          // Username Field
+                          CustomTextField(
+                            label: 'Username'.tr(),
+                            hint: 'Choose a unique username'.tr(),
+                            controller: _usernameController,
+                            prefixIcon:
+                                const Icon(Icons.account_circle_outlined),
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return 'Please enter a username'.tr();
+                              }
+                              if (value.length < 3) {
+                                return 'Username must be at least 3 characters'
+                                    .tr();
+                              }
+                              return null;
+                            },
+                          ),
+
+                          // Email Field
+                          CustomTextField(
+                            label: 'Email'.tr(),
+                            hint: 'Enter your email address'.tr(),
+                            controller: _emailController,
+                            keyboardType: TextInputType.emailAddress,
+                            prefixIcon: const Icon(Icons.email_outlined),
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return 'Please enter your email'.tr();
+                              }
+                              if (!value.contains('@')) {
+                                return 'Please enter a valid email address'
+                                    .tr();
+                              }
+                              return null;
+                            },
+                          ),
+
+                          // Phone Field
+                          CustomTextField(
+                            label: 'Phone Number'.tr(),
+                            hint: 'Enter your phone number'.tr(),
+                            controller: _phoneController,
+                            keyboardType: TextInputType.phone,
+                            prefixIcon: const Icon(Icons.phone_outlined),
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return 'Please enter your phone number'.tr();
+                              }
+                              return null;
+                            },
+                          ),
+
+                          // Birthday Field
+                          Container(
+                            margin: const EdgeInsets.only(bottom: 16),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Date of Birth'.tr(),
+                                  style: const TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                    color: AppColors.textPrimary,
+                                    letterSpacing: 0.3,
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                GestureDetector(
+                                  onTap: _selectDate,
+                                  child: Container(
+                                    decoration: BoxDecoration(
+                                      borderRadius: BorderRadius.circular(16),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: Colors.black.withOpacity(0.05),
+                                          blurRadius: 8,
+                                          offset: const Offset(0, 2),
+                                        ),
+                                      ],
+                                    ),
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 20, vertical: 18),
+                                      decoration: BoxDecoration(
+                                        color: Colors.white,
+                                        borderRadius: BorderRadius.circular(16),
+                                        border: Border.all(
+                                          color: AppColors.lightGrey
+                                              .withOpacity(0.3),
+                                          width: 1.5,
+                                        ),
+                                      ),
+                                      child: Row(
+                                        children: [
+                                          Icon(
+                                            Icons.calendar_today_outlined,
+                                            color: AppColors.textSecondary,
+                                          ),
+                                          const SizedBox(width: 12),
+                                          Text(
+                                            _selectedDate != null
+                                                ? '${_selectedDate!.day}/${_selectedDate!.month}/${_selectedDate!.year}'
+                                                : 'Select your birthday'.tr(),
+                                            style: TextStyle(
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.w500,
+                                              color: _selectedDate != null
+                                                  ? AppColors.textPrimary
+                                                  : AppColors.textSecondary
+                                                      .withOpacity(0.7),
+                                              letterSpacing: 0.3,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+
+                          // Password Field
+                          CustomTextField(
+                            label: 'Password'.tr(),
+                            hint: 'Create a secure password'.tr(),
+                            controller: _passwordController,
+                            obscureText: _obscurePassword,
+                            prefixIcon: const Icon(Icons.lock_outline),
+                            suffixIcon: IconButton(
+                              icon: Icon(
+                                _obscurePassword
+                                    ? Icons.visibility_outlined
+                                    : Icons.visibility_off_outlined,
+                              ),
+                              onPressed: () {
+                                setState(() {
+                                  _obscurePassword = !_obscurePassword;
+                                });
+                              },
+                            ),
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return 'Please enter a password'.tr();
+                              }
+                              if (value.length < 6) {
+                                return 'Password must be at least 6 characters'
+                                    .tr();
+                              }
+                              return null;
+                            },
+                          ),
+
+                          // Confirm Password Field
+                          CustomTextField(
+                            label: 'Confirm Password'.tr(),
+                            hint: 'Re-enter your password'.tr(),
+                            controller: _confirmPasswordController,
+                            obscureText: _obscureConfirmPassword,
+                            prefixIcon: const Icon(Icons.lock_outline),
+                            suffixIcon: IconButton(
+                              icon: Icon(
+                                _obscureConfirmPassword
+                                    ? Icons.visibility_outlined
+                                    : Icons.visibility_off_outlined,
+                              ),
+                              onPressed: () {
+                                setState(() {
+                                  _obscureConfirmPassword =
+                                      !_obscureConfirmPassword;
+                                });
+                              },
+                            ),
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return 'Please confirm your password'.tr();
+                              }
+                              if (value != _passwordController.text) {
+                                return 'Passwords do not match'.tr();
+                              }
+                              return null;
+                            },
+                          ),
+
+                          const SizedBox(height: 8),
+
+                          // Next Button
+                          CustomButton(
+                            text: 'Next'.tr(),
+                            onPressed: _handleNext,
+                            isLoading: _isLoading,
+                            icon: Icons.arrow_forward,
+                          ),
+
+                          const SizedBox(height: 16),
+
+                          // Login Link
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(
+                                "Already have an account? ".tr(),
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  color: AppColors.textSecondary,
+                                ),
+                              ),
+                              GestureDetector(
+                                onTap: () => context.go('/helper-login'),
+                                child: Text(
+                                  'Login'.tr(),
+                                  style: const TextStyle(
+                                    fontSize: 16,
+                                    color: AppColors.primaryGreen,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                         ],
                       ),
                     ),
-                  ),
 
-                  const SizedBox(height: 16),
-
-                  // Password Field
-                  TextFormField(
-                    controller: _passwordController,
-                    obscureText: _obscurePassword,
-                    decoration: InputDecoration(
-                      labelText: 'Password',
-                      hintText: 'Create a secure password',
-                      prefixIcon: const Icon(Icons.lock),
-                      suffixIcon: IconButton(
-                        icon: Icon(
-                          _obscurePassword
-                              ? Icons.visibility
-                              : Icons.visibility_off,
-                        ),
-                        onPressed: () {
-                          setState(() {
-                            _obscurePassword = !_obscurePassword;
-                          });
-                        },
-                      ),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide:
-                            const BorderSide(color: AppColors.lightGrey),
-                      ),
-                      filled: true,
-                      fillColor: AppColors.white,
-                    ),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Please enter a password';
-                      }
-                      if (value.length < 6) {
-                        return 'Password must be at least 6 characters';
-                      }
-                      return null;
-                    },
-                  ),
-
-                  const SizedBox(height: 16),
-
-                  // Confirm Password Field
-                  TextFormField(
-                    controller: _confirmPasswordController,
-                    obscureText: _obscureConfirmPassword,
-                    decoration: InputDecoration(
-                      labelText: 'Confirm Password',
-                      hintText: 'Re-enter your password',
-                      prefixIcon: const Icon(Icons.lock_outline),
-                      suffixIcon: IconButton(
-                        icon: Icon(
-                          _obscureConfirmPassword
-                              ? Icons.visibility
-                              : Icons.visibility_off,
-                        ),
-                        onPressed: () {
-                          setState(() {
-                            _obscureConfirmPassword = !_obscureConfirmPassword;
-                          });
-                        },
-                      ),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide:
-                            const BorderSide(color: AppColors.lightGrey),
-                      ),
-                      filled: true,
-                      fillColor: AppColors.white,
-                    ),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Please confirm your password';
-                      }
-                      if (value != _passwordController.text) {
-                        return 'Passwords do not match';
-                      }
-                      return null;
-                    },
-                  ),
-
-                  const SizedBox(height: 32),
-
-                  // Next Button
-                  SizedBox(
-                    width: double.infinity,
-                    height: 56,
-                    child: ElevatedButton(
-                      onPressed: _isLoading ? null : _handleNext,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primaryGreen,
-                        foregroundColor: AppColors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        elevation: 2,
-                      ),
-                      child: _isLoading
-                          ? const CircularProgressIndicator(
-                              valueColor: AlwaysStoppedAnimation<Color>(
-                                  AppColors.white),
-                            )
-                          : const Text(
-                              'Next',
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                    ),
-                  ),
-
-                  const SizedBox(height: 20),
-
-                  // Login Link
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Text(
-                        "Already have an account? ",
-                        style: TextStyle(
-                          fontSize: 16,
-                          color: AppColors.textSecondary,
-                        ),
-                      ),
-                      GestureDetector(
-                        onTap: () => context.go('/helper-login'),
-                        child: const Text(
-                          'Login',
-                          style: TextStyle(
-                            fontSize: 16,
-                            color: AppColors.primaryGreen,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-
-                  const SizedBox(height: 40),
-                ],
+                    const SizedBox(height: 32),
+                  ],
+                ),
               ),
             ),
           ),
-        ),
+        ],
       ),
     );
   }
@@ -481,8 +430,8 @@ class _Helper3RegistrationPage1State extends State<Helper3RegistrationPage1> {
 
     if (_selectedDate == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please select your birthday'),
+        SnackBar(
+          content: Text('Please select your birthday'.tr()),
           backgroundColor: AppColors.error,
         ),
       );
@@ -513,7 +462,7 @@ class _Helper3RegistrationPage1State extends State<Helper3RegistrationPage1> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error: $e'),
+            content: Text('Error: $e'.tr()),
             backgroundColor: AppColors.error,
           ),
         );

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../models/user_type.dart';
 import 'package:go_router/go_router.dart';
 import '../../utils/app_colors.dart';
 import '../../utils/app_text_styles.dart';
@@ -492,59 +493,143 @@ class _Helper23ProfileJobsTabPageState
   }
 
   void _showFilterBottomSheet(BuildContext context) {
-    showModalBottomSheet(
+    // Show center popup instead of bottom sheet
+    showDialog(
       context: context,
-      builder: (BuildContext context) {
-        return Container(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
+      barrierDismissible: true,
+      barrierColor: Colors.black.withOpacity(0.5),
+      builder: (BuildContext context) => Material(
+        color: Colors.transparent,
+        child: Center(
+          child: Container(
+            width: 340,
+            height: 380,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.25),
+                  blurRadius: 8,
+                  offset: const Offset(0, 4),
+                  spreadRadius: 2,
+                ),
+              ],
+            ),
+            child: Column(
+              children: [
+                // Header with close button
+                Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        'Filter Jobs',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      GestureDetector(
+                        onTap: () => Navigator.of(context).pop(),
+                        child: Container(
+                          width: 30,
+                          height: 30,
+                          decoration: BoxDecoration(
+                            color: Colors.grey.withOpacity(0.3),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            Icons.close,
+                            size: 18,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                // Filter options
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: Column(
+                      children: [
+                        _buildFilterOption('All', 'All Jobs', Icons.list_alt),
+                        const SizedBox(height: 12),
+                        _buildFilterOption(
+                            'Active', 'Active Jobs', Icons.play_circle_outline),
+                        const SizedBox(height: 12),
+                        _buildFilterOption('Completed', 'Completed Jobs',
+                            Icons.check_circle_outline),
+                        const SizedBox(height: 12),
+                        _buildFilterOption('Cancelled', 'Cancelled Jobs',
+                            Icons.cancel_outlined),
+                      ],
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 20),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFilterOption(String value, String label, IconData icon) {
+    final isSelected = _selectedFilter == value;
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: () {
+          setState(() {
+            _selectedFilter = value;
+          });
+          Navigator.pop(context);
+        },
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: isSelected
+                ? Colors.green.withOpacity(0.1)
+                : Colors.grey.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: isSelected ? Colors.green : Colors.grey.withOpacity(0.3),
+              width: 1,
+            ),
+          ),
+          child: Row(
             children: [
+              Icon(
+                icon,
+                color: isSelected ? Colors.green : Colors.grey,
+                size: 24,
+              ),
+              const SizedBox(width: 16),
               Text(
-                'Filter Jobs',
-                style: TextStyle(),
+                label,
+                style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  color: isSelected ? Colors.green : Colors.black,
+                ),
               ),
-              const SizedBox(height: 20),
-              ListTile(
-                title: const Text('All Jobs'),
-                onTap: () {
-                  setState(() {
-                    _selectedFilter = 'All';
-                  });
-                  Navigator.pop(context);
-                },
-              ),
-              ListTile(
-                title: const Text('Active Jobs'),
-                onTap: () {
-                  setState(() {
-                    _selectedFilter = 'Active';
-                  });
-                  Navigator.pop(context);
-                },
-              ),
-              ListTile(
-                title: const Text('Completed Jobs'),
-                onTap: () {
-                  setState(() {
-                    _selectedFilter = 'Completed';
-                  });
-                  Navigator.pop(context);
-                },
-              ),
-              ListTile(
-                title: const Text('Cancelled Jobs'),
-                onTap: () {
-                  setState(() {
-                    _selectedFilter = 'Cancelled';
-                  });
-                  Navigator.pop(context);
-                },
-              ),
+              const Spacer(),
+              if (isSelected)
+                const Icon(
+                  Icons.check_circle,
+                  color: Colors.green,
+                  size: 20,
+                ),
             ],
           ),
-        );
-      },
+        ),
+      ),
     );
   }
 }

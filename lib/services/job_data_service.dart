@@ -1,5 +1,7 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'custom_auth_service.dart';
+import 'realtime_notification_service.dart';
+import 'popup_manager_service.dart';
 
 class JobDataService {
   static final JobDataService _instance = JobDataService._internal();
@@ -8,6 +10,9 @@ class JobDataService {
 
   final SupabaseClient _supabase = Supabase.instance.client;
   final CustomAuthService _authService = CustomAuthService();
+  final PopupManagerService _popupManager = PopupManagerService();
+  final RealTimeNotificationService _notificationService =
+      RealTimeNotificationService();
 
   /// Get jobs by user and status for helpee
   Future<List<Map<String, dynamic>>> getJobsByUserAndStatus(
@@ -23,7 +28,7 @@ class JobDataService {
       final response = await _supabase
           .from('jobs')
           .select('''
-            id, title, hourly_rate, scheduled_date, scheduled_time, 
+            id, title, hourly_rate, scheduled_date, scheduled_start_time, 
             location_address, status, created_at, description,
             job_categories(id, name),
             helper:users!assigned_helper_id(id, first_name, last_name)
@@ -32,6 +37,9 @@ class JobDataService {
           .inFilter('status', statusesToQuery)
           .order('created_at', ascending: false);
 
+      print('✅ Found ${response.length} jobs for helpee user $userId');
+
+      // Transform the database response to match the expected UI format
       return List<Map<String, dynamic>>.from(response).map((job) {
         final helper = job['helper'];
         final category = job['job_categories'];
@@ -41,7 +49,7 @@ class JobDataService {
           'title': job['title'] ?? 'Unknown Job',
           'pay': 'LKR ${job['hourly_rate']?.toString() ?? '0'}/Hr',
           'date': _formatDate(job['scheduled_date']),
-          'time': job['scheduled_time'] ?? 'Time TBD',
+          'time': _formatTime(job['scheduled_start_time']) ?? 'Time TBD',
           'location': job['location_address'] ?? 'Location TBD',
           'helper_name': helper != null
               ? '${helper['first_name'] ?? ''} ${helper['last_name'] ?? ''}'
@@ -87,7 +95,7 @@ class JobDataService {
             'title': job['title'] ?? 'Unknown Job',
             'pay': 'LKR ${job['hourly_rate']?.toString() ?? '0'}/Hr',
             'date': _formatDate(job['scheduled_date']),
-            'time': job['scheduled_start_time'] ?? 'Time TBD',
+            'time': _formatTime(job['scheduled_start_time']) ?? 'Time TBD',
             'location': job['location_address'] ?? 'Location TBD',
             'helpee_name':
                 '${job['helpee_first_name'] ?? ''} ${job['helpee_last_name'] ?? ''}'
@@ -127,7 +135,7 @@ class JobDataService {
       final response = await _supabase
           .from('jobs')
           .select('''
-            id, title, hourly_rate, scheduled_date, scheduled_time, 
+            id, title, hourly_rate, scheduled_date, scheduled_start_time, 
             location_address, status, timer_status, created_at, description,
             job_category_name,
             job_categories(id, name),
@@ -156,9 +164,11 @@ class JobDataService {
         return jobCategory != null && activeCategories.contains(jobCategory);
       }).toList();
 
-      print('✅ Filtered to ${filteredJobs.length} jobs in active categories');
+      print(
+          '✅ Fallback found ${filteredJobs.length} jobs for helper $helperId');
 
-      return filteredJobs.map((job) {
+      // Transform the database response to match the expected UI format
+      return List<Map<String, dynamic>>.from(filteredJobs).map((job) {
         final helpee = job['helpee'];
         final category = job['job_categories'];
 
@@ -167,32 +177,30 @@ class JobDataService {
           'title': job['title'] ?? 'Unknown Job',
           'pay': 'LKR ${job['hourly_rate']?.toString() ?? '0'}/Hr',
           'date': _formatDate(job['scheduled_date']),
-          'time': job['scheduled_time'] ?? 'Time TBD',
+          'time': _formatTime(job['scheduled_start_time']) ?? 'Time TBD',
           'location': job['location_address'] ?? 'Location TBD',
-          'helpee_name': helpee != null
-              ? '${helpee['first_name'] ?? ''} ${helpee['last_name'] ?? ''}'
-                  .trim()
-              : 'Unknown Client',
+          'helpee_name':
+              '${helpee?['first_name'] ?? ''} ${helpee?['last_name'] ?? ''}'
+                  .trim(),
           'description': job['description'] ?? 'No description provided.',
-          'category':
-              job['job_category_name'] ?? category?['name'] ?? 'General',
+          'category': category?['name'] ?? 'General',
           'status': job['status'] ?? 'pending',
           'timer_status': job['timer_status'] ?? 'not_started',
           'created_at': job['created_at'],
           'hourly_rate': job['hourly_rate'],
           'scheduled_date': job['scheduled_date'],
-          'scheduled_start_time': job['scheduled_time'],
+          'scheduled_start_time': job['scheduled_start_time'],
           'location_address': job['location_address'],
           'job_category_name': job['job_category_name'],
         };
       }).toList();
     } catch (e) {
-      print('❌ Error in fallback method: $e');
+      print('❌ Error in fallback job method: $e');
       return [];
     }
   }
 
-  /// Get jobs for calendar view (helpee)
+  /// Get calendar events for helpee
   Future<Map<DateTime, List<Map<String, dynamic>>>> getJobsForCalendar(
       String userId) async {
     try {
@@ -201,7 +209,7 @@ class JobDataService {
       final response = await _supabase
           .from('jobs')
           .select('''
-            id, title, scheduled_date, scheduled_time, status,
+            id, title, scheduled_date, scheduled_start_time, status,
             users!assigned_helper_id(first_name, last_name)
           ''')
           .eq('helpee_id', userId)
@@ -224,7 +232,7 @@ class JobDataService {
                 ? '${helper['first_name'] ?? ''} ${helper['last_name'] ?? ''}'
                     .trim()
                 : 'Waiting for Helper',
-            'time': job['scheduled_time'] ?? 'Time TBD',
+            'time': _formatTime(job['scheduled_start_time']) ?? 'Time TBD',
             'job_id': job['id']?.toString() ?? '',
           };
 
@@ -260,7 +268,7 @@ class JobDataService {
                 'id': job['id'],
                 'title': job['title'],
                 'scheduled_date': job['scheduled_date'],
-                'scheduled_time': job['scheduled_start_time'],
+                'scheduled_start_time': job['scheduled_start_time'],
                 'status': job['status'],
                 'is_private': job['is_private'],
                 'users': {
@@ -280,7 +288,7 @@ class JobDataService {
                 'id': job['id'],
                 'title': job['title'],
                 'scheduled_date': job['scheduled_date'],
-                'scheduled_time': job['scheduled_start_time'],
+                'scheduled_start_time': job['scheduled_start_time'],
                 'status': job['status'],
                 'is_private': job['is_private'],
                 'users': {
@@ -300,23 +308,17 @@ class JobDataService {
           final date = DateTime.parse(dateStr);
           final dateKey = DateTime(date.year, date.month, date.day);
 
-          final helpee = job['users'];
-          final isAssigned =
-              assignedJobs.any((assigned) => assigned['id'] == job['id']);
-
+          final users = job['users'];
           final event = {
             'title': job['title'] ?? 'Unknown Job',
-            'status': isAssigned
-                ? (job['status']?.toUpperCase() ?? 'PENDING')
-                : 'AVAILABLE',
-            'helpee': helpee != null
-                ? '${helpee['first_name'] ?? ''} ${helpee['last_name'] ?? ''}'
+            'status': job['status']?.toUpperCase() ?? 'PENDING',
+            'helpee': users != null
+                ? '${users['first_name'] ?? ''} ${users['last_name'] ?? ''}'
                     .trim()
                 : 'Unknown Client',
-            'time': job['scheduled_time'] ?? 'Time TBD',
+            'time': _formatTime(job['scheduled_start_time']) ?? 'Time TBD',
             'job_id': job['id']?.toString() ?? '',
-            'is_assigned': isAssigned,
-            'is_private': job['is_private'] ?? false,
+            'is_assigned': job['is_private'] == true ? true : false,
           };
 
           if (calendarEvents[dateKey] == null) {
@@ -326,8 +328,6 @@ class JobDataService {
         }
       }
 
-      print(
-          '✅ Found ${calendarEvents.length} dates with jobs (${assignedJobs.length} assigned + ${availableJobs.length} available)');
       return calendarEvents;
     } catch (e) {
       print('❌ Error getting helper jobs for calendar: $e');
@@ -357,7 +357,7 @@ class JobDataService {
           'title': job['title'] ?? 'Unknown Job',
           'pay': 'LKR ${job['hourly_rate']?.toString() ?? '0'}/Hr',
           'date': _formatDate(job['scheduled_date']),
-          'time': job['scheduled_start_time'] ?? 'Time TBD',
+          'time': _formatTime(job['scheduled_start_time']) ?? 'Time TBD',
           'location': job['location_address'] ?? 'Location TBD',
           'helpee_name':
               '${job['helpee_first_name'] ?? ''} ${job['helpee_last_name'] ?? ''}'
@@ -381,19 +381,20 @@ class JobDataService {
     }
   }
 
-  /// Get private job requests for a specific helper filtered by job type preferences
+  /// Get private job requests for a specific helper filtered by job type preferences - Enhanced
   Future<List<Map<String, dynamic>>> getPrivateJobRequestsForHelper(
       String helperId) async {
     try {
       print('🔍 Getting private job requests for helper: $helperId');
 
-      // Use the new simplified database function
+      // Use the fixed database function that includes assigned jobs
       final response =
           await _supabase.rpc('get_private_jobs_for_helper', params: {
         'p_helper_id': helperId,
       });
 
       print('✅ Found ${response.length} private jobs for helper');
+      print('🔍 Raw database response: $response');
 
       // Transform the database response to match the expected UI format
       return List<Map<String, dynamic>>.from(response).map((job) {
@@ -402,7 +403,7 @@ class JobDataService {
           'title': job['title'] ?? 'Unknown Job',
           'pay': 'LKR ${job['hourly_rate']?.toString() ?? '0'}/Hr',
           'date': _formatDate(job['scheduled_date']),
-          'time': job['scheduled_start_time'] ?? 'Time TBD',
+          'time': _formatTime(job['scheduled_start_time']) ?? 'Time TBD',
           'location': job['location_address'] ?? 'Location TBD',
           'helpee_name':
               '${job['helpee_first_name'] ?? ''} ${job['helpee_last_name'] ?? ''}'
@@ -417,7 +418,7 @@ class JobDataService {
           'scheduled_date': job['scheduled_date'],
           'scheduled_start_time': job['scheduled_start_time'],
           'location_address': job['location_address'],
-          'job_category_name': job['job_category_name'],
+          'job_category_name': job['job_category_name'] ?? 'General',
         };
       }).toList();
     } catch (e) {
@@ -517,23 +518,56 @@ class JobDataService {
     }
   }
 
-  /// Complete job
+  /// Complete job - Update status to completed and notify both users
   Future<bool> completeJob(String jobId) async {
     try {
-      print('✅ Completing job $jobId');
+      print('✅ Completing job: $jobId');
 
-      // Get current elapsed time before completing
-      final currentElapsed = await getJobElapsedTime(jobId);
-
+      // Update job status to completed
       await _supabase.from('jobs').update({
         'status': 'completed',
-        'timer_status': 'completed',
         'completed_at': DateTime.now().toIso8601String(),
-        'total_elapsed_seconds': currentElapsed,
+        'updated_at': DateTime.now().toIso8601String(),
       }).eq('id', jobId);
 
-      print('✅ Job completed successfully');
-      return true;
+      // Get job details for notifications
+      final jobResponse = await _supabase
+          .from('jobs')
+          .select('*, helpee_id, assigned_helper_id')
+          .eq('id', jobId)
+          .single();
+
+      if (jobResponse != null) {
+        final job = jobResponse;
+        final helpeeId = job['helpee_id'];
+        final helperId = job['assigned_helper_id'];
+
+        // Create job completion notifications for both users
+        if (helpeeId != null) {
+          await _notificationService.createNotification(
+            userId: helpeeId,
+            notificationType: 'job_completed',
+            title: 'Job Completed',
+            message: 'Your job has been completed successfully!',
+            relatedJobId: jobId,
+          );
+        }
+
+        if (helperId != null) {
+          await _notificationService.createNotification(
+            userId: helperId,
+            notificationType: 'job_completed',
+            title: 'Job Completed',
+            message: 'You have successfully completed the job!',
+            relatedJobId: jobId,
+          );
+        }
+
+        print('✅ Job completed successfully: $jobId');
+        return true;
+      }
+
+      return false;
     } catch (e) {
       print('❌ Error completing job: $e');
       return false;
@@ -551,6 +585,9 @@ class JobDataService {
         'started_at': DateTime.now().toIso8601String(),
         'updated_at': DateTime.now().toIso8601String(),
       }).eq('id', jobId);
+
+      // Create manual notification for job start
+      await _createJobStartedNotifications(jobId);
 
       print('✅ Job timer started successfully');
       return true;
@@ -575,6 +612,9 @@ class JobDataService {
         'updated_at': DateTime.now().toIso8601String(),
       }).eq('id', jobId);
 
+      // Create manual notification for job pause
+      await _createJobPausedNotifications(jobId);
+
       print('✅ Job timer paused successfully');
       return true;
     } catch (e) {
@@ -593,6 +633,9 @@ class JobDataService {
         'resumed_at': DateTime.now().toIso8601String(),
         'updated_at': DateTime.now().toIso8601String(),
       }).eq('id', jobId);
+
+      // Create manual notification for job resume
+      await _createJobResumedNotifications(jobId);
 
       print('✅ Job timer resumed successfully');
       return true;
@@ -807,7 +850,7 @@ class JobDataService {
       print('🔍 Getting job details for: $jobId');
 
       final response = await _supabase.from('jobs').select('''
-            id, title, description, hourly_rate, scheduled_date, scheduled_time, 
+            id, title, description, hourly_rate, scheduled_date, scheduled_start_time, 
             location_address, status, created_at,
             job_categories(id, name),
             helpee:users!helpee_id(id, first_name, last_name, phone, email),
@@ -844,183 +887,228 @@ class JobDataService {
   List<Map<String, dynamic>> getJobActionButtons(
       Map<String, dynamic> job, String userType,
       {String? context}) {
-    final status = job['status']?.toLowerCase() ?? 'unknown';
-    final timerStatus = job['timer_status']?.toLowerCase() ?? 'not_started';
-    final isPublic = job['is_public'] == true || job['is_private'] == false;
-    final List<Map<String, dynamic>> buttons = [];
+    try {
+      // Extremely safe extraction with multiple fallbacks
+      String status = 'unknown';
+      String timerStatus = 'not_started';
 
-    print(
-        '🔧 Getting action buttons for: userType=$userType, status=$status, timerStatus=$timerStatus, isPublic=$isPublic');
-
-    if (userType == 'helper') {
-      switch (status) {
-        // HELPER - PENDING TAB: Accept + Reject/Ignore
-        case 'pending':
-          buttons.add({
-            'text': 'Accept',
-            'action': 'accept',
-            'color': 'success',
-            'icon': 'check',
-          });
-
-          // Different button text for public vs private jobs
-          if (isPublic) {
-            buttons.add({
-              'text': 'Ignore',
-              'action': 'ignore',
-              'color': 'secondary',
-              'icon': 'visibility_off',
-            });
+      // Extract status with comprehensive error handling
+      try {
+        final statusRaw = job['status'];
+        if (statusRaw != null) {
+          if (statusRaw is String) {
+            status = statusRaw.toLowerCase();
           } else {
-            buttons.add({
-              'text': 'Reject',
-              'action': 'reject',
-              'color': 'error',
-              'icon': 'close',
-            });
+            final statusStr = statusRaw.toString();
+            if (statusStr.isNotEmpty && statusStr != 'null') {
+              status = statusStr.toLowerCase();
+            }
           }
-          break;
+        }
+      } catch (e) {
+        print('⚠️ Error extracting status: $e, using default: unknown');
+        status = 'unknown';
+      }
 
-        // HELPER - ONGOING TAB: Start Job initially, then Pause/Resume + Complete
-        case 'accepted':
-        case 'ongoing':
-          // Job accepted but not started yet
-          if (timerStatus == 'not_started' || timerStatus == 'stopped') {
-            buttons.add({
-              'text': 'Start Job',
-              'action': 'start',
-              'color': 'primary',
-              'icon': 'play_arrow',
-            });
+      // Extract timer_status with comprehensive error handling
+      try {
+        final timerStatusRaw = job['timer_status'];
+        if (timerStatusRaw != null) {
+          if (timerStatusRaw is String) {
+            timerStatus = timerStatusRaw.toLowerCase();
+          } else {
+            final timerStatusStr = timerStatusRaw.toString();
+            if (timerStatusStr.isNotEmpty && timerStatusStr != 'null') {
+              timerStatus = timerStatusStr.toLowerCase();
+            }
           }
-          // Job is paused - show Resume + Complete
-          else if (timerStatus == 'paused') {
-            buttons.addAll([
-              {
-                'text': 'Resume',
-                'action': 'resume',
+        }
+      } catch (e) {
+        print(
+            '⚠️ Error extracting timer_status: $e, using default: not_started');
+        timerStatus = 'not_started';
+      }
+
+      final isPublic = job['is_public'] == true || job['is_private'] == false;
+      final List<Map<String, dynamic>> buttons = [];
+
+      print(
+          '🔧 Getting action buttons for: userType=$userType, status=$status, timerStatus=$timerStatus, isPublic=$isPublic');
+
+      if (userType == 'helper') {
+        switch (status) {
+          // HELPER - PENDING TAB: Accept + Reject/Ignore
+          case 'pending':
+            buttons.add({
+              'text': 'Accept',
+              'action': 'accept',
+              'color': 'success',
+              'icon': 'check',
+            });
+
+            // Different button text for public vs private jobs
+            if (isPublic) {
+              buttons.add({
+                'text': 'Ignore',
+                'action': 'ignore',
+                'color': 'secondary',
+                'icon': 'visibility_off',
+              });
+            } else {
+              buttons.add({
+                'text': 'Reject',
+                'action': 'reject',
+                'color': 'error',
+                'icon': 'close',
+              });
+            }
+            break;
+
+          // HELPER - ONGOING TAB: Start Job initially, then Pause/Resume + Complete
+          case 'accepted':
+          case 'ongoing':
+            // Job accepted but not started yet
+            if (timerStatus == 'not_started' || timerStatus == 'stopped') {
+              buttons.add({
+                'text': 'Start Job',
+                'action': 'start',
                 'color': 'primary',
                 'icon': 'play_arrow',
-              },
-              {
-                'text': 'Complete Job',
-                'action': 'complete',
-                'color': 'success',
-                'icon': 'check_circle',
-              },
-            ]);
-          }
-          // Job is running - show Pause + Complete
-          else if (timerStatus == 'running') {
-            buttons.addAll([
-              {
-                'text': 'Pause',
-                'action': 'pause',
-                'color': 'warning',
-                'icon': 'pause',
-              },
-              {
-                'text': 'Complete Job',
-                'action': 'complete',
-                'color': 'success',
-                'icon': 'check_circle',
-              },
-            ]);
-          }
-          break;
+              });
+            }
+            // Job is paused - show Resume + Complete
+            else if (timerStatus == 'paused') {
+              buttons.addAll([
+                {
+                  'text': 'Resume',
+                  'action': 'resume',
+                  'color': 'primary',
+                  'icon': 'play_arrow',
+                },
+                {
+                  'text': 'Complete Job',
+                  'action': 'complete',
+                  'color': 'success',
+                  'icon': 'check_circle',
+                },
+              ]);
+            }
+            // Job is running - show Pause + Complete
+            else if (timerStatus == 'running') {
+              buttons.addAll([
+                {
+                  'text': 'Pause',
+                  'action': 'pause',
+                  'color': 'warning',
+                  'icon': 'pause',
+                },
+                {
+                  'text': 'Complete Job',
+                  'action': 'complete',
+                  'color': 'success',
+                  'icon': 'check_circle',
+                },
+              ]);
+            }
+            break;
 
-        case 'started':
-          // Job has been started with timer
-          if (timerStatus == 'paused') {
-            buttons.addAll([
-              {
-                'text': 'Resume',
-                'action': 'resume',
-                'color': 'primary',
-                'icon': 'play_arrow',
-              },
-              {
-                'text': 'Complete Job',
-                'action': 'complete',
-                'color': 'success',
-                'icon': 'check_circle',
-              },
-            ]);
-          } else {
-            buttons.addAll([
-              {
-                'text': 'Pause',
-                'action': 'pause',
-                'color': 'warning',
-                'icon': 'pause',
-              },
-              {
-                'text': 'Complete Job',
-                'action': 'complete',
-                'color': 'success',
-                'icon': 'check_circle',
-              },
-            ]);
-          }
-          break;
+          case 'started':
+            // Job has been started with timer
+            if (timerStatus == 'paused') {
+              buttons.addAll([
+                {
+                  'text': 'Resume',
+                  'action': 'resume',
+                  'color': 'primary',
+                  'icon': 'play_arrow',
+                },
+                {
+                  'text': 'Complete Job',
+                  'action': 'complete',
+                  'color': 'success',
+                  'icon': 'check_circle',
+                },
+              ]);
+            } else {
+              buttons.addAll([
+                {
+                  'text': 'Pause',
+                  'action': 'pause',
+                  'color': 'warning',
+                  'icon': 'pause',
+                },
+                {
+                  'text': 'Complete Job',
+                  'action': 'complete',
+                  'color': 'success',
+                  'icon': 'check_circle',
+                },
+              ]);
+            }
+            break;
 
-        // HELPER - COMPLETED TAB: Report
-        case 'completed':
-          buttons.add({
-            'text': 'Report',
-            'action': 'report',
-            'color': 'error',
-            'icon': 'report',
-          });
-          break;
-      }
-    } else if (userType == 'helpee') {
-      switch (status) {
-        // HELPEE - PENDING TAB: Edit Job + Cancel Job
-        case 'pending':
-          buttons.addAll([
-            {
-              'text': 'Edit Job',
-              'action': 'edit',
-              'color': 'primary',
-              'icon': 'edit',
-            },
-            {
-              'text': 'Cancel Job',
-              'action': 'cancel',
+          // HELPER - COMPLETED TAB: Report
+          case 'completed':
+            buttons.add({
+              'text': 'Report',
+              'action': 'report',
               'color': 'error',
-              'icon': 'cancel',
-            },
-          ]);
-          break;
+              'icon': 'report',
+            });
+            break;
+        }
+      } else if (userType == 'helpee') {
+        switch (status) {
+          // HELPEE - PENDING TAB: Edit Job + Cancel Job
+          case 'pending':
+            buttons.addAll([
+              {
+                'text': 'Edit Job',
+                'action': 'edit',
+                'color': 'primary',
+                'icon': 'edit',
+              },
+              {
+                'text': 'Cancel Job',
+                'action': 'cancel',
+                'color': 'error',
+                'icon': 'cancel',
+              },
+            ]);
+            break;
 
-        // HELPEE - ONGOING TAB: Report only
-        case 'accepted':
-        case 'ongoing':
-        case 'started':
-          buttons.add({
-            'text': 'Report',
-            'action': 'report',
-            'color': 'error',
-            'icon': 'report',
-          });
-          break;
+          // HELPEE - ONGOING TAB: Report only
+          case 'accepted':
+          case 'ongoing':
+          case 'started':
+            buttons.add({
+              'text': 'Report',
+              'action': 'report',
+              'color': 'error',
+              'icon': 'report',
+            });
+            break;
 
-        // HELPEE - COMPLETED TAB: Report only
-        case 'completed':
-          buttons.add({
-            'text': 'Report',
-            'action': 'report',
-            'color': 'error',
-            'icon': 'report',
-          });
-          break;
+          // HELPEE - COMPLETED TAB: Report only
+          case 'completed':
+            buttons.add({
+              'text': 'Report',
+              'action': 'report',
+              'color': 'error',
+              'icon': 'report',
+            });
+            break;
+        }
       }
+
+      print(
+          '✅ Generated ${buttons.length} action buttons: ${buttons.map((b) => b['text']).join(', ')}');
+      return buttons;
+    } catch (e) {
+      print('❌ Error in getJobActionButtons: $e');
+      // Return empty buttons array on error
+      return [];
     }
-
-    print(
-        '✅ Generated ${buttons.length} action buttons: ${buttons.map((b) => b['text']).join(', ')}');
-    return buttons;
   }
 
   /// Execute job action
@@ -1070,6 +1158,18 @@ class JobDataService {
       return '${day}${suffix} ${_getMonthName(date.month)} ${date.year}';
     } catch (e) {
       return 'Date TBD';
+    }
+  }
+
+  String? _formatTime(String? timeStr) {
+    if (timeStr == null) return null;
+    try {
+      final time = DateTime.parse(timeStr);
+      final hour = time.hour.toString().padLeft(2, '0');
+      final minute = time.minute.toString().padLeft(2, '0');
+      return '$hour:$minute';
+    } catch (e) {
+      return null;
     }
   }
 
@@ -1171,6 +1271,7 @@ class JobDataService {
           helperStats = {
             'avg_rating': avgRating,
             'completed_jobs': completedJobsResp.length,
+            'review_count': ratingsResp.length,
             'job_types': jobTypeNames.isNotEmpty
                 ? jobTypeNames.join(' • ')
                 : 'General Services',
@@ -1180,6 +1281,7 @@ class JobDataService {
           helperStats = {
             'avg_rating': 0.0,
             'completed_jobs': 0,
+            'review_count': 0,
             'job_types': 'General Services',
           };
         }
@@ -1214,6 +1316,7 @@ class JobDataService {
           'helper_profile_pic': jobResponse['helper']['profile_image_url'],
           'helper_avg_rating': helperStats['avg_rating'],
           'helper_completed_jobs': helperStats['completed_jobs'],
+          'helper_review_count': helperStats['review_count'],
           'helper_job_types': helperStats['job_types'],
         },
         // Parse questions and answers
@@ -1326,7 +1429,7 @@ class JobDataService {
       final response = await _supabase
           .from('jobs')
           .select('''
-            id, title, description, hourly_rate, scheduled_date, scheduled_time, 
+            id, title, description, hourly_rate, scheduled_date, scheduled_start_time, 
             location_address, status, created_at, is_private,
             job_categories(id, name),
             helpee:users!jobs_helpee_id_fkey(id, first_name, last_name, location_city)
@@ -1350,7 +1453,7 @@ class JobDataService {
           'hourly_rate': job['hourly_rate'] ?? 0,
           'pay': 'LKR ${job['hourly_rate']?.toString() ?? '0'}/Hr',
           'date': _formatDate(job['scheduled_date']),
-          'time': job['scheduled_time'] ?? 'Time TBD',
+          'time': _formatTime(job['scheduled_start_time']) ?? 'Time TBD',
           'location': job['location_address'] ?? 'Location TBD',
           'helpee_name': helpee != null
               ? '${helpee['first_name'] ?? ''} ${helpee['last_name'] ?? ''}'
@@ -1378,7 +1481,7 @@ class JobDataService {
       final response = await _supabase
           .from('jobs')
           .select('''
-            id, title, description, hourly_rate, scheduled_date, scheduled_time, 
+            id, title, description, hourly_rate, scheduled_date, scheduled_start_time, 
             location_address, status, created_at, is_private,
             job_categories(id, name),
             helpee:users!jobs_helpee_id_fkey(id, first_name, last_name, location_city)
@@ -1402,7 +1505,7 @@ class JobDataService {
           'hourly_rate': job['hourly_rate'] ?? 0,
           'pay': 'LKR ${job['hourly_rate']?.toString() ?? '0'}/Hr',
           'date': _formatDate(job['scheduled_date']),
-          'time': job['scheduled_time'] ?? 'Time TBD',
+          'time': _formatTime(job['scheduled_start_time']) ?? 'Time TBD',
           'location': job['location_address'] ?? 'Location TBD',
           'helpee_name': helpee != null
               ? '${helpee['first_name'] ?? ''} ${helpee['last_name'] ?? ''}'
@@ -1431,10 +1534,38 @@ class JobDataService {
         'updated_at': DateTime.now().toIso8601String(),
       }).eq('id', jobId);
 
+      // Create manual notification for job acceptance
+      await _createJobAcceptedNotifications(jobId, helperId);
+
       print('✅ Job accepted successfully');
       return true;
     } catch (e) {
       print('❌ Error accepting job: $e');
+      return false;
+    }
+  }
+
+  /// Accept a private job - enhanced version for private jobs
+  Future<bool> acceptPrivateJob(String jobId, String helperId) async {
+    try {
+      print('🤝 Accepting private job $jobId for helper $helperId');
+
+      final response = await _supabase
+          .from('jobs')
+          .update({
+            'status': 'accepted',
+            'updated_at': DateTime.now().toIso8601String(),
+          })
+          .eq('id', jobId)
+          .eq('assigned_helper_id', helperId);
+
+      // Create manual notification for job acceptance
+      await _createJobAcceptedNotifications(jobId, helperId);
+
+      print('✅ Private job accepted successfully');
+      return true;
+    } catch (e) {
+      print('❌ Error accepting private job: $e');
       return false;
     }
   }
@@ -1525,7 +1656,7 @@ class JobDataService {
   Future<Map<String, dynamic>?> getJobDetailsById(String jobId) async {
     try {
       final response = await _supabase.from('jobs').select('''
-            id, title, description, hourly_rate, scheduled_date, scheduled_time, 
+            id, title, description, hourly_rate, scheduled_date, scheduled_start_time, 
             location_address, status, created_at,
             job_categories(id, name),
             helpee:users!helpee_id(id, first_name, last_name, phone, email),
@@ -1536,6 +1667,212 @@ class JobDataService {
     } catch (e) {
       print('❌ Error getting job details: $e');
       return null;
+    }
+  }
+
+  /// Create manual notifications for job completion since triggers are disabled
+  Future<void> _createJobCompletionNotifications(String jobId) async {
+    try {
+      print('🔔 Creating manual notifications for job completion: $jobId');
+
+      // Get job details
+      final jobDetails = await _supabase
+          .from('jobs')
+          .select(
+              'helpee_id, assigned_helper_id, title, total_amount, hourly_rate')
+          .eq('id', jobId)
+          .maybeSingle();
+
+      if (jobDetails == null) return;
+
+      final helpeeId = jobDetails['helpee_id'];
+      final helperId = jobDetails['assigned_helper_id'];
+      final jobTitle = jobDetails['title'] ?? 'Job';
+      final amount =
+          jobDetails['total_amount'] ?? jobDetails['hourly_rate'] ?? 50.0;
+
+      // Create notification for helpee
+      if (helpeeId != null) {
+        await _supabase.from('notifications').insert({
+          'user_id': helpeeId,
+          'title': 'Job Completed! 🎉',
+          'message':
+              'Your helper completed "$jobTitle". Please confirm payment of \$${amount.toStringAsFixed(2)}',
+          'notification_type': 'job_completed',
+          'related_job_id': jobId,
+          'related_user_id': helperId,
+          'is_read': false,
+          'created_at': DateTime.now().toIso8601String(),
+        });
+        print('✅ Notification created for helpee: $helpeeId');
+      }
+
+      // Create notification for helper
+      if (helperId != null) {
+        await _supabase.from('notifications').insert({
+          'user_id': helperId,
+          'title': 'Job Completed! 🎉',
+          'message':
+              'You completed "$jobTitle" successfully! You should receive \$${amount.toStringAsFixed(2)}',
+          'notification_type': 'job_completed',
+          'related_job_id': jobId,
+          'related_user_id': helpeeId,
+          'is_read': false,
+          'created_at': DateTime.now().toIso8601String(),
+        });
+        print('✅ Notification created for helper: $helperId');
+      }
+    } catch (e) {
+      print('❌ Error creating manual notifications: $e');
+    }
+  }
+
+  /// Create manual notifications for job acceptance
+  Future<void> _createJobAcceptedNotifications(
+      String jobId, String helperId) async {
+    try {
+      print('🔔 Creating manual notifications for job acceptance: $jobId');
+
+      // Get job details
+      final jobDetails = await _supabase
+          .from('jobs')
+          .select('helpee_id, title')
+          .eq('id', jobId)
+          .maybeSingle();
+
+      if (jobDetails == null) return;
+
+      final helpeeId = jobDetails['helpee_id'];
+      final jobTitle = jobDetails['title'] ?? 'Job';
+
+      // Create notification for helpee only
+      if (helpeeId != null) {
+        await _supabase.from('notifications').insert({
+          'user_id': helpeeId,
+          'title': 'Job Accepted! ✅',
+          'message':
+              'Your job request "$jobTitle" has been accepted by a helper.',
+          'notification_type': 'job_accepted',
+          'related_job_id': jobId,
+          'related_user_id': helperId,
+          'is_read': false,
+          'created_at': DateTime.now().toIso8601String(),
+        });
+        print('✅ Job acceptance notification created for helpee: $helpeeId');
+      }
+    } catch (e) {
+      print('❌ Error creating job acceptance notifications: $e');
+    }
+  }
+
+  /// Create manual notifications for job start
+  Future<void> _createJobStartedNotifications(String jobId) async {
+    try {
+      print('🔔 Creating manual notifications for job start: $jobId');
+
+      // Get job details
+      final jobDetails = await _supabase
+          .from('jobs')
+          .select('helpee_id, assigned_helper_id, title')
+          .eq('id', jobId)
+          .maybeSingle();
+
+      if (jobDetails == null) return;
+
+      final helpeeId = jobDetails['helpee_id'];
+      final helperId = jobDetails['assigned_helper_id'];
+      final jobTitle = jobDetails['title'] ?? 'Job';
+
+      // Create notification for helpee
+      if (helpeeId != null) {
+        await _supabase.from('notifications').insert({
+          'user_id': helpeeId,
+          'title': 'Job Started! 🚀',
+          'message': 'Your helper has started working on "$jobTitle".',
+          'notification_type': 'job_started',
+          'related_job_id': jobId,
+          'related_user_id': helperId,
+          'is_read': false,
+          'created_at': DateTime.now().toIso8601String(),
+        });
+        print('✅ Job started notification created for helpee: $helpeeId');
+      }
+    } catch (e) {
+      print('❌ Error creating job started notifications: $e');
+    }
+  }
+
+  /// Create manual notifications for job pause
+  Future<void> _createJobPausedNotifications(String jobId) async {
+    try {
+      print('🔔 Creating manual notifications for job pause: $jobId');
+
+      // Get job details
+      final jobDetails = await _supabase
+          .from('jobs')
+          .select('helpee_id, assigned_helper_id, title')
+          .eq('id', jobId)
+          .maybeSingle();
+
+      if (jobDetails == null) return;
+
+      final helpeeId = jobDetails['helpee_id'];
+      final helperId = jobDetails['assigned_helper_id'];
+      final jobTitle = jobDetails['title'] ?? 'Job';
+
+      // Create notification for helpee
+      if (helpeeId != null) {
+        await _supabase.from('notifications').insert({
+          'user_id': helpeeId,
+          'title': 'Job Paused ⏸️',
+          'message': 'Your helper has paused work on "$jobTitle".',
+          'notification_type': 'job_paused',
+          'related_job_id': jobId,
+          'related_user_id': helperId,
+          'is_read': false,
+          'created_at': DateTime.now().toIso8601String(),
+        });
+        print('✅ Job paused notification created for helpee: $helpeeId');
+      }
+    } catch (e) {
+      print('❌ Error creating job paused notifications: $e');
+    }
+  }
+
+  /// Create manual notifications for job resume
+  Future<void> _createJobResumedNotifications(String jobId) async {
+    try {
+      print('🔔 Creating manual notifications for job resume: $jobId');
+
+      // Get job details
+      final jobDetails = await _supabase
+          .from('jobs')
+          .select('helpee_id, assigned_helper_id, title')
+          .eq('id', jobId)
+          .maybeSingle();
+
+      if (jobDetails == null) return;
+
+      final helpeeId = jobDetails['helpee_id'];
+      final helperId = jobDetails['assigned_helper_id'];
+      final jobTitle = jobDetails['title'] ?? 'Job';
+
+      // Create notification for helpee
+      if (helpeeId != null) {
+        await _supabase.from('notifications').insert({
+          'user_id': helpeeId,
+          'title': 'Job Resumed ▶️',
+          'message': 'Your helper has resumed work on "$jobTitle".',
+          'notification_type': 'job_resumed',
+          'related_job_id': jobId,
+          'related_user_id': helperId,
+          'is_read': false,
+          'created_at': DateTime.now().toIso8601String(),
+        });
+        print('✅ Job resumed notification created for helpee: $helpeeId');
+      }
+    } catch (e) {
+      print('❌ Error creating job resumed notifications: $e');
     }
   }
 }

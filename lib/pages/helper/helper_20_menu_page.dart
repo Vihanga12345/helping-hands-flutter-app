@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../models/user_type.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../../utils/app_colors.dart';
@@ -9,6 +10,7 @@ import '../../widgets/language_switcher.dart';
 import '../../services/user_data_service.dart';
 import '../../services/custom_auth_service.dart';
 import '../../services/localization_service.dart';
+import '../common/report_page.dart';
 
 class Helper20MenuPage extends StatefulWidget {
   const Helper20MenuPage({super.key});
@@ -81,7 +83,7 @@ class _Helper20MenuPageState extends State<Helper20MenuPage> {
             children: [
               // Header
               AppHeader(
-                title: 'Menu',
+                title: 'Menu'.tr(),
                 showBackButton: true,
                 onBackPressed: () => context.pop(),
               ),
@@ -166,7 +168,7 @@ class _Helper20MenuPageState extends State<Helper20MenuPage> {
                                         ),
                                         const SizedBox(height: 4),
                                         Text(
-                                          'Verified Helper • ${(_userStatistics?['rating'] ?? 0.0).toStringAsFixed(1)} ⭐',
+                                          '${'Verified Helper'.tr()} • ${(_userStatistics?['rating'] ?? 0.0).toStringAsFixed(1)} ⭐',
                                           style:
                                               AppTextStyles.bodyMedium.copyWith(
                                             color: AppColors.textSecondary,
@@ -193,9 +195,9 @@ class _Helper20MenuPageState extends State<Helper20MenuPage> {
                       // Menu Items
                       _buildMenuSection(
                         context,
-                        'Analytics',
+                        'Analytics'.tr(),
                         [
-                          _MenuItem('Earnings', Icons.analytics,
+                          _MenuItem('Earnings'.tr(), Icons.analytics,
                               () => context.push('/helper/earnings')),
                         ],
                       ),
@@ -221,7 +223,7 @@ class _Helper20MenuPageState extends State<Helper20MenuPage> {
                             Padding(
                               padding: const EdgeInsets.fromLTRB(20, 20, 20, 8),
                               child: Text(
-                                'Settings',
+                                'Settings'.tr(),
                                 style: TextStyle().copyWith(
                                   fontWeight: FontWeight.w600,
                                   color: AppColors.primaryGreen,
@@ -238,15 +240,25 @@ class _Helper20MenuPageState extends State<Helper20MenuPage> {
 
                       _buildMenuSection(
                         context,
-                        'Support & Information',
+                        'Support & Information'.tr(),
                         [
-                          _MenuItem('Help & Support', Icons.help_outline,
+                          _MenuItem('Help & Support'.tr(), Icons.help_outline,
                               () => context.push('/helper/help-support')),
-                          _MenuItem('About Us', Icons.info_outline,
+                          _MenuItem(
+                              'Report Issue'.tr(),
+                              Icons.report_problem,
+                              () => Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) =>
+                                          const ReportPage(userType: 'helper'),
+                                    ),
+                                  )),
+                          _MenuItem('About Us'.tr(), Icons.info_outline,
                               () => context.push('/helper/about-us')),
-                          _MenuItem('Terms & Conditions', Icons.article,
+                          _MenuItem('Terms & Conditions'.tr(), Icons.article,
                               () => context.push('/helper/terms-conditions')),
-                          _MenuItem('Privacy Policy', Icons.privacy_tip,
+                          _MenuItem('Privacy Policy'.tr(), Icons.privacy_tip,
                               () => context.push('/helper/privacy-policy')),
                         ],
                       ),
@@ -262,7 +274,7 @@ class _Helper20MenuPageState extends State<Helper20MenuPage> {
                           icon:
                               const Icon(Icons.logout, color: AppColors.error),
                           label: Text(
-                            'Logout',
+                            'Logout'.tr(),
                             style: TextStyle().copyWith(
                               color: AppColors.error,
                             ),
@@ -346,7 +358,7 @@ class _Helper20MenuPageState extends State<Helper20MenuPage> {
 
   void _handleMenuTap(BuildContext context, String title) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Opening $title')),
+      SnackBar(content: Text('Opening $title'.tr())),
     );
   }
 
@@ -355,25 +367,25 @@ class _Helper20MenuPageState extends State<Helper20MenuPage> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: const Text('Logout'),
-          content: const Text('Are you sure you want to logout?'),
+          title: Text('Logout'.tr()),
+          content: Text('Are you sure you want to logout?'.tr()),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Cancel'),
+              child: Text('Cancel'.tr()),
             ),
             ElevatedButton(
               onPressed: () {
                 Navigator.of(context).pop();
                 context.go('/');
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Logged out successfully')),
+                  SnackBar(content: Text('Logged out successfully'.tr())),
                 );
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.error,
               ),
-              child: const Text('Logout'),
+              child: Text('Logout'.tr()),
             ),
           ],
         );

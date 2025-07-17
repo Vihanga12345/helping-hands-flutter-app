@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../models/user_type.dart';
 import 'package:go_router/go_router.dart';
 import '../../utils/app_colors.dart';
 import '../../utils/app_text_styles.dart';
@@ -7,6 +8,7 @@ import '../../widgets/common/app_navigation_bar.dart';
 import '../../services/user_data_service.dart';
 import '../../services/helper_data_service.dart';
 import '../../services/custom_auth_service.dart';
+import '../../services/localization_service.dart';
 
 class Helper21ProfileTabPage extends StatefulWidget {
   final int initialTabIndex;
@@ -115,7 +117,7 @@ class _Helper21ProfileTabPageState extends State<Helper21ProfileTabPage>
             children: [
               // Header with notification button (edit button removed)
               AppHeader(
-                title: 'Profile',
+                title: 'Profile'.tr(),
                 showMenuButton: true,
                 showNotificationButton: true,
                 onMenuPressed: () {
@@ -150,10 +152,10 @@ class _Helper21ProfileTabPageState extends State<Helper21ProfileTabPage>
                   ),
                   indicatorSize: TabBarIndicatorSize.tab,
                   dividerColor: Colors.transparent,
-                  tabs: const [
-                    Tab(text: 'Profile'),
-                    Tab(text: 'Jobs'),
-                    Tab(text: 'Resume'),
+                  tabs: [
+                    Tab(text: 'Profile'.tr()),
+                    Tab(text: 'Jobs'.tr()),
+                    Tab(text: 'Resume'.tr()),
                   ],
                 ),
               ),
@@ -190,8 +192,8 @@ class _Helper21ProfileTabPageState extends State<Helper21ProfileTabPage>
 
   Widget _buildProfileTab() {
     if (_userProfile == null) {
-      return const Center(
-        child: Text('Unable to load profile data'),
+      return Center(
+        child: Text('Unable to load profile data'.tr()),
       );
     }
 
@@ -264,7 +266,7 @@ class _Helper21ProfileTabPageState extends State<Helper21ProfileTabPage>
                 ),
                 const SizedBox(height: 8),
 
-                // Rating and Job Count
+                // Rating and Review Count
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
@@ -303,7 +305,7 @@ class _Helper21ProfileTabPageState extends State<Helper21ProfileTabPage>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Personal Information',
+                  'Personal Information'.tr(),
                   style: AppTextStyles.heading3.copyWith(
                     color: AppColors.primaryGreen,
                     fontWeight: FontWeight.w700,
@@ -311,23 +313,25 @@ class _Helper21ProfileTabPageState extends State<Helper21ProfileTabPage>
                 ),
                 const SizedBox(height: 16),
                 _buildInfoRow(
-                    'Telephone',
-                    _userProfile!['phone_number'] ?? 'Not provided',
+                    'Telephone'.tr(),
+                    _userProfile!['phone_number'] ?? 'Not provided'.tr(),
                     Icons.phone),
                 const SizedBox(height: 12),
-                _buildInfoRow('Gender',
-                    _userProfile!['gender'] ?? 'Not specified', Icons.person),
+                _buildInfoRow(
+                    'Gender'.tr(),
+                    _userProfile!['gender'] ?? 'Not specified'.tr(),
+                    Icons.person),
                 const SizedBox(height: 12),
-                _buildInfoRow('Birthday',
+                _buildInfoRow('Birthday'.tr(),
                     _formatDate(_userProfile!['date_of_birth']), Icons.cake),
                 const SizedBox(height: 12),
                 _buildInfoRow(
-                    'Location',
-                    _userProfile!['location_city'] ?? 'Not specified',
+                    'Location'.tr(),
+                    _userProfile!['location_city'] ?? 'Not specified'.tr(),
                     Icons.location_on),
                 const SizedBox(height: 12),
-                _buildInfoRow('Email', _userProfile!['email'] ?? 'Not provided',
-                    Icons.email),
+                _buildInfoRow('Email'.tr(),
+                    _userProfile!['email'] ?? 'Not provided'.tr(), Icons.email),
               ],
             ),
           ),
@@ -353,7 +357,7 @@ class _Helper21ProfileTabPageState extends State<Helper21ProfileTabPage>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'About Me',
+                  'About Me'.tr(),
                   style: AppTextStyles.heading3.copyWith(
                     color: AppColors.primaryGreen,
                     fontWeight: FontWeight.w700,
@@ -361,7 +365,7 @@ class _Helper21ProfileTabPageState extends State<Helper21ProfileTabPage>
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  _userProfile!['bio'] ?? 'No bio available',
+                  _userProfile!['bio'] ?? 'No bio available'.tr(),
                   style: AppTextStyles.bodyMedium.copyWith(
                     color: AppColors.textSecondary,
                     height: 1.5,
@@ -394,7 +398,7 @@ class _Helper21ProfileTabPageState extends State<Helper21ProfileTabPage>
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Emergency Contact',
+                    'Emergency Contact'.tr(),
                     style: AppTextStyles.heading3.copyWith(
                       color: AppColors.primaryGreen,
                       fontWeight: FontWeight.w700,
@@ -402,14 +406,15 @@ class _Helper21ProfileTabPageState extends State<Helper21ProfileTabPage>
                   ),
                   const SizedBox(height: 16),
                   _buildInfoRow(
-                      'Name',
-                      _userProfile!['emergency_contact_name'] ?? 'Not provided',
+                      'Name'.tr(),
+                      _userProfile!['emergency_contact_name'] ??
+                          'Not provided'.tr(),
                       Icons.person),
                   const SizedBox(height: 12),
                   _buildInfoRow(
-                      'Telephone',
+                      'Telephone'.tr(),
                       _userProfile!['emergency_contact_phone'] ??
-                          'Not provided',
+                          'Not provided'.tr(),
                       Icons.phone),
                 ],
               ),
@@ -442,7 +447,7 @@ class _Helper21ProfileTabPageState extends State<Helper21ProfileTabPage>
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Selected Job Types',
+                      'Selected Job Types'.tr(),
                       style: AppTextStyles.heading3.copyWith(
                         color: AppColors.primaryGreen,
                         fontWeight: FontWeight.w700,
@@ -501,15 +506,15 @@ class _Helper21ProfileTabPageState extends State<Helper21ProfileTabPage>
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    'No Job Types Selected',
+                    'No Job Types Selected'.tr(),
                     style: AppTextStyles.heading3.copyWith(
-                      color: AppColors.textPrimary,
+                      color: AppColors.textSecondary,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Select job types to start receiving job requests',
+                    'Select job types to start receiving job requests'.tr(),
                     style: AppTextStyles.bodyMedium.copyWith(
                       color: AppColors.textSecondary,
                     ),
@@ -524,7 +529,7 @@ class _Helper21ProfileTabPageState extends State<Helper21ProfileTabPage>
                       backgroundColor: AppColors.primaryGreen,
                       foregroundColor: AppColors.white,
                     ),
-                    child: const Text('Select Job Types'),
+                    child: Text('Select Job Types'.tr()),
                   ),
                 ],
               ),
@@ -576,7 +581,7 @@ class _Helper21ProfileTabPageState extends State<Helper21ProfileTabPage>
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              category?['name'] ?? 'Unknown Job Type',
+                              category?['name'] ?? 'Unknown Job Type'.tr(),
                               style: AppTextStyles.bodyLarge.copyWith(
                                 color: AppColors.textPrimary,
                                 fontWeight: FontWeight.w600,
@@ -584,7 +589,8 @@ class _Helper21ProfileTabPageState extends State<Helper21ProfileTabPage>
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              'Rs. ${jobType['hourly_rate']?.toStringAsFixed(0) ?? '2000'}/Hr',
+                              'Rs. ${jobType['hourly_rate']?.toStringAsFixed(0) ?? '2000'}/Hr'
+                                  .tr(),
                               style: AppTextStyles.bodySmall.copyWith(
                                 color: AppColors.success,
                                 fontWeight: FontWeight.w600,
@@ -603,7 +609,7 @@ class _Helper21ProfileTabPageState extends State<Helper21ProfileTabPage>
                           borderRadius: BorderRadius.circular(6),
                         ),
                         child: Text(
-                          'Active',
+                          'Active'.tr(),
                           style: AppTextStyles.bodySmall.copyWith(
                             color: AppColors.success,
                             fontWeight: FontWeight.w600,
@@ -643,7 +649,7 @@ class _Helper21ProfileTabPageState extends State<Helper21ProfileTabPage>
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Documents & Attachments',
+                      'Documents & Attachments'.tr(),
                       style: AppTextStyles.heading3.copyWith(
                         color: AppColors.primaryGreen,
                         fontWeight: FontWeight.w700,
@@ -702,15 +708,16 @@ class _Helper21ProfileTabPageState extends State<Helper21ProfileTabPage>
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    'No Documents Uploaded',
+                    'No Documents Uploaded'.tr(),
                     style: AppTextStyles.heading3.copyWith(
-                      color: AppColors.textPrimary,
+                      color: AppColors.textSecondary,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Upload certificates and documents to enhance your profile',
+                    'Upload certificates and documents to enhance your profile'
+                        .tr(),
                     style: AppTextStyles.bodyMedium.copyWith(
                       color: AppColors.textSecondary,
                     ),
@@ -725,7 +732,7 @@ class _Helper21ProfileTabPageState extends State<Helper21ProfileTabPage>
                       backgroundColor: AppColors.primaryGreen,
                       foregroundColor: AppColors.white,
                     ),
-                    child: const Text('Upload Documents'),
+                    child: Text('Upload Documents'.tr()),
                   ),
                 ],
               ),
@@ -776,7 +783,8 @@ class _Helper21ProfileTabPageState extends State<Helper21ProfileTabPage>
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              document['document_name'] ?? 'Unknown Document',
+                              document['document_name'] ??
+                                  'Unknown Document'.tr(),
                               style: AppTextStyles.bodyLarge.copyWith(
                                 color: AppColors.textPrimary,
                                 fontWeight: FontWeight.w600,
@@ -784,7 +792,7 @@ class _Helper21ProfileTabPageState extends State<Helper21ProfileTabPage>
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              '${document['document_type']?.toUpperCase() ?? 'DOCUMENT'} • ${_formatFileSize(document['file_size_bytes'])}',
+                              '${document['document_type']?.toUpperCase() ?? 'DOCUMENT'.tr()} • ${_formatFileSize(document['file_size_bytes'])}',
                               style: AppTextStyles.bodySmall.copyWith(
                                 color: AppColors.textSecondary,
                               ),
@@ -812,7 +820,7 @@ class _Helper21ProfileTabPageState extends State<Helper21ProfileTabPage>
                         ),
                         child: Text(
                           document['verification_status']?.toUpperCase() ??
-                              'PENDING',
+                              'PENDING'.tr(),
                           style: AppTextStyles.bodySmall.copyWith(
                             color: _getVerificationColor(
                                 document['verification_status']),
@@ -916,42 +924,42 @@ class _Helper21ProfileTabPageState extends State<Helper21ProfileTabPage>
   }
 
   String _formatDate(String? dateString) {
-    if (dateString == null) return 'Unknown date';
+    if (dateString == null) return 'Unknown date'.tr();
     try {
       final date = DateTime.parse(dateString);
       final months = [
-        'January',
-        'February',
-        'March',
-        'April',
-        'May',
-        'June',
-        'July',
-        'August',
-        'September',
-        'October',
-        'November',
-        'December'
+        'January'.tr(),
+        'February'.tr(),
+        'March'.tr(),
+        'April'.tr(),
+        'May'.tr(),
+        'June'.tr(),
+        'July'.tr(),
+        'August'.tr(),
+        'September'.tr(),
+        'October'.tr(),
+        'November'.tr(),
+        'December'.tr()
       ];
       final day = date.day;
       final suffix = _getDaySuffix(day);
       return '${day}${suffix} ${months[date.month - 1]} ${date.year}';
     } catch (e) {
-      return 'Unknown date';
+      return 'Unknown date'.tr();
     }
   }
 
   String _getDaySuffix(int day) {
-    if (day >= 11 && day <= 13) return 'th';
+    if (day >= 11 && day <= 13) return 'th'.tr();
     switch (day % 10) {
       case 1:
-        return 'st';
+        return 'st'.tr();
       case 2:
-        return 'nd';
+        return 'nd'.tr();
       case 3:
-        return 'rd';
+        return 'rd'.tr();
       default:
-        return 'th';
+        return 'th'.tr();
     }
   }
 

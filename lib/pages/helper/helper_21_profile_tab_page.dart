@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../models/user_type.dart';
 import 'package:go_router/go_router.dart';
 import '../../utils/app_colors.dart';
 import '../../utils/app_text_styles.dart';
@@ -252,221 +253,340 @@ class _Helper21ProfileTabPageState extends State<Helper21ProfileTabPage>
       padding: const EdgeInsets.all(16),
       child: Column(
         children: [
-          // Profile Image and Basic Info
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: AppColors.white,
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: const [
-                BoxShadow(
-                  color: AppColors.shadowColorLight,
-                  blurRadius: 8,
-                  offset: Offset(0, 4),
-                ),
-              ],
-            ),
-            child: Column(
-              children: [
-                // Profile Image
-                Container(
-                  width: 120,
-                  height: 120,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: AppColors.primaryGreen,
-                      width: 3,
-                    ),
-                  ),
-                  child: ClipOval(
-                    child: _userProfile!['profile_image_url'] != null
-                        ? Image.network(
-                            _userProfile!['profile_image_url'],
-                            fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) =>
-                                Container(
-                              color: AppColors.lightGrey,
-                              child: const Icon(
-                                Icons.person,
-                                size: 60,
-                                color: AppColors.textSecondary,
-                              ),
-                            ),
-                          )
-                        : Container(
-                            color: AppColors.lightGrey,
-                            child: const Icon(
-                              Icons.person,
-                              size: 60,
-                              color: AppColors.textSecondary,
-                            ),
-                          ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-
-                // Username (First name + Last name)
-                Text(
-                  '${_userProfile!['first_name'] ?? ''} ${_userProfile!['last_name'] ?? ''}',
-                  style: AppTextStyles.heading2.copyWith(
-                    color: AppColors.textPrimary,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                const SizedBox(height: 8),
-
-                // Rating and Job Count
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(Icons.star, color: AppColors.warning, size: 20),
-                    const SizedBox(width: 4),
-                    Text(
-                      '${_userStatistics?['rating']?.toStringAsFixed(1) ?? '0.0'} (${_userStatistics?['total_reviews'] ?? 0} reviews)',
-                      style: AppTextStyles.bodyMedium.copyWith(
-                        color: AppColors.textSecondary,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
+          // Profile Image Section
+          _buildProfileImageSection(),
 
           const SizedBox(height: 20),
 
-          // Personal Information
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: AppColors.white,
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: const [
-                BoxShadow(
-                  color: AppColors.shadowColorLight,
-                  blurRadius: 8,
-                  offset: Offset(0, 4),
-                ),
-              ],
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Personal Information',
-                  style: AppTextStyles.heading3.copyWith(
-                    color: AppColors.primaryGreen,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                _buildInfoRow('Telephone',
-                    _userProfile!['phone'] ?? 'Not provided', Icons.phone),
-                const SizedBox(height: 12),
-                _buildInfoRow('Gender',
-                    _userProfile!['gender'] ?? 'Not specified', Icons.person),
-                const SizedBox(height: 12),
-                _buildInfoRow('Birthday',
-                    _formatDate(_userProfile!['date_of_birth']), Icons.cake),
-                const SizedBox(height: 12),
-                _buildInfoRow(
-                    'Location',
-                    _userProfile!['location_city'] ?? 'Not specified',
-                    Icons.location_on),
-                const SizedBox(height: 12),
-                _buildInfoRow('Email', _userProfile!['email'] ?? 'Not provided',
-                    Icons.email),
-              ],
-            ),
-          ),
+          // Stats Section (Rating | Reviews | Jobs)
+          _buildStatsSection(),
 
           const SizedBox(height: 20),
 
-          // About Me
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: AppColors.white,
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: const [
-                BoxShadow(
-                  color: AppColors.shadowColorLight,
-                  blurRadius: 8,
-                  offset: Offset(0, 4),
-                ),
-              ],
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'About Me',
-                  style: AppTextStyles.heading3.copyWith(
-                    color: AppColors.primaryGreen,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  _userProfile!['about_me'] ?? 'No bio available',
-                  style: AppTextStyles.bodyMedium.copyWith(
-                    color: AppColors.textSecondary,
-                    height: 1.5,
-                  ),
-                ),
-              ],
-            ),
-          ),
+          // Personal Information Section
+          _buildPersonalInfoSection(),
 
           const SizedBox(height: 20),
 
-          // Emergency Contact
-          if (_userProfile!['emergency_contact_name'] != null ||
-              _userProfile!['emergency_contact_phone'] != null)
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: AppColors.white,
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: const [
-                  BoxShadow(
-                    color: AppColors.shadowColorLight,
-                    blurRadius: 8,
-                    offset: Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Emergency Contact',
-                    style: AppTextStyles.heading3.copyWith(
-                      color: AppColors.primaryGreen,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  _buildInfoRow(
-                      'Name',
-                      _userProfile!['emergency_contact_name'] ?? 'Not provided',
-                      Icons.person),
-                  const SizedBox(height: 12),
-                  _buildInfoRow(
-                      'Telephone',
-                      _userProfile!['emergency_contact_phone'] ??
-                          'Not provided',
-                      Icons.phone),
-                ],
-              ),
-            ),
+          // Emergency Contact Section
+          _buildEmergencyContactSection(),
+
+          const SizedBox(height: 20),
         ],
       ),
+    );
+  }
+
+  Widget _buildProfileImageSection() {
+    final firstName = _userProfile!['first_name'] ?? '';
+    final lastName = _userProfile!['last_name'] ?? '';
+    final displayName = '$firstName $lastName'.trim();
+
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: const [
+          BoxShadow(
+            color: AppColors.shadowColorLight,
+            blurRadius: 8,
+            offset: Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          // Profile Picture
+          Container(
+            width: 120,
+            height: 120,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: AppColors.primaryGreen,
+                width: 3,
+              ),
+            ),
+            child: CircleAvatar(
+              radius: 57,
+              backgroundColor: AppColors.primaryGreen,
+              backgroundImage: _userProfile!['profile_image_url'] != null
+                  ? NetworkImage(_userProfile!['profile_image_url'])
+                  : null,
+              child: _userProfile!['profile_image_url'] == null
+                  ? Text(
+                      displayName.isNotEmpty
+                          ? displayName[0].toUpperCase()
+                          : 'U',
+                      style: const TextStyle(
+                        fontSize: 36,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.white,
+                      ),
+                    )
+                  : null,
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          // User Name
+          Text(
+            displayName.isNotEmpty ? displayName : 'User',
+            style: AppTextStyles.heading2.copyWith(
+              fontWeight: FontWeight.w700,
+              color: AppColors.textPrimary,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatsSection() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: const [
+          BoxShadow(
+            color: AppColors.shadowColorLight,
+            blurRadius: 8,
+            offset: Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        children: [
+          _buildStatItem(
+            'Rating',
+            '${_userStatistics?['rating']?.toStringAsFixed(1) ?? '0.0'}',
+            Icons.star,
+            AppColors.warning,
+          ),
+          _buildStatDivider(),
+          _buildStatItem(
+            'Reviews',
+            '${_userStatistics?['total_reviews'] ?? 0}',
+            Icons.rate_review,
+            AppColors.primaryGreen,
+          ),
+          _buildStatDivider(),
+          _buildStatItem(
+            'Jobs',
+            '${_userStatistics?['total_jobs'] ?? 0}',
+            Icons.work,
+            AppColors.info,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPersonalInfoSection() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: const [
+          BoxShadow(
+            color: AppColors.shadowColorLight,
+            blurRadius: 8,
+            offset: Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Personal Information',
+            style: AppTextStyles.heading3.copyWith(
+              fontWeight: FontWeight.w700,
+              color: AppColors.primaryGreen,
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          // About Me
+          _buildInfoSection(
+            'About me',
+            _userProfile!['about_me'] ?? 'No bio available',
+            isMultiLine: true,
+          ),
+          const SizedBox(height: 16),
+
+          // Email
+          _buildInfoRow(
+            'Email',
+            _userProfile!['email'] ?? 'Not provided',
+            Icons.email,
+          ),
+          const SizedBox(height: 12),
+
+          // Phone Number
+          _buildInfoRow(
+            'Phone Number',
+            _userProfile!['phone'] ?? 'Not provided',
+            Icons.phone,
+          ),
+          const SizedBox(height: 12),
+
+          // Location
+          _buildInfoRow(
+            'Location',
+            _userProfile!['location_city'] ?? 'Not provided',
+            Icons.location_on,
+          ),
+          const SizedBox(height: 12),
+
+          // Age
+          _buildInfoRow(
+            'Age',
+            _calculateAge(_userProfile!['date_of_birth']),
+            Icons.calendar_today,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEmergencyContactSection() {
+    final emergencyName = _userProfile!['emergency_contact_name'];
+    final emergencyPhone = _userProfile!['emergency_contact_phone'];
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: const [
+          BoxShadow(
+            color: AppColors.shadowColorLight,
+            blurRadius: 8,
+            offset: Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Emergency Contact',
+            style: AppTextStyles.heading3.copyWith(
+              fontWeight: FontWeight.w700,
+              color: AppColors.primaryGreen,
+            ),
+          ),
+          const SizedBox(height: 16),
+          if (emergencyName != null || emergencyPhone != null) ...[
+            // Name
+            _buildInfoRow(
+              'Name',
+              emergencyName ?? 'Not provided',
+              Icons.person,
+            ),
+            const SizedBox(height: 12),
+
+            // Phone
+            _buildInfoRow(
+              'Phone',
+              emergencyPhone ?? 'Not provided',
+              Icons.phone,
+            ),
+          ] else ...[
+            Center(
+              child: Column(
+                children: [
+                  Icon(
+                    Icons.contact_emergency_outlined,
+                    size: 48,
+                    color: AppColors.textSecondary,
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    'No emergency contact added',
+                    style: AppTextStyles.bodyMedium.copyWith(
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatItem(
+      String label, String value, IconData icon, Color color) {
+    return Expanded(
+      child: Column(
+        children: [
+          Icon(
+            icon,
+            color: color,
+            size: 24,
+          ),
+          const SizedBox(height: 8),
+          Text(
+            value,
+            style: AppTextStyles.heading3.copyWith(
+              color: color,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            label,
+            style: AppTextStyles.bodySmall.copyWith(
+              color: AppColors.textSecondary,
+              fontWeight: FontWeight.w500,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatDivider() {
+    return Container(
+      width: 1,
+      height: 40,
+      color: AppColors.borderLight,
+      margin: const EdgeInsets.symmetric(horizontal: 8),
+    );
+  }
+
+  Widget _buildInfoSection(String label, String value,
+      {bool isMultiLine = false}) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: AppTextStyles.bodyMedium.copyWith(
+            fontWeight: FontWeight.w600,
+            color: AppColors.textPrimary,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          value,
+          style: AppTextStyles.bodyMedium.copyWith(
+            color: AppColors.textSecondary,
+            height: isMultiLine ? 1.5 : 1.0,
+          ),
+        ),
+      ],
     );
   }
 
@@ -872,6 +992,22 @@ class _Helper21ProfileTabPageState extends State<Helper21ProfileTabPage>
     if (bytes < 1024) return '$bytes B';
     if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(1)} KB';
     return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
+  }
+
+  String _calculateAge(String? dateOfBirth) {
+    if (dateOfBirth == null) return 'Age not specified';
+    try {
+      final birthDate = DateTime.parse(dateOfBirth);
+      final today = DateTime.now();
+      int age = today.year - birthDate.year;
+      if (today.month < birthDate.month ||
+          (today.month == birthDate.month && today.day < birthDate.day)) {
+        age--;
+      }
+      return '$age years';
+    } catch (e) {
+      return 'Age not specified';
+    }
   }
 
   Widget _buildEditButtonForCurrentTab() {

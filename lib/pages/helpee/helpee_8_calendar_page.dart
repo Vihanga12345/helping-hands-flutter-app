@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../models/user_type.dart';
 import 'package:go_router/go_router.dart';
 import 'package:table_calendar/table_calendar.dart';
 import '../../utils/app_colors.dart';
@@ -8,6 +9,8 @@ import '../../widgets/common/app_navigation_bar.dart';
 import '../../services/job_data_service.dart';
 import '../../services/custom_auth_service.dart';
 import '../../services/localization_service.dart';
+import '../../widgets/common/realtime_app_wrapper.dart';
+import 'dart:async';
 
 class Event {
   final String title;
@@ -33,7 +36,8 @@ class Helpee8CalendarPage extends StatefulWidget {
   State<Helpee8CalendarPage> createState() => _Helpee8CalendarPageState();
 }
 
-class _Helpee8CalendarPageState extends State<Helpee8CalendarPage> {
+class _Helpee8CalendarPageState extends State<Helpee8CalendarPage>
+    with RealTimePageMixin {
   CalendarFormat _calendarFormat = CalendarFormat.month;
   DateTime _focusedDay = DateTime.now();
   DateTime? _selectedDay;
@@ -45,11 +49,71 @@ class _Helpee8CalendarPageState extends State<Helpee8CalendarPage> {
   bool _isLoading = true;
   String? _error;
 
+  // Real-time subscription
+  StreamSubscription? _calendarSubscription;
+
   @override
   void initState() {
     super.initState();
     _selectedDay = DateTime.now();
+    _initializeRealTimeCalendar();
+  }
+
+  void _initializeRealTimeCalendar() {
+    // Listen to real-time calendar data updates
+    _calendarSubscription =
+        liveDataService.calendarStream.listen((calendarJobs) {
+      if (mounted) {
+        _processCalendarData(calendarJobs);
+      }
+    });
+
+    // Initial calendar data load
     _loadCalendarEvents();
+  }
+
+  void _processCalendarData(List<Map<String, dynamic>> calendarJobs) {
+    try {
+      // Convert jobs to Event objects grouped by date
+      Map<DateTime, List<Event>> events = {};
+
+      for (var job in calendarJobs) {
+        final scheduledDate = job['scheduled_date'];
+        if (scheduledDate != null) {
+          final date = DateTime.parse(scheduledDate);
+          final normalizedDate = DateTime(date.year, date.month, date.day);
+
+          final event = Event(
+            title: job['title'] ?? 'Unknown Job'.tr(),
+            status: job['status'] ?? 'PENDING',
+            helper: job['users']?['display_name'] ?? 'Waiting for Helper'.tr(),
+            jobId: job['id'] ?? '',
+          );
+
+          if (events[normalizedDate] == null) {
+            events[normalizedDate] = [];
+          }
+          events[normalizedDate]!.add(event);
+        }
+      }
+
+      setState(() {
+        _events = events;
+        _isLoading = false;
+        _error = null;
+      });
+    } catch (e) {
+      setState(() {
+        _error = 'Failed to process calendar data: $e'.tr();
+        _isLoading = false;
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _calendarSubscription?.cancel();
+    super.dispose();
   }
 
   Future<void> _loadCalendarEvents() async {
@@ -68,26 +132,15 @@ class _Helpee8CalendarPageState extends State<Helpee8CalendarPage> {
         return;
       }
 
-      final calendarData =
-          await _jobDataService.getJobsForCalendar(currentUser['user_id']);
+      // Use real-time service to refresh calendar data
+      final now = DateTime.now();
+      final startDate = DateTime(now.year, now.month, 1);
+      final endDate = DateTime(now.year, now.month + 1, 0);
 
-      // Convert to Event objects
-      Map<DateTime, List<Event>> events = {};
-      calendarData.forEach((date, jobList) {
-        events[date] = jobList
-            .map((job) => Event(
-                  title: job['title'] ?? 'Unknown Job'.tr(),
-                  status: job['status'] ?? 'PENDING',
-                  helper: job['helper'] ?? 'Waiting for Helper'.tr(),
-                  jobId: job['job_id'] ?? '',
-                ))
-            .toList();
-      });
-
-      setState(() {
-        _events = events;
-        _isLoading = false;
-      });
+      await liveDataService.refreshCalendar(
+        startDate: startDate,
+        endDate: endDate,
+      );
     } catch (e) {
       setState(() {
         _isLoading = false;
@@ -650,20 +703,44 @@ class _Helpee8CalendarPageState extends State<Helpee8CalendarPage> {
                 ),
                 const SizedBox(height: 8),
 
-                // Helper info
+                // Public/Private Status Label
                 Row(
                   children: [
-                    Icon(
-                      Icons.person,
-                      size: 16,
-                      color: AppColors.textSecondary,
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      helper,
-                      style: AppTextStyles.bodyMedium.copyWith(
-                        color: AppColors.textSecondary,
-                        fontSize: 14,
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: jobData?['is_private'] == true
+                            ? AppColors.primaryGreen.withOpacity(0.1)
+                            : AppColors.warning.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            jobData?['is_private'] == true
+                                ? Icons.lock
+                                : Icons.public,
+                            size: 14,
+                            color: jobData?['is_private'] == true
+                                ? AppColors.primaryGreen
+                                : AppColors.warning,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            jobData?['is_private'] == true
+                                ? 'PRIVATE'
+                                : 'PUBLIC',
+                            style: AppTextStyles.bodySmall.copyWith(
+                              color: jobData?['is_private'] == true
+                                  ? AppColors.primaryGreen
+                                  : AppColors.warning,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ],

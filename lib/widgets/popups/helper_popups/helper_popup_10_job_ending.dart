@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import '../../../utils/app_colors.dart';
 import '../../../utils/app_text_styles.dart';
 
 class HelperPopup10JobEnding extends StatefulWidget {
   final VoidCallback? onClose;
-  const HelperPopup10JobEnding({Key? key, this.onClose}) : super(key: key);
+  final String? jobId;
+  const HelperPopup10JobEnding({Key? key, this.onClose, this.jobId})
+      : super(key: key);
   @override
   State<HelperPopup10JobEnding> createState() => _HelperPopup10JobEndingState();
 }
@@ -116,10 +119,10 @@ class _HelperPopup10JobEndingState extends State<HelperPopup10JobEnding>
         });
   }
 
-  static void show(BuildContext context) => showDialog(
+  static void show(BuildContext context, {String? jobId}) => showDialog(
       context: context,
       barrierDismissible: false,
       barrierColor: Colors.transparent,
-      builder: (context) =>
-          HelperPopup10JobEnding(onClose: () => Navigator.of(context).pop()));
+      builder: (context) => HelperPopup10JobEnding(
+          onClose: () => Navigator.of(context).pop(), jobId: jobId));
 }

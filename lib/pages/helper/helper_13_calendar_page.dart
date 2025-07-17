@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../models/user_type.dart';
 import 'package:go_router/go_router.dart';
 import 'package:table_calendar/table_calendar.dart';
 import '../../utils/app_colors.dart';
@@ -8,18 +9,26 @@ import '../../widgets/common/app_navigation_bar.dart';
 import '../../widgets/common/job_action_buttons.dart';
 import '../../services/job_data_service.dart';
 import '../../services/custom_auth_service.dart';
+import '../../widgets/common/realtime_app_wrapper.dart';
+import 'dart:async';
 
 class Event {
   final String title;
   final String status;
   final String helpee;
   final String jobId;
+  final String time;
+  final String pay;
+  final String location;
 
   const Event({
     required this.title,
     required this.status,
     required this.helpee,
     required this.jobId,
+    required this.time,
+    required this.pay,
+    required this.location,
   });
 
   @override
@@ -33,7 +42,8 @@ class Helper13CalendarPage extends StatefulWidget {
   State<Helper13CalendarPage> createState() => _Helper13CalendarPageState();
 }
 
-class _Helper13CalendarPageState extends State<Helper13CalendarPage> {
+class _Helper13CalendarPageState extends State<Helper13CalendarPage>
+    with RealTimePageMixin {
   CalendarFormat _calendarFormat = CalendarFormat.month;
   DateTime _focusedDay = DateTime.now();
   DateTime? _selectedDay;
@@ -45,11 +55,162 @@ class _Helper13CalendarPageState extends State<Helper13CalendarPage> {
   bool _isLoading = true;
   String? _error;
 
+  // Real-time subscription
+  StreamSubscription? _calendarSubscription;
+
   @override
   void initState() {
     super.initState();
     _selectedDay = DateTime.now();
+    _initializeRealTimeCalendar();
+  }
+
+  void _initializeRealTimeCalendar() {
+    // Listen to real-time calendar data updates
+    _calendarSubscription =
+        liveDataService.calendarStream.listen((calendarJobs) {
+      if (mounted) {
+        _processCalendarData(calendarJobs);
+      }
+    });
+
+    // Initial calendar data load
     _loadCalendarEvents();
+  }
+
+  void _processCalendarData(List<Map<String, dynamic>> calendarJobs) {
+    try {
+      // Convert jobs to Event objects grouped by date
+      Map<DateTime, List<Event>> events = {};
+
+      for (var job in calendarJobs) {
+        final scheduledDate = job['scheduled_date'];
+        if (scheduledDate != null) {
+          final date = DateTime.parse(scheduledDate);
+          final normalizedDate = DateTime(date.year, date.month, date.day);
+
+          // Extract and format the required fields
+          final timeStr = _extractTimeFromJob(job);
+          final payStr = _extractPayFromJob(job);
+          final locationStr = _extractLocationFromJob(job);
+          final helpeeStr = _extractHelpeeFromJob(job);
+
+          final event = Event(
+            title: job['title'] ?? 'Unknown Job',
+            status: job['status'] ?? 'PENDING',
+            helpee: helpeeStr,
+            jobId: job['id'] ?? '',
+            time: timeStr,
+            pay: payStr,
+            location: locationStr,
+          );
+
+          if (events[normalizedDate] == null) {
+            events[normalizedDate] = [];
+          }
+          events[normalizedDate]!.add(event);
+        }
+      }
+
+      setState(() {
+        _events = events;
+        _isLoading = false;
+        _error = null;
+      });
+    } catch (e) {
+      setState(() {
+        _error = 'Failed to process calendar data: $e';
+        _isLoading = false;
+      });
+    }
+  }
+
+  // Helper method to extract and format time from job data
+  String _extractTimeFromJob(Map<String, dynamic> job) {
+    // Try multiple possible field names for time
+    String? timeValue =
+        job['time'] ?? job['scheduled_start_time'] ?? job['scheduled_time'];
+
+    print(
+        '🕐 Extracting time from job ${job['id']}: time=${job['time']}, scheduled_start_time=${job['scheduled_start_time']}');
+
+    if (timeValue != null && timeValue != 'Time TBD') {
+      print('✅ Using existing time value: $timeValue');
+      return timeValue;
+    }
+
+    // Try to format from raw time data
+    try {
+      if (job['scheduled_start_time'] != null) {
+        final dateTime = DateTime.parse(job['scheduled_start_time']);
+        final hour = dateTime.hour.toString().padLeft(2, '0');
+        final minute = dateTime.minute.toString().padLeft(2, '0');
+        final formattedTime = '$hour:$minute';
+        print('✅ Formatted time from scheduled_start_time: $formattedTime');
+        return formattedTime;
+      }
+    } catch (e) {
+      print('❌ Error formatting time: $e');
+    }
+
+    print('⚠️ Using fallback time: Time not set');
+    return 'Time not set';
+  }
+
+  // Helper method to extract and format pay from job data
+  String _extractPayFromJob(Map<String, dynamic> job) {
+    print(
+        '💰 Extracting pay from job ${job['id']}: pay=${job['pay']}, hourly_rate=${job['hourly_rate']}');
+
+    // Try multiple possible field names for pay
+    if (job['pay'] != null && job['pay'] != 'Rate not set') {
+      print('✅ Using existing pay value: ${job['pay']}');
+      return job['pay'];
+    }
+
+    // Try to format from hourly_rate
+    if (job['hourly_rate'] != null) {
+      final formattedPay = 'LKR ${job['hourly_rate']}/Hr';
+      print('✅ Formatted pay from hourly_rate: $formattedPay');
+      return formattedPay;
+    }
+
+    print('⚠️ Using fallback pay: Rate not set');
+    return 'Rate not set';
+  }
+
+  // Helper method to extract location from job data
+  String _extractLocationFromJob(Map<String, dynamic> job) {
+    final location =
+        job['location'] ?? job['location_address'] ?? 'Location not set';
+
+    print(
+        '📍 Extracting location from job ${job['id']}: location=${job['location']}, location_address=${job['location_address']} -> $location');
+    return location;
+  }
+
+  // Helper method to extract helpee name from job data
+  String _extractHelpeeFromJob(Map<String, dynamic> job) {
+    // Try multiple possible field names for helpee name
+    String? helpeeName;
+
+    // First try the users object
+    if (job['users'] != null && job['users']['display_name'] != null) {
+      helpeeName = job['users']['display_name'];
+    }
+    // Then try first and last name separately
+    else if (job['helpee_first_name'] != null ||
+        job['helpee_last_name'] != null) {
+      final firstName = job['helpee_first_name'] ?? '';
+      final lastName = job['helpee_last_name'] ?? '';
+      helpeeName = '$firstName $lastName'.trim();
+    }
+
+    if (helpeeName == null || helpeeName.isEmpty) {
+      helpeeName = 'Unknown Client';
+    }
+
+    return helpeeName;
   }
 
   Future<void> _loadCalendarEvents() async {
@@ -68,32 +229,27 @@ class _Helper13CalendarPageState extends State<Helper13CalendarPage> {
         return;
       }
 
-      final calendarData = await _jobDataService
-          .getHelperJobsForCalendar(currentUser['user_id']);
+      // Use real-time service to refresh calendar data
+      final now = DateTime.now();
+      final startDate = DateTime(now.year, now.month, 1);
+      final endDate = DateTime(now.year, now.month + 1, 0);
 
-      // Convert to Event objects
-      Map<DateTime, List<Event>> events = {};
-      calendarData.forEach((date, jobList) {
-        events[date] = jobList
-            .map((job) => Event(
-                  title: job['title'] ?? 'Unknown Job',
-                  status: job['status'] ?? 'PENDING',
-                  helpee: job['helpee'] ?? 'Unknown Client',
-                  jobId: job['job_id'] ?? '',
-                ))
-            .toList();
-      });
-
-      setState(() {
-        _events = events;
-        _isLoading = false;
-      });
+      await liveDataService.refreshCalendar(
+        startDate: startDate,
+        endDate: endDate,
+      );
     } catch (e) {
       setState(() {
         _isLoading = false;
         _error = 'Failed to load calendar events: $e';
       });
     }
+  }
+
+  @override
+  void dispose() {
+    _calendarSubscription?.cancel();
+    super.dispose();
   }
 
   // Method to get complete job data for action buttons
@@ -343,24 +499,62 @@ class _Helper13CalendarPageState extends State<Helper13CalendarPage> {
     return FutureBuilder<List<Map<String, dynamic>>>(
       future: _getJobDetailsForEvent(event),
       builder: (context, snapshot) {
+        // Use Event data directly for basic display, even while loading full job details
+        final basicJobData = {
+          'title': event.title,
+          'pay': event.pay,
+          'date': _formatDate(_selectedDay!),
+          'time': event.time,
+          'location': event.location,
+          'status': event.status,
+          'id': event.jobId,
+        };
+
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return _buildLoadingJobCard();
+          // Show basic card with Event data while loading additional details
+          return _buildJobCard(
+            context: context,
+            title: event.title,
+            pay: event.pay,
+            date: _formatDate(_selectedDay!),
+            time: event.time,
+            location: event.location,
+            status: event.status,
+            helpee: event.helpee,
+            jobType: _getJobTypeFromStatus(event.status),
+            jobId: event.jobId,
+            jobData: basicJobData,
+          );
         }
 
         if (snapshot.hasError ||
             snapshot.data == null ||
             snapshot.data!.isEmpty) {
-          return _buildBasicJobCard(event);
+          // Use Event data if detailed fetch fails
+          return _buildJobCard(
+            context: context,
+            title: event.title,
+            pay: event.pay,
+            date: _formatDate(_selectedDay!),
+            time: event.time,
+            location: event.location,
+            status: event.status,
+            helpee: event.helpee,
+            jobType: _getJobTypeFromStatus(event.status),
+            jobId: event.jobId,
+            jobData: basicJobData,
+          );
         }
 
+        // Use detailed job data if available, but fallback to Event data for missing fields
         final jobDetails = snapshot.data!.first;
         return _buildJobCard(
           context: context,
           title: jobDetails['title'] ?? event.title,
-          pay: jobDetails['pay'] ?? 'Rate not set',
+          pay: jobDetails['pay'] ?? event.pay,
           date: jobDetails['date'] ?? _formatDate(_selectedDay!),
-          time: jobDetails['time'] ?? 'Time not set',
-          location: jobDetails['location'] ?? 'Location not set',
+          time: jobDetails['time'] ?? event.time,
+          location: jobDetails['location'] ?? event.location,
           status: event.status,
           helpee: event.helpee,
           jobType: _getJobTypeFromStatus(event.status),

@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import '../../models/user_type.dart';
 import 'package:go_router/go_router.dart';
 import '../../utils/app_colors.dart';
 import '../../widgets/common/app_header.dart';
 import '../../widgets/common/app_navigation_bar.dart';
 import '../../services/custom_auth_service.dart';
 import '../../services/localization_service.dart';
+import '../common/report_page.dart';
 
 class Helpee6MenuPage extends StatefulWidget {
   const Helpee6MenuPage({super.key});
@@ -115,6 +117,17 @@ class _Helpee6MenuPageState extends State<Helpee6MenuPage> {
                             icon: Icons.info,
                             title: 'About Us'.tr(),
                             onTap: () => context.go('/helpee/about-us'),
+                          ),
+                          _buildMenuItem(
+                            icon: Icons.report_problem,
+                            title: 'Report Issue'.tr(),
+                            onTap: () => Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) =>
+                                    const ReportPage(userType: 'helpee'),
+                              ),
+                            ),
                           ),
                           _buildMenuItem(
                             icon: Icons.logout,

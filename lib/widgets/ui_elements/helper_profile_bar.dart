@@ -1,31 +1,30 @@
 import 'package:flutter/material.dart';
 
 /// Helper Profile Bar component for displaying helper information from helpee POV
-/// Redesigned to show: name, profile pic, rating, job count, job types
+/// Redesigned to show: name, profile pic, job types only
+/// Enhanced to support selection mode for private job creation
 class HelperProfileBar extends StatelessWidget {
   final String name;
   final String? profileImageUrl;
-  final double rating;
-  final int jobCount;
   final List<String> jobTypes;
   final VoidCallback? onTap;
   final String? helperId;
   final Map<String, dynamic>? helperData;
   final Color? backgroundColor;
   final double? height;
+  final bool isSelectionMode;
 
   const HelperProfileBar({
     super.key,
     required this.name,
     this.profileImageUrl,
-    required this.rating,
-    required this.jobCount,
     this.jobTypes = const [],
     this.onTap,
     this.helperId,
     this.helperData,
     this.backgroundColor,
     this.height = 90,
+    this.isSelectionMode = false,
   });
 
   @override
@@ -35,11 +34,15 @@ class HelperProfileBar extends StatelessWidget {
     // Format job types to display (max 3, then "...more")
     String displayJobTypes = '';
     if (jobTypes.isNotEmpty) {
-      if (jobTypes.length <= 3) {
-        displayJobTypes = jobTypes.join(' • ').toLowerCase();
+      final validJobTypes = jobTypes
+          .where((type) => type != null)
+          .map((type) => type.toLowerCase())
+          .toList();
+      if (validJobTypes.length <= 3) {
+        displayJobTypes = validJobTypes.join(' • ');
       } else {
         displayJobTypes =
-            '${jobTypes.take(3).join(' • ').toLowerCase()} • +${jobTypes.length - 3} more';
+            '${validJobTypes.take(3).join(' • ')} • +${validJobTypes.length - 3} more';
       }
     }
 
@@ -52,6 +55,9 @@ class HelperProfileBar extends StatelessWidget {
           color: effectiveBackgroundColor,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(15),
+            side: isSelectionMode
+                ? const BorderSide(color: Color(0xFF8FD89F), width: 2)
+                : BorderSide.none,
           ),
           shadows: const [
             BoxShadow(
@@ -123,69 +129,45 @@ class HelperProfileBar extends StatelessWidget {
                     maxLines: 1,
                   ),
                   const SizedBox(height: 4),
-
-
+                  if (displayJobTypes.isNotEmpty)
+                    Text(
+                      displayJobTypes,
+                      style: const TextStyle(
+                        color: Colors.black87,
+                        fontSize: 14,
+                        fontFamily: 'Manjari',
+                        fontWeight: FontWeight.w400,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 1,
+                    ),
                 ],
               ),
             ),
 
             const SizedBox(width: 12),
 
-            // Statistics Section
-            Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                // Rating with star
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(
-                      Icons.star,
-                      color: Colors.amber,
-                      size: 18,
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      rating.toStringAsFixed(1),
-                      style: const TextStyle(
-                        color: Colors.black,
-                        fontSize: 16,
-                        fontFamily: 'Manjari',
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ],
+            // Selection/Navigation Section
+            if (isSelectionMode)
+              Container(
+                width: 24,
+                height: 24,
+                decoration: const BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Color(0xFF8FD89F),
                 ),
-                const SizedBox(height: 6),
-
-                // Job Count with # symbol
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Text(
-                      '#',
-                      style: TextStyle(
-                        color: Colors.black,
-                        fontSize: 16,
-                        fontFamily: 'Manjari',
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(width: 2),
-                    Text(
-                      jobCount.toString(),
-                      style: const TextStyle(
-                        color: Colors.black,
-                        fontSize: 16,
-                        fontFamily: 'Manjari',
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ],
+                child: const Icon(
+                  Icons.check,
+                  color: Colors.white,
+                  size: 16,
                 ),
-              ],
-            ),
+              )
+            else
+              const Icon(
+                Icons.arrow_forward_ios,
+                color: Colors.black54,
+                size: 18,
+              ),
           ],
         ),
       ),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../models/user_type.dart';
 import 'package:provider/provider.dart';
 import '../../services/localization_service.dart';
 import '../../services/supabase_service.dart';

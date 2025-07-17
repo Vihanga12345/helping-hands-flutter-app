@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../models/user_type.dart';
 import 'package:go_router/go_router.dart';
 import 'dart:async';
 import '../../utils/app_colors.dart';
@@ -585,28 +586,75 @@ class _Helper16JobOngoingPageState extends State<Helper16JobOngoingPage> {
 
                             const SizedBox(height: 16),
 
-                            // Helpee Profile Section
-                            HelpeeProfileBar(
-                              name: 'Wasantha Kumara',
-                              rating: 4.3,
-                              jobCount: 22,
-                              onMessage: () {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                      content:
-                                          Text('Opening chat with helpee')),
-                                );
-                              },
-                              onCall: () {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                      content: Text('Calling helpee')),
-                                );
-                              },
-                              onTap: () {
-                                // Navigate to helpee profile page
-                                context.push('/helper/helpee-profile');
-                              },
+                            // Helpee Profile Section - removed message/call buttons
+                            Container(
+                              padding: const EdgeInsets.all(16),
+                              decoration: BoxDecoration(
+                                color: AppColors.white,
+                                borderRadius: BorderRadius.circular(12),
+                                boxShadow: const [
+                                  BoxShadow(
+                                    color: AppColors.shadowColorLight,
+                                    blurRadius: 6,
+                                    offset: Offset(0, 2),
+                                  ),
+                                ],
+                              ),
+                              child: Row(
+                                children: [
+                                  Container(
+                                    width: 60,
+                                    height: 60,
+                                    decoration: BoxDecoration(
+                                      borderRadius: BorderRadius.circular(30),
+                                      color: AppColors.primaryGreen
+                                          .withOpacity(0.1),
+                                    ),
+                                    child: const Icon(
+                                      Icons.person,
+                                      size: 30,
+                                      color: AppColors.primaryGreen,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          'Wasantha Kumara',
+                                          style:
+                                              AppTextStyles.heading3.copyWith(
+                                            fontWeight: FontWeight.w600,
+                                            color: AppColors.textPrimary,
+                                            fontSize: 16,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  GestureDetector(
+                                    onTap: () {
+                                      context.push('/helper/helpee-profile');
+                                    },
+                                    child: Container(
+                                      width: 32,
+                                      height: 32,
+                                      decoration: BoxDecoration(
+                                        color: AppColors.primaryGreen
+                                            .withOpacity(0.1),
+                                        borderRadius: BorderRadius.circular(16),
+                                      ),
+                                      child: const Icon(
+                                        Icons.arrow_forward_ios,
+                                        size: 16,
+                                        color: AppColors.primaryGreen,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
 
                             const SizedBox(height: 16),

@@ -12,7 +12,7 @@ class EarningsService {
       final completedJobs = await _supabase
           .from('jobs')
           .select('''
-            id, pay, created_at, time_taken_hours, category_id, date, time, status,
+            id, pay, created_at, total_work_time_minutes, category_id, date, time, status,
             category:job_categories!jobs_category_id_fkey(name)
           ''')
           .eq('assigned_helper_id', helperId)
@@ -47,7 +47,8 @@ class EarningsService {
       for (var job in completedJobs) {
         final jobDate = DateTime.parse(job['created_at']);
         final pay = (job['pay'] ?? 0).toDouble();
-        final hours = ((job['time_taken_hours'] ?? 3) as num).toDouble();
+        final hours =
+            (((job['total_work_time_minutes'] ?? 180) as num) / 60).toDouble();
         final categoryName = job['category']?['name'] ?? 'Unknown';
 
         // Update all-time stats

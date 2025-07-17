@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../models/user_type.dart';
 import 'package:go_router/go_router.dart';
 import '../../utils/app_colors.dart';
 import '../../utils/app_text_styles.dart';
@@ -10,7 +11,16 @@ import '../../widgets/ui_elements/helper_profile_bar.dart';
 import '../../services/localization_service.dart';
 
 class Helpee9SearchHelperPage extends StatefulWidget {
-  const Helpee9SearchHelperPage({super.key});
+  final bool isSelectionMode;
+  final String? selectedCategoryId;
+  final String? returnRoute;
+
+  const Helpee9SearchHelperPage({
+    super.key,
+    this.isSelectionMode = false,
+    this.selectedCategoryId,
+    this.returnRoute,
+  });
 
   @override
   State<Helpee9SearchHelperPage> createState() =>
@@ -138,10 +148,12 @@ class _Helpee9SearchHelperPageState extends State<Helpee9SearchHelperPage> {
       body: Column(
         children: [
           AppHeader(
-            title: 'Search Helpers'.tr(),
+            title: widget.isSelectionMode
+                ? 'Select Helper'.tr()
+                : 'Search Helpers'.tr(),
             showBackButton: true,
             showMenuButton: false,
-            showNotificationButton: true,
+            showNotificationButton: !widget.isSelectionMode,
           ),
           Expanded(
             child: Container(
@@ -284,15 +296,14 @@ class _Helpee9SearchHelperPageState extends State<Helpee9SearchHelperPage> {
       margin: const EdgeInsets.only(bottom: 16),
       child: HelperProfileBar(
         name: helper['display_name'] ?? 'Unknown Helper'.tr(),
-        rating: (helper['rating'] ?? 0.0).toDouble(),
-        jobCount: helper['total_jobs'] ?? 0,
         jobTypes: skills,
         profileImageUrl: helper['profile_image_url'],
         helperId: helper['id'],
+        isSelectionMode: widget.isSelectionMode,
         helperData: {
           'id': helper['id'],
           'full_name': helper['display_name'],
-          'average_rating': helper['rating'],
+          'average_rating': helper['average_rating'],
           'total_reviews': helper['total_reviews'],
           'job_type_names': skills,
           'bio': 'Professional helper ready to assist you'.tr(),
@@ -304,29 +315,44 @@ class _Helpee9SearchHelperPageState extends State<Helpee9SearchHelperPage> {
               isAvailable ? 'Available Now'.tr() : 'Busy'.tr(),
         },
         onTap: () {
-          context.push('/helpee/helper-profile', extra: {
-            'helperId': helper['id'],
-            'helperData': {
+          if (widget.isSelectionMode) {
+            // Selection mode: return helper data to job request
+            final helperData = {
               'id': helper['id'],
               'full_name': helper['display_name'],
-              'average_rating': helper['rating'],
-              'total_reviews': helper['total_reviews'],
-              'job_type_names': skills,
-              'bio': 'Professional helper ready to assist you'.tr(),
-              'location': helper['location_city'],
-              'phone_number': helper['phone_number'],
               'email': helper['email'],
-              'is_available': isAvailable,
-              'availability_status':
-                  isAvailable ? 'Available Now'.tr() : 'Busy'.tr(),
-              'response_time': '< 1hr',
-              'total_jobs': helper['total_jobs'] ?? 0,
-              'experience_years': 1,
-              'job_types': [],
-              'documents': [],
-              'reviews': [],
-            },
-          });
+              'phone_number': helper['phone_number'],
+              'average_rating': helper['rating'],
+              'profile_image_url': helper['profile_image_url'],
+              'job_type_names': skills,
+            };
+            context.pop(helperData);
+          } else {
+            // Normal mode: navigate to profile
+            context.push('/helpee/helper-profile', extra: {
+              'helperId': helper['id'],
+              'helperData': {
+                'id': helper['id'],
+                'full_name': helper['display_name'],
+                'average_rating': helper['rating'],
+                'total_reviews': helper['total_reviews'],
+                'job_type_names': skills,
+                'bio': 'Professional helper ready to assist you'.tr(),
+                'location': helper['location_city'],
+                'phone_number': helper['phone_number'],
+                'email': helper['email'],
+                'is_available': isAvailable,
+                'availability_status':
+                    isAvailable ? 'Available Now'.tr() : 'Busy'.tr(),
+                'response_time': '< 1hr',
+                'total_jobs': helper['total_jobs'] ?? 0,
+                'experience_years': 1,
+                'job_types': [],
+                'documents': [],
+                'reviews': [],
+              },
+            });
+          }
         },
       ),
     );

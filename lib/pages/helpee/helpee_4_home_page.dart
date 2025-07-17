@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../models/user_type.dart';
 import 'package:go_router/go_router.dart';
 import '../../utils/app_colors.dart';
 import '../../utils/app_text_styles.dart';
@@ -7,6 +8,7 @@ import '../../widgets/common/app_navigation_bar.dart';
 import '../../services/user_data_service.dart';
 import '../../services/custom_auth_service.dart';
 import '../../services/localization_service.dart';
+import '../../models/user_type.dart';
 
 class Helpee4HomePage extends StatefulWidget {
   const Helpee4HomePage({super.key});
@@ -107,6 +109,24 @@ class _Helpee4HomePageState extends State<Helpee4HomePage> {
                               'Calendar'.tr(),
                               Icons.calendar_today,
                               () => context.go('/helpee/calendar'),
+                            ),
+                          ),
+                        ],
+                      ),
+
+                      const SizedBox(height: 16),
+
+                      // AI Bot Assist Action (centered)
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          SizedBox(
+                            width: 160, // Half width for centered appearance
+                            child: _buildQuickActionCard(
+                              context,
+                              'AI Bot Assist'.tr(),
+                              Icons.smart_toy,
+                              () => context.go('/helpee/ai-bot'),
                             ),
                           ),
                         ],

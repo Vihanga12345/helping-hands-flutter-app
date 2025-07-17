@@ -3,12 +3,13 @@ import '../../utils/app_colors.dart';
 import '../../utils/app_text_styles.dart';
 import '../../services/job_data_service.dart';
 import '../../services/custom_auth_service.dart';
+import '../../pages/common/report_page.dart';
 
 class JobActionButtons extends StatefulWidget {
   final Map<String, dynamic> job;
   final String userType; // 'helper' or 'helpee'
   final VoidCallback? onJobUpdated;
-  final bool showTimer;
+  final bool showTimer; // Kept for compatibility but not used
 
   const JobActionButtons({
     super.key,
@@ -26,26 +27,6 @@ class _JobActionButtonsState extends State<JobActionButtons> {
   final JobDataService _jobDataService = JobDataService();
   final CustomAuthService _authService = CustomAuthService();
   bool _isLoading = false;
-  Map<String, dynamic>? _timerInfo;
-
-  @override
-  void initState() {
-    super.initState();
-    if (widget.showTimer) {
-      _loadTimerInfo();
-    }
-  }
-
-  Future<void> _loadTimerInfo() async {
-    if (widget.job['id'] != null) {
-      final timerInfo = await _jobDataService.getJobTimerInfo(widget.job['id']);
-      if (mounted) {
-        setState(() {
-          _timerInfo = timerInfo;
-        });
-      }
-    }
-  }
 
   Future<void> _handleAction(String action) async {
     if (_isLoading) return;
@@ -56,11 +37,11 @@ class _JobActionButtonsState extends State<JobActionButtons> {
 
     try {
       final jobId = widget.job['id'];
+      final currentUser = _authService.currentUser;
       bool success = false;
 
       switch (action) {
         case 'accept':
-          final currentUser = _authService.currentUser;
           final helperId = currentUser?['user_id'];
           if (helperId != null) {
             success = await _jobDataService.acceptJob(jobId, helperId);
@@ -72,7 +53,6 @@ class _JobActionButtonsState extends State<JobActionButtons> {
           }
           break;
         case 'reject':
-          final currentUser = _authService.currentUser;
           final helperId = currentUser?['user_id'];
           if (helperId != null) {
             success = await _jobDataService.rejectJob(jobId, helperId);
@@ -84,7 +64,6 @@ class _JobActionButtonsState extends State<JobActionButtons> {
           }
           break;
         case 'ignore':
-          final currentUser = _authService.currentUser;
           final helperId = currentUser?['user_id'];
           if (helperId != null) {
             success = await _jobDataService.ignoreJob(jobId, helperId);
@@ -96,30 +75,14 @@ class _JobActionButtonsState extends State<JobActionButtons> {
           }
           break;
         case 'start':
-          success = await _jobDataService.startJob(jobId);
-          if (success && mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Job timer started!')),
-            );
-            _loadTimerInfo(); // Refresh timer info
-          }
-          break;
-        case 'pause':
-          success = await _jobDataService.pauseJob(jobId);
-          if (success && mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Job timer paused')),
-            );
-            _loadTimerInfo(); // Refresh timer info
-          }
-          break;
-        case 'resume':
-          success = await _jobDataService.resumeJob(jobId);
-          if (success && mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Job timer resumed!')),
-            );
-            _loadTimerInfo(); // Refresh timer info
+          final helperId = currentUser?['user_id'];
+          if (helperId != null) {
+            success = await _jobDataService.startJob(jobId);
+            if (success && mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Job started successfully!')),
+              );
+            }
           }
           break;
         case 'complete':
@@ -131,8 +94,15 @@ class _JobActionButtonsState extends State<JobActionButtons> {
           }
           break;
         case 'report':
-          _showReportDialog();
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => ReportPage(userType: widget.userType),
+            ),
+          );
           break;
+        // NOTE: Timer actions (start, pause, resume, complete) are now handled
+        // by the dedicated HelperJobTimerWidget, not this widget
       }
 
       if (success && widget.onJobUpdated != null) {
@@ -153,153 +123,82 @@ class _JobActionButtonsState extends State<JobActionButtons> {
     }
   }
 
-  void _showReportDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Report Job'),
-        content:
-            const Text('Job reporting functionality will be implemented here.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Report submitted')),
-              );
-            },
-            child: const Text('Report'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildTimer() {
-    if (_timerInfo == null) return const SizedBox.shrink();
-
-    final isRunning = _timerInfo!['is_timer_running'] ?? false;
-    final formattedTime = _timerInfo!['formatted_elapsed_time'] ?? '00:00:00';
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        color: isRunning
-            ? AppColors.primaryGreen.withOpacity(0.1)
-            : AppColors.warning.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color: isRunning ? AppColors.primaryGreen : AppColors.warning,
-          width: 1,
-        ),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            isRunning ? Icons.timer : Icons.pause_circle_outline,
-            size: 16,
-            color: isRunning ? AppColors.primaryGreen : AppColors.warning,
-          ),
-          const SizedBox(width: 4),
-          Text(
-            formattedTime,
-            style: AppTextStyles.bodySmall.copyWith(
-              color: isRunning ? AppColors.primaryGreen : AppColors.warning,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final buttons =
         _jobDataService.getJobActionButtons(widget.job, widget.userType);
 
-    if (buttons.isEmpty && !widget.showTimer) {
+    // Remove messaging/calling functionality from job cards
+    // These features are now only available in profile pages
+
+    if (buttons.isEmpty) {
       return const SizedBox.shrink();
     }
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Timer display
-        if (widget.showTimer && _timerInfo != null) ...[
-          _buildTimer(),
-          const SizedBox(height: 8),
-        ],
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: buttons.map((button) {
+        // Only skip timer-specific controls (pause, resume), but keep basic job actions (start, complete)
+        if (['pause', 'resume'].contains(button['action'])) {
+          return const SizedBox.shrink();
+        }
 
-        // Action buttons
-        if (buttons.isNotEmpty)
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: buttons.map((button) {
-              Color buttonColor;
-              switch (button['color']) {
-                case 'success':
-                  buttonColor = AppColors.success;
-                  break;
-                case 'error':
-                  buttonColor = AppColors.error;
-                  break;
-                case 'warning':
-                  buttonColor = AppColors.warning;
-                  break;
-                case 'primary':
-                default:
-                  buttonColor = AppColors.primaryGreen;
-                  break;
-              }
+        Color buttonColor;
+        switch (button['color']) {
+          case 'success':
+            buttonColor = AppColors.success;
+            break;
+          case 'error':
+            buttonColor = AppColors.error;
+            break;
+          case 'warning':
+            buttonColor = AppColors.warning;
+            break;
+          case 'primary':
+          default:
+            buttonColor = AppColors.primaryGreen;
+            break;
+        }
 
-              return SizedBox(
-                height: 36,
-                child: ElevatedButton.icon(
-                  onPressed:
-                      _isLoading ? null : () => _handleAction(button['action']),
-                  icon: _isLoading && button['action'] != 'report'
-                      ? SizedBox(
-                          width: 16,
-                          height: 16,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            valueColor:
-                                AlwaysStoppedAnimation<Color>(AppColors.white),
-                          ),
-                        )
-                      : Icon(
-                          _getIconData(button['icon']),
-                          size: 16,
-                        ),
-                  label: Text(
-                    button['text'],
-                    style: AppTextStyles.bodySmall.copyWith(
-                      color: AppColors.white,
-                      fontWeight: FontWeight.w600,
+        return SizedBox(
+          height: 36,
+          child: ElevatedButton.icon(
+            onPressed:
+                _isLoading ? null : () => _handleAction(button['action']),
+            icon: _isLoading && button['action'] != 'report'
+                ? SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor:
+                          AlwaysStoppedAnimation<Color>(AppColors.white),
                     ),
+                  )
+                : Icon(
+                    _getIconData(button['icon']),
+                    size: 16,
                   ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: buttonColor,
-                    foregroundColor: AppColors.white,
-                    elevation: 2,
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
-                ),
-              );
-            }).toList(),
+            label: Text(
+              button['text'],
+              style: AppTextStyles.bodySmall.copyWith(
+                color: AppColors.white,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: buttonColor,
+              foregroundColor: AppColors.white,
+              elevation: 2,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
           ),
-      ],
+        );
+      }).toList(),
     );
   }
 
@@ -322,4 +221,3 @@ class _JobActionButtonsState extends State<JobActionButtons> {
     }
   }
 }
- 

@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import '../../models/user_type.dart';
 import 'package:go_router/go_router.dart';
 import '../../services/job_data_service.dart';
 import '../../services/custom_auth_service.dart';
+import '../../services/localization_service.dart';
 import '../../utils/app_colors.dart';
 import '../../utils/app_text_styles.dart';
 import '../../widgets/common/app_header.dart';
@@ -67,7 +69,7 @@ class _Helper8ViewRequestsPageState extends State<Helper8ViewRequestsPage>
           child: Column(
             children: [
               AppHeader(
-                title: 'View Requests',
+                title: 'View Requests'.tr(),
                 showMenuButton: true,
                 showNotificationButton: true,
                 onMenuPressed: () => context.push('/helper/menu'),
@@ -116,15 +118,15 @@ class _Helper8ViewRequestsPageState extends State<Helper8ViewRequestsPage>
                       fontWeight: FontWeight.w500,
                       fontSize: 14,
                     ),
-                    tabs: const [
+                    tabs: [
                       Tab(
                           child: Padding(
-                              padding: EdgeInsets.symmetric(vertical: 12),
-                              child: Text('Private Requests'))),
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              child: Text('Private Requests'.tr()))),
                       Tab(
                           child: Padding(
-                              padding: EdgeInsets.symmetric(vertical: 12),
-                              child: Text('Public Jobs'))),
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              child: Text('Public Jobs'.tr()))),
                     ],
                   ),
                 ),
@@ -157,11 +159,26 @@ class _Helper8ViewRequestsPageState extends State<Helper8ViewRequestsPage>
     return FutureBuilder<List<Map<String, dynamic>>>(
       future: _privateJobsFuture,
       builder: (context, snapshot) {
+        print(
+            '🔍 Private Jobs Tab - Connection State: ${snapshot.connectionState}');
+        if (snapshot.hasData) {
+          print(
+              '🔍 Private Jobs Tab - Data: ${snapshot.data!.length} jobs found');
+          if (snapshot.data!.isNotEmpty) {
+            print('🔍 Private Jobs Tab - First job: ${snapshot.data!.first}');
+          }
+        }
+        if (snapshot.hasError) {
+          print('❌ Private Jobs Tab - Error: ${snapshot.error}');
+        }
+
         if (snapshot.connectionState == ConnectionState.waiting) {
+          print('⏳ Private Jobs Tab - Loading...');
           return const Center(
               child: CircularProgressIndicator(color: AppColors.primaryGreen));
         }
         if (snapshot.hasError) {
+          print('❌ Private Jobs Tab - Showing error UI');
           return Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -180,6 +197,7 @@ class _Helper8ViewRequestsPageState extends State<Helper8ViewRequestsPage>
           );
         }
         if (!snapshot.hasData || snapshot.data!.isEmpty) {
+          print('📭 Private Jobs Tab - No data or empty list');
           return const Center(
             child: Padding(
               padding: EdgeInsets.all(50.0),
@@ -213,10 +231,17 @@ class _Helper8ViewRequestsPageState extends State<Helper8ViewRequestsPage>
         }
 
         final jobs = snapshot.data!;
+        print('✅ Private Jobs Tab - Rendering ${jobs.length} jobs');
+        for (int i = 0; i < jobs.length; i++) {
+          print(
+              '🔍 Private Job $i: ${jobs[i]['title']} - ${jobs[i]['is_private']}');
+        }
         return ListView.builder(
           padding: const EdgeInsets.all(16),
           itemCount: jobs.length,
           itemBuilder: (context, index) {
+            print(
+                '🔧 Building PublicJobTile for private job $index: ${jobs[index]['title']}');
             return PublicJobTile(job: jobs[index]);
           },
         );

@@ -90,14 +90,45 @@ class SupabaseService {
   String? get currentUsername => _authService.currentUsername;
   bool get isLoggedIn => _authService.isLoggedIn;
 
-  /// Check username availability
-  Future<bool> isUsernameAvailable(String username) async {
-    return await _authService.isUsernameAvailable(username);
+  // Check if username is available for specific user type
+  Future<bool> isUsernameAvailable(String username, {String? userType}) async {
+    try {
+      if (userType != null) {
+        // Use the new function for user type specific checking
+        final result =
+            await _client.rpc('check_username_availability', params: {
+          'p_username': username,
+          'p_user_type': userType,
+        });
+        return result == true;
+      } else {
+        // Fallback to old behavior if userType not provided
+        final response = await _client
+            .from('users')
+            .select('id')
+            .eq('username', username)
+            .maybeSingle();
+        return response == null;
+      }
+    } catch (e) {
+      print('Error checking username availability: $e');
+      return false;
+    }
   }
 
-  /// Check email availability
+  // Check if email is available (should be unique across all user types)
   Future<bool> isEmailAvailable(String email) async {
-    return await _authService.isEmailAvailable(email);
+    try {
+      final response = await _client
+          .from('users')
+          .select('id')
+          .eq('email', email)
+          .maybeSingle();
+      return response == null;
+    } catch (e) {
+      print('Error checking email availability: $e');
+      return false;
+    }
   }
 
   // =============================================================================
@@ -266,47 +297,6 @@ class SupabaseService {
     bool? petFriendlyRequired,
   }) async {
     try {
-      if (_useMockData) {
-        // Create job in mock data
-        final jobId = 'job_${DateTime.now().millisecondsSinceEpoch}';
-        final job = {
-          'id': jobId,
-          'helpee_id': helpeeId,
-          'category_id': categoryId,
-          'title': title,
-          'description': description,
-          'job_type': jobType,
-          'hourly_rate': hourlyRate,
-          'scheduled_date': scheduledDate,
-          'scheduled_start_time': scheduledStartTime,
-          'location_latitude': locationLatitude,
-          'location_longitude': locationLongitude,
-          'location_address': locationAddress,
-          'assigned_helper_id': assignedHelperId,
-          'invited_helper_email': invitedHelperEmail,
-          'special_instructions': specialInstructions,
-          'estimated_hours': estimatedHours,
-          'scheduled_end_time': scheduledEndTime,
-          'location_type': locationType,
-          'payment_method': paymentMethod ?? 'cash',
-          'requires_own_supplies': requiresOwnSupplies ?? false,
-          'pet_friendly_required': petFriendlyRequired ?? false,
-          'status': 'pending',
-          'created_at': DateTime.now().toIso8601String(),
-        };
-
-        // Save question answers
-        if (questionAnswers.isNotEmpty) {
-          await _questionsService.saveJobAnswers(
-            jobId: jobId,
-            answers: questionAnswers,
-          );
-        }
-
-        print('✅ Job created successfully in mock data: $title');
-        return job;
-      }
-
       // Create job using stored function with helpee details
       print('🔧 Creating job with category ID: $categoryId');
       print('🔧 Job category name: $jobCategoryName');
@@ -362,10 +352,30 @@ class SupabaseService {
         return jobDetails;
       }
 
-      return null;
+      throw Exception('Failed to create job - no data returned');
     } catch (e) {
       print('Error creating job with questions: $e');
-      return null;
+      // Check if it's a notification trigger error
+      if (e.toString().contains('notifications')) {
+        // If it's a notification error, try to get the job that was created
+        try {
+          final jobs = await _client
+              .from('jobs')
+              .select('*, job_categories(*)')
+              .eq('helpee_id', helpeeId)
+              .eq('title', title)
+              .order('created_at', ascending: false)
+              .limit(1);
+
+          if (jobs.isNotEmpty) {
+            print('✅ Found created job despite notification error');
+            return jobs[0];
+          }
+        } catch (innerError) {
+          print('Error retrieving created job: $innerError');
+        }
+      }
+      throw Exception('Failed to create job - $e');
     }
   }
 
@@ -591,6 +601,100 @@ class SupabaseService {
     } catch (e) {
       print('Error getting jobs with details: $e');
       return [];
+    }
+  }
+
+  // Enhanced private job creation with helper assignment
+  Future<Map<String, dynamic>?> createPrivateJobWithHelperAssignment({
+    required String helpeeId,
+    required String categoryId,
+    required String jobCategoryName,
+    required String title,
+    required String description,
+    required double hourlyRate,
+    required String scheduledDate,
+    required String scheduledStartTime,
+    required double locationLatitude,
+    required double locationLongitude,
+    required String locationAddress,
+    required List<Map<String, dynamic>> questionAnswers,
+    required Map<String, dynamic> selectedHelper,
+    String? specialInstructions,
+  }) async {
+    try {
+      // Create job with helper assignment
+      final jobData = {
+        'helpee_id': helpeeId,
+        'category_id': categoryId,
+        'title': title,
+        'description': description,
+        'job_type': 'private',
+        'status': 'pending',
+        'hourly_rate': hourlyRate,
+        'scheduled_date': scheduledDate,
+        'scheduled_start_time': scheduledStartTime,
+        'location_latitude': locationLatitude,
+        'location_longitude': locationLongitude,
+        'location_address': locationAddress,
+        'special_instructions': specialInstructions,
+        // Helper assignment
+        'assigned_helper_id': selectedHelper['id'],
+        'invited_helper_email': selectedHelper['email'],
+        'assigned_helper_email': selectedHelper['email'],
+        'helper_selection_method': 'search',
+        'created_at': DateTime.now().toIso8601String(),
+      };
+
+      final response =
+          await _client.from('jobs').insert(jobData).select().single();
+
+      if (response != null) {
+        final jobId = response['id'];
+
+        // Insert question answers
+        if (questionAnswers.isNotEmpty) {
+          await _questionsService.saveJobAnswers(
+            jobId: jobId,
+            answers: questionAnswers,
+          );
+        }
+
+        // Create notification for assigned helper
+        await _createPrivateJobNotification(
+          helperId: selectedHelper['id'],
+          jobId: jobId,
+          jobTitle: title,
+          helpeeId: helpeeId,
+        );
+
+        return response;
+      }
+      return null;
+    } catch (e) {
+      print('❌ Error creating private job with helper assignment: $e');
+      return null;
+    }
+  }
+
+  Future<void> _createPrivateJobNotification({
+    required String helperId,
+    required String jobId,
+    required String jobTitle,
+    required String helpeeId,
+  }) async {
+    try {
+      await _client.from('notifications').insert({
+        'user_id': helperId,
+        'title': 'New Private Job Request',
+        'message': 'You have been invited to a private job: $jobTitle',
+        'notification_type': 'private_job_request',
+        'related_job_id': jobId,
+        'related_user_id': helpeeId,
+        'is_read': false,
+        'created_at': DateTime.now().toIso8601String(),
+      });
+    } catch (e) {
+      print('❌ Error creating private job notification: $e');
     }
   }
 

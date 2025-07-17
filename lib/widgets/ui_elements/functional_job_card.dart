@@ -4,6 +4,7 @@ import '../../utils/app_colors.dart';
 import '../../utils/app_text_styles.dart';
 import '../../services/job_data_service.dart';
 import '../common/job_action_buttons.dart';
+import '../../pages/common/report_page.dart';
 
 class FunctionalJobCard extends StatefulWidget {
   final Map<String, dynamic> jobData;
@@ -105,16 +106,16 @@ class _FunctionalJobCardState extends State<FunctionalJobCard> {
               ],
 
               // Action buttons with timer
-                const SizedBox(height: 16),
-                const Divider(),
-                const SizedBox(height: 16),
+              const SizedBox(height: 16),
+              const Divider(),
+              const SizedBox(height: 16),
               JobActionButtons(
                 job: job,
                 userType: widget.userType,
                 onJobUpdated: widget.onStatusChanged,
                 showTimer: ['started', 'paused']
                     .contains(job['status']?.toLowerCase()),
-                ),
+              ),
             ],
           ),
         ),
@@ -324,13 +325,16 @@ class _FunctionalJobCardState extends State<FunctionalJobCard> {
 
       // Handle special actions that need user input
       if (action == 'report') {
-        params = await _showReportDialog();
-        if (params == null) {
-          setState(() {
-            _isLoading = false;
-          });
-          return;
-        }
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => ReportPage(userType: widget.userType),
+          ),
+        );
+        setState(() {
+          _isLoading = false;
+        });
+        return;
       } else if (action == 'cancel') {
         params = await _showCancelDialog();
         if (params == null) {
@@ -405,52 +409,6 @@ class _FunctionalJobCardState extends State<FunctionalJobCard> {
       default:
         return 'Action completed successfully!';
     }
-  }
-
-  Future<Map<String, dynamic>?> _showReportDialog() async {
-    String? reason;
-    String? description;
-
-    return await showDialog<Map<String, dynamic>>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Report Job'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            DropdownButtonFormField<String>(
-              decoration: const InputDecoration(labelText: 'Reason'),
-              items: [
-                'Quality Issues',
-                'Safety Concerns',
-                'Payment Issues',
-                'Other'
-              ].map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
-              onChanged: (value) => reason = value,
-            ),
-            const SizedBox(height: 16),
-            TextFormField(
-              decoration: const InputDecoration(labelText: 'Description'),
-              maxLines: 3,
-              onChanged: (value) => description = value,
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context, {
-              'reason': reason ?? 'Other',
-              'description': description ?? '',
-            }),
-            child: const Text('Report'),
-          ),
-        ],
-      ),
-    );
   }
 
   Future<Map<String, dynamic>?> _showCancelDialog() async {

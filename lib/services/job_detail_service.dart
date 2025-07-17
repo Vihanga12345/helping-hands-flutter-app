@@ -16,6 +16,12 @@ class JobDetailService {
     try {
       print('🔍 Fetching complete job details for: $jobId');
 
+      // Validate jobId
+      if (jobId.isEmpty) {
+        print('❌ Invalid job ID provided');
+        return null;
+      }
+
       // Main job query with all related data
       final jobResponse = await _supabase.from('jobs').select('''
             *,
@@ -30,7 +36,7 @@ class JobDetailService {
             category:job_categories!jobs_category_id_fkey(
               id, name, description, default_hourly_rate
             )
-          ''').eq('id', jobId).single();
+          ''').eq('id', jobId).maybeSingle();
 
       if (jobResponse == null) {
         print('❌ Job not found: $jobId');
@@ -38,6 +44,7 @@ class JobDetailService {
       }
 
       final job = Map<String, dynamic>.from(jobResponse);
+      print('✅ Job data fetched: ${job['title'] ?? 'Unknown Title'}');
 
       // Get job questions and answers with proper join
       final questionsResponse =
@@ -53,78 +60,102 @@ class JobDetailService {
             )
           ''').eq('job_id', jobId).order('created_at');
 
-      final questions = List<Map<String, dynamic>>.from(questionsResponse);
+      final questions =
+          List<Map<String, dynamic>>.from(questionsResponse ?? []);
+      print('📋 Questions fetched: ${questions.length} items');
 
       // Process questions to get the correct answer based on question type
       for (var question in questions) {
-        final questionType = question['question']?['question_type'] ?? 'text';
-        String? answerValue;
+        try {
+          final questionType = question['question']?['question_type'] ?? 'text';
+          String? answerValue;
 
-        // Get the correct answer based on question type
-        switch (questionType) {
+          // Get the correct answer based on question type
+          switch (questionType) {
             case 'text':
-            answerValue = question['answer_text'] ?? question['answer'];
+              answerValue = question['answer_text'] ?? question['answer'];
               break;
             case 'number':
-            answerValue =
-                question['answer_number']?.toString() ?? question['answer'];
-            break;
-          case 'yes_no':
-            answerValue =
-                question['answer_boolean']?.toString() ?? question['answer'];
+              answerValue =
+                  question['answer_number']?.toString() ?? question['answer'];
+              break;
+            case 'yes_no':
+              answerValue =
+                  question['answer_boolean']?.toString() ?? question['answer'];
               break;
             case 'date':
-            answerValue =
-                question['answer_date']?.toString() ?? question['answer'];
+              answerValue =
+                  question['answer_date']?.toString() ?? question['answer'];
               break;
             case 'time':
-            answerValue =
-                question['answer_time']?.toString() ?? question['answer'];
+              answerValue =
+                  question['answer_time']?.toString() ?? question['answer'];
               break;
             default:
-            answerValue = question['answer'] ?? question['answer_text'];
-        }
+              answerValue = question['answer'] ?? question['answer_text'];
+          }
 
-        // Set the processed answer
-        question['processed_answer'] = answerValue ?? 'No answer provided';
+          // Set the processed answer
+          question['processed_answer'] = answerValue ?? 'No answer provided';
+        } catch (e) {
+          print('⚠️ Error processing question: $e');
+          question['processed_answer'] = 'Error loading answer';
+        }
       }
 
       // Get helper statistics if helper is assigned
       Map<String, dynamic>? helperStats;
       if (job['assigned_helper_id'] != null) {
-        helperStats = await _getHelperStatistics(job['assigned_helper_id']);
+        try {
+          helperStats = await _getHelperStatistics(job['assigned_helper_id']);
+        } catch (e) {
+          print('⚠️ Error fetching helper stats: $e');
+        }
       }
 
       // Get helpee statistics
       Map<String, dynamic>? helpeeStats;
       if (job['helpee_id'] != null) {
-        helpeeStats = await _getHelpeeStatistics(job['helpee_id']);
+        try {
+          helpeeStats = await _getHelpeeStatistics(job['helpee_id']);
+        } catch (e) {
+          print('⚠️ Error fetching helpee stats: $e');
+        }
       }
 
       // Get payment details if job is completed
       Map<String, dynamic>? paymentDetails;
       if (job['status']?.toLowerCase() == 'completed') {
-        paymentDetails = await _getPaymentDetails(jobId);
+        try {
+          paymentDetails = await _getPaymentDetails(jobId);
+        } catch (e) {
+          print('⚠️ Error fetching payment details: $e');
+        }
       }
 
       // Get job timer status
       Map<String, dynamic>? timerStatus;
       if (['started', 'paused', 'ongoing']
           .contains(job['status']?.toLowerCase())) {
-        timerStatus = await _getJobTimerStatus(jobId);
+        try {
+          timerStatus = await _getJobTimerStatus(jobId);
+        } catch (e) {
+          print('⚠️ Error fetching timer status: $e');
+        }
       }
 
-      // Construct complete job details
+      // Construct complete job details with safe defaults
       final completeJobDetails = {
         // Basic job info
-        'id': job['id'],
-        'title': job['title'],
-        'description': job['description'],
-        'status': job['status'],
+        'id': job['id'] ?? jobId,
+        'title': job['title'] ?? 'Untitled Job',
+        'description': job['description'] ?? 'No description provided',
+        'status': job['status'] ?? 'unknown',
         'pay': 'LKR ${job['hourly_rate']?.toString() ?? '0'}/Hr',
         'date': formatDate(job['scheduled_date']),
         'time': formatTime(job['scheduled_start_time']),
-        'location': job['location_address'],
+        'location': job['location_address'] ?? 'Location not specified',
+        'location_address': job['location_address'] ?? 'Location not specified',
         'created_at': job['created_at'],
         'updated_at': job['updated_at'],
         'is_private': job['is_private'] ?? false,
@@ -132,7 +163,7 @@ class JobDetailService {
 
         // Category info
         'category_id': job['category_id'],
-        'category_name': job['category']?['name'] ?? 'Unknown',
+        'category_name': job['category']?['name'] ?? 'General Service',
         'category_description': job['category']?['description'] ?? '',
         'hourly_rate':
             (job['hourly_rate'] ?? job['category']?['default_hourly_rate'] ?? 0)
@@ -140,16 +171,16 @@ class JobDetailService {
 
         // Helpee details
         'helpee_id': job['helpee_id'],
-        'helpee_first_name': job['helpee']?['first_name'] ?? '',
-        'helpee_last_name': job['helpee']?['last_name'] ?? '',
+        'helpee_first_name': job['helpee']?['first_name'] ?? 'Unknown',
+        'helpee_last_name': job['helpee']?['last_name'] ?? 'User',
         'helpee_full_name':
-            '${job['helpee']?['first_name'] ?? ''} ${job['helpee']?['last_name'] ?? ''}'
-              .trim(),
-        'helpee_phone': job['helpee']?['phone'] ?? '',
-        'helpee_email': job['helpee']?['email'] ?? '',
+            '${job['helpee']?['first_name'] ?? 'Unknown'} ${job['helpee']?['last_name'] ?? 'User'}'
+                .trim(),
+        'helpee_phone': job['helpee']?['phone'] ?? 'Not provided',
+        'helpee_email': job['helpee']?['email'] ?? 'Not provided',
         'helpee_profile_pic': job['helpee']?['profile_image_url'] ?? '',
-        'helpee_address': job['helpee']?['location_address'] ?? '',
-        'helpee_stats': helpeeStats,
+        'helpee_address': job['helpee']?['location_address'] ?? 'Not provided',
+        'helpee_stats': helpeeStats ?? {},
 
         // Helper details (if assigned)
         'assigned_helper_id': job['assigned_helper_id'],
@@ -157,12 +188,12 @@ class JobDetailService {
         'helper_last_name': job['helper']?['last_name'] ?? '',
         'helper_full_name':
             '${job['helper']?['first_name'] ?? ''} ${job['helper']?['last_name'] ?? ''}'
-                        .trim(),
+                .trim(),
         'helper_phone': job['helper']?['phone'] ?? '',
         'helper_email': job['helper']?['email'] ?? '',
         'helper_profile_pic': job['helper']?['profile_image_url'] ?? '',
         'helper_address': job['helper']?['location_address'] ?? '',
-        'helper_stats': helperStats,
+        'helper_stats': helperStats ?? {},
 
         // Job questions and answers
         'questions': questions,
@@ -174,6 +205,7 @@ class JobDetailService {
 
         // Timer status (for ongoing jobs)
         'timer_status': timerStatus,
+        'total_time_seconds': timerStatus?['total_seconds'] ?? 0,
 
         // Additional computed fields
         'has_helper': job['assigned_helper_id'] != null,
@@ -183,11 +215,12 @@ class JobDetailService {
         'is_completed': job['status']?.toLowerCase() == 'completed',
       };
 
-      print('✅ Complete job details fetched successfully');
+      print('✅ Complete job details constructed successfully');
       return completeJobDetails;
-    } catch (e) {
+    } catch (e, stackTrace) {
       print('❌ Error fetching complete job details: $e');
-      return null;
+      print('📍 Stack trace: $stackTrace');
+      rethrow; // Re-throw to allow calling code to handle
     }
   }
 
@@ -398,6 +431,59 @@ class JobDetailService {
       return true;
     } catch (e) {
       print('❌ Error rejecting job: $e');
+      return false;
+    }
+  }
+
+  /// Ignore a job request (helper only)
+  Future<bool> ignoreJob(String jobId, String helperId) async {
+    try {
+      await _supabase.rpc('ignore_job_request', params: {
+        'job_id': jobId,
+        'helper_id': helperId,
+      });
+      return true;
+    } catch (e) {
+      print('❌ Error ignoring job: $e');
+      return false;
+    }
+  }
+
+  /// Start a job (helper only)
+  Future<bool> startJob(String jobId) async {
+    try {
+      await _supabase.rpc('start_job', params: {
+        'job_id': jobId,
+      });
+      return true;
+    } catch (e) {
+      print('❌ Error starting job: $e');
+      return false;
+    }
+  }
+
+  /// Pause a job (helper only)
+  Future<bool> pauseJob(String jobId) async {
+    try {
+      await _supabase.rpc('pause_job', params: {
+        'job_id': jobId,
+      });
+      return true;
+    } catch (e) {
+      print('❌ Error pausing job: $e');
+      return false;
+    }
+  }
+
+  /// Complete a job (helper only)
+  Future<bool> completeJob(String jobId) async {
+    try {
+      await _supabase.rpc('complete_job', params: {
+        'job_id': jobId,
+      });
+      return true;
+    } catch (e) {
+      print('❌ Error completing job: $e');
       return false;
     }
   }

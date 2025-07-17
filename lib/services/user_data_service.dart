@@ -48,13 +48,16 @@ class UserDataService {
           .maybeSingle();
 
       if (stats != null) {
+        // Get real rating data from ratings table
+        final ratingsData = await _getRealRatingData(userId);
+
         return {
           'total_jobs': stats['total_jobs'] ?? 0,
           'pending_jobs': stats['pending_jobs'] ?? 0,
           'ongoing_jobs': stats['ongoing_jobs'] ?? 0,
           'completed_jobs': stats['completed_jobs'] ?? 0,
-          'rating': (stats['average_rating_given'] ?? 0.0).toDouble(),
-          'total_reviews': stats['completed_jobs'] ?? 0,
+          'rating': ratingsData['average_rating'],
+          'total_reviews': ratingsData['total_reviews'],
           'member_since': _formatMemberSince(stats['member_since']),
         };
       }
@@ -77,13 +80,16 @@ class UserDataService {
           .maybeSingle();
 
       if (stats != null) {
+        // Get real rating data from ratings table
+        final ratingsData = await _getRealRatingData(helperId);
+
         return {
           'total_jobs': stats['total_jobs'] ?? 0,
           'pending_jobs': stats['pending_jobs'] ?? 0,
           'ongoing_jobs': stats['ongoing_jobs'] ?? 0,
           'completed_jobs': stats['completed_jobs'] ?? 0,
-          'rating': (stats['average_rating_received'] ?? 0.0).toDouble(),
-          'total_reviews': stats['completed_jobs'] ?? 0,
+          'rating': ratingsData['average_rating'],
+          'total_reviews': ratingsData['total_reviews'],
           'member_since': _formatMemberSince(stats['member_since']),
         };
       }
@@ -100,6 +106,9 @@ class UserDataService {
   Future<Map<String, dynamic>> _calculateUserStatisticsManually(
       String userId, String userType) async {
     try {
+      // Get real rating data from ratings table
+      final ratingsData = await _getRealRatingData(userId);
+
       if (userType == 'helper') {
         // For helpers, we need to count:
         // 1. Jobs assigned to them (jobs they've accepted/started/completed)
@@ -162,8 +171,8 @@ class UserDataService {
           'pending_jobs': pendingJobs,
           'ongoing_jobs': ongoingJobs,
           'completed_jobs': completedJobs,
-          'rating': 4.5, // Mock rating
-          'total_reviews': totalJobs > 0 ? (totalJobs * 0.8).round() : 0,
+          'rating': ratingsData['average_rating'],
+          'total_reviews': ratingsData['total_reviews'],
           'member_since': 'Dec 2024',
         };
       } else {
@@ -186,8 +195,8 @@ class UserDataService {
           'pending_jobs': pendingJobs,
           'ongoing_jobs': ongoingJobs,
           'completed_jobs': completedJobs,
-          'rating': 4.5, // Mock rating
-          'total_reviews': totalJobs > 0 ? (totalJobs * 0.8).round() : 0,
+          'rating': ratingsData['average_rating'],
+          'total_reviews': ratingsData['total_reviews'],
           'member_since': 'Dec 2024',
         };
       }
@@ -201,6 +210,42 @@ class UserDataService {
         'rating': 0.0,
         'total_reviews': 0,
         'member_since': 'Dec 2024',
+      };
+    }
+  }
+
+  /// Get real rating data from ratings table
+  Future<Map<String, dynamic>> _getRealRatingData(String userId) async {
+    try {
+      print('⭐ Getting real rating data for user: $userId');
+
+      // Get user's average rating from users table (automatically calculated)
+      final userResponse = await _supabase
+          .from('users')
+          .select('average_rating')
+          .eq('id', userId)
+          .single();
+
+      // Get count of ratings from ratings_reviews table
+      final ratingsResponse = await _supabase
+          .from('ratings_reviews')
+          .select('rating')
+          .eq('reviewee_id', userId);
+
+      final averageRating = (userResponse['average_rating'] ?? 0.0).toDouble();
+      final totalReviews = ratingsResponse.length;
+
+      print('✅ Rating data: avg=$averageRating, count=$totalReviews');
+
+      return {
+        'average_rating': averageRating,
+        'total_reviews': totalReviews,
+      };
+    } catch (e) {
+      print('❌ Error getting real rating data: $e');
+      return {
+        'average_rating': 0.0,
+        'total_reviews': 0,
       };
     }
   }
@@ -402,7 +447,7 @@ class UserDataService {
     }
   }
 
-  // Add method to get registered helpers for search page
+  /// Get list of all registered helpers with their details and statistics
   Future<List<Map<String, dynamic>>> getRegisteredHelpers() async {
     try {
       print('🔍 Fetching registered helpers from database...');
@@ -416,16 +461,20 @@ class UserDataService {
             hourly_rate_default,
             availability_status,
             profile_image_url,
+            average_rating,
             created_at
           ''').eq('user_type', 'helper').eq('is_active', true);
 
       print('✅ Found ${response.length} registered helpers');
 
-      // Transform data to include ratings and skills
+      // Transform data to include real ratings and skills
       List<Map<String, dynamic>> helpers = [];
 
       for (var helper in response) {
-        // Get helper statistics
+        // Get real rating data from ratings table
+        final ratingsData = await _getRealRatingData(helper['id']);
+
+        // Get helper statistics for job counts
         final stats = await getHelperStatistics(helper['id']);
 
         // Get helper skills (if helper_skills table exists)
@@ -446,6 +495,24 @@ class UserDataService {
           print('⚠️ No skills found for helper ${helper['id']}: $e');
         }
 
+        // Try to get job type names from helper_job_types table
+        if (skills.isEmpty) {
+          try {
+            final jobTypesResponse =
+                await _supabase.from('helper_job_types').select('''
+                  job_categories(name)
+                ''').eq('helper_id', helper['id']).eq('is_active', true);
+
+            if (jobTypesResponse.isNotEmpty) {
+              skills = jobTypesResponse
+                  .map((jt) => jt['job_categories']['name'].toString())
+                  .toList();
+            }
+          } catch (e) {
+            print('⚠️ No job types found for helper ${helper['id']}: $e');
+          }
+        }
+
         // Always provide at least one default skill
         if (skills.isEmpty) {
           skills = ['General Services'];
@@ -453,8 +520,8 @@ class UserDataService {
 
         helpers.add({
           ...helper,
-          'average_rating': stats['average_rating'] ?? 0.0,
-          'total_reviews': stats['total_reviews'] ?? 0,
+          'average_rating': ratingsData['average_rating'],
+          'total_reviews': ratingsData['total_reviews'],
           'total_jobs': stats['total_jobs'] ?? 0,
           'skills': skills,
         });
@@ -467,27 +534,56 @@ class UserDataService {
     }
   }
 
-  /// Get notifications for the current user
+  /// Get user notifications
   Future<List<Map<String, dynamic>>> getNotifications() async {
     try {
       final currentUser = _authService.currentUser;
       if (currentUser == null) {
-        throw Exception('User not authenticated');
+        print('❌ No current user found');
+        return [];
       }
 
-      print('🔔 Fetching notifications for user: ${currentUser['user_id']}');
-
-      final response = await _supabase
+      final notifications = await _supabase
           .from('notifications')
           .select('*')
           .eq('user_id', currentUser['user_id'])
-          .order('created_at', ascending: false);
+          .order('created_at', ascending: false)
+          .limit(50);
 
-      print('✅ Found ${response.length} notifications');
-      return List<Map<String, dynamic>>.from(response);
+      return List<Map<String, dynamic>>.from(notifications);
     } catch (e) {
-      print('❌ Error fetching notifications: $e');
+      print('❌ Error getting notifications: $e');
       return [];
+    }
+  }
+
+  /// Mark notification as read
+  Future<void> markNotificationAsRead(String notificationId) async {
+    try {
+      await _supabase
+          .from('notifications')
+          .update({'is_read': true}).eq('id', notificationId);
+    } catch (e) {
+      print('❌ Error marking notification as read: $e');
+    }
+  }
+
+  /// Mark all notifications as read
+  Future<void> markAllNotificationsAsRead() async {
+    try {
+      final currentUser = _authService.currentUser;
+      if (currentUser == null) {
+        print('❌ No current user found');
+        return;
+      }
+
+      await _supabase
+          .from('notifications')
+          .update({'is_read': true})
+          .eq('user_id', currentUser['user_id'])
+          .eq('is_read', false);
+    } catch (e) {
+      print('❌ Error marking all notifications as read: $e');
     }
   }
 }

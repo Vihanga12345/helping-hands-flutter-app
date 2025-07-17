@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../models/user_type.dart';
 import 'package:go_router/go_router.dart';
 import '../../utils/app_colors.dart';
 import '../../utils/app_text_styles.dart';
@@ -7,15 +8,22 @@ import '../../widgets/common/app_navigation_bar.dart';
 import '../../services/helper_data_service.dart';
 import '../../services/custom_auth_service.dart';
 import '../../services/localization_service.dart';
+import '../../services/messaging_service.dart';
+import '../../services/webrtc_calling_service.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class Helpee14HelperProfilePage extends StatefulWidget {
   final String? helperId;
   final Map<String, dynamic>? helperData;
+  final bool isSelectionMode;
+  final String? returnRoute;
 
   const Helpee14HelperProfilePage({
     Key? key,
     this.helperId,
     this.helperData,
+    this.isSelectionMode = false,
+    this.returnRoute,
   }) : super(key: key);
 
   @override
@@ -28,6 +36,7 @@ class _Helpee14HelperProfilePageState extends State<Helpee14HelperProfilePage>
   late TabController _tabController;
   final HelperDataService _helperDataService = HelperDataService();
   Map<String, dynamic>? _helperProfile;
+  List<Map<String, dynamic>>? _emergencyContacts;
   bool _isLoading = true;
   String? _error;
   String? _helperId;
@@ -93,6 +102,9 @@ class _Helpee14HelperProfilePageState extends State<Helpee14HelperProfilePage>
               profile['profile_image_url'] ?? profile['profile_pic'],
         };
 
+        // Get emergency contact data
+        await _loadEmergencyContacts();
+
         // Ensure full_name is never empty
         if (profile['full_name'] == null ||
             profile['full_name'].toString().trim().isEmpty) {
@@ -120,6 +132,30 @@ class _Helpee14HelperProfilePageState extends State<Helpee14HelperProfilePage>
     }
   }
 
+  Future<void> _loadEmergencyContacts() async {
+    if (_helperId == null) return;
+
+    try {
+      print('🆘 Loading emergency contacts for helper: $_helperId');
+
+      final response = await Supabase.instance.client
+          .from('emergency_contacts')
+          .select('contact_name, contact_phone')
+          .eq('user_id', _helperId!);
+
+      setState(() {
+        _emergencyContacts = List<Map<String, dynamic>>.from(response);
+      });
+
+      print('✅ Emergency contacts loaded: ${_emergencyContacts?.length ?? 0}');
+    } catch (e) {
+      print('❌ Error loading emergency contacts: $e');
+      setState(() {
+        _emergencyContacts = [];
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -127,7 +163,9 @@ class _Helpee14HelperProfilePageState extends State<Helpee14HelperProfilePage>
         children: [
           // Header with standard notification button
           AppHeader(
-            title: 'Helper Profile'.tr(),
+            title: widget.isSelectionMode
+                ? 'Select Helper'.tr()
+                : 'Helper Profile'.tr(),
             showBackButton: true,
             showMenuButton: false,
             showNotificationButton: false,
@@ -269,18 +307,23 @@ class _Helpee14HelperProfilePageState extends State<Helpee14HelperProfilePage>
             padding: const EdgeInsets.all(16),
             child: Column(
               children: [
-                // Personal Information Card
-                _buildPersonalInfoCard(),
+                // Stats Section (Rating | Reviews | Jobs)
+                _buildStatsSection(),
 
                 const SizedBox(height: 20),
 
-                // Statistics Section
-                _buildCompactStatisticsSection(),
+                // Personal Information Section
+                _buildPersonalInfoSection(),
 
                 const SizedBox(height: 20),
 
                 // Reviews Section
                 _buildReviewsSection(),
+
+                const SizedBox(height: 20),
+
+                // Emergency Contact Section
+                _buildEmergencyContactSection(),
 
                 const SizedBox(height: 20),
 
@@ -310,65 +353,42 @@ class _Helpee14HelperProfilePageState extends State<Helpee14HelperProfilePage>
     }
 
     final name = _helperProfile?['full_name'] ?? 'Unknown Helper';
-    final rating = (_helperProfile?['average_rating'] ?? 0.0).toDouble();
-    final totalReviews = _helperProfile?['total_reviews'] ?? 0;
     final profileImageUrl = _helperProfile?['profile_image_url'];
-    final isAvailable = _helperProfile?['is_available'] ?? true;
-    final availabilityStatus =
-        _helperProfile?['availability_status'] ?? 'Available Now';
 
     return Container(
       color: Colors.white,
       padding: const EdgeInsets.all(20),
       child: Column(
         children: [
-          // Profile Picture with availability indicator
-          Stack(
-            children: [
-              Container(
-                width: 100,
-                height: 100,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: AppColors.primaryGreen,
-                    width: 3,
-                  ),
-                ),
-                child: CircleAvatar(
-                  radius: 48,
-                  backgroundColor: AppColors.primaryGreen,
-                  backgroundImage:
-                      profileImageUrl != null && profileImageUrl.isNotEmpty
-                          ? NetworkImage(profileImageUrl)
-                          : null,
-                  child: profileImageUrl == null || profileImageUrl.isEmpty
-                      ? Icon(
-                          Icons.person,
-                          size: 50,
-                          color: Colors.white,
-                        )
+          // Profile Picture
+          Container(
+            width: 120,
+            height: 120,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: AppColors.primaryGreen,
+                width: 3,
+              ),
+            ),
+            child: CircleAvatar(
+              radius: 57,
+              backgroundColor: AppColors.primaryGreen,
+              backgroundImage:
+                  profileImageUrl != null && profileImageUrl.isNotEmpty
+                      ? NetworkImage(profileImageUrl)
                       : null,
-                ),
-              ),
-              Positioned(
-                bottom: 0,
-                right: 0,
-                child: Container(
-                  padding: const EdgeInsets.all(4),
-                  decoration: BoxDecoration(
-                    color: isAvailable ? AppColors.success : AppColors.warning,
-                    shape: BoxShape.circle,
-                    border: Border.all(color: Colors.white, width: 2),
-                  ),
-                  child: Icon(
-                    isAvailable ? Icons.check : Icons.schedule,
-                    size: 16,
-                    color: Colors.white,
-                  ),
-                ),
-              ),
-            ],
+              child: profileImageUrl == null || profileImageUrl.isEmpty
+                  ? Text(
+                      name.isNotEmpty ? name[0].toUpperCase() : 'H',
+                      style: const TextStyle(
+                        fontSize: 36,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    )
+                  : null,
+            ),
           ),
 
           const SizedBox(height: 16),
@@ -382,55 +402,228 @@ class _Helpee14HelperProfilePageState extends State<Helpee14HelperProfilePage>
             ),
             textAlign: TextAlign.center,
           ),
+        ],
+      ),
+    );
+  }
 
-          const SizedBox(height: 8),
+  Widget _buildStatsSection() {
+    final rating = (_helperProfile?['average_rating'] ?? 0.0).toDouble();
+    final totalReviews = _helperProfile?['total_reviews'] ?? 0;
+    final totalJobs =
+        _helperProfile?['total_jobs'] ?? _helperProfile?['completed_jobs'] ?? 0;
 
-          // Rating and Reviews
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(
-                Icons.star,
-                color: AppColors.warning,
-                size: 20,
-              ),
-              const SizedBox(width: 4),
-              Text(
-                '${rating.toStringAsFixed(1)} ($totalReviews reviews)',
-                style: AppTextStyles.bodyMedium.copyWith(
-                  color: AppColors.textSecondary,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ],
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: const [
+          BoxShadow(
+            color: AppColors.shadowColorLight,
+            blurRadius: 8,
+            offset: Offset(0, 4),
           ),
-
-          const SizedBox(height: 8),
-
-          // Availability Status
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            decoration: BoxDecoration(
-              color: isAvailable
-                  ? AppColors.success.withOpacity(0.1)
-                  : AppColors.warning.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(
-                color: isAvailable ? AppColors.success : AppColors.warning,
-                width: 1,
-              ),
-            ),
-            child: Text(
-              availabilityStatus,
-              style: AppTextStyles.bodyMedium.copyWith(
-                color: isAvailable ? AppColors.success : AppColors.warning,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
+        ],
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        children: [
+          _buildStatItem(
+            'Rating',
+            rating.toStringAsFixed(1),
+            Icons.star,
+            AppColors.warning,
+          ),
+          _buildStatDivider(),
+          _buildStatItem(
+            'Reviews',
+            totalReviews.toString(),
+            Icons.rate_review,
+            AppColors.primaryGreen,
+          ),
+          _buildStatDivider(),
+          _buildStatItem(
+            'Jobs',
+            totalJobs.toString(),
+            Icons.work,
+            AppColors.info,
           ),
         ],
       ),
     );
+  }
+
+  Widget _buildPersonalInfoSection() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: const [
+          BoxShadow(
+            color: AppColors.shadowColorLight,
+            blurRadius: 8,
+            offset: Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Personal Information',
+            style: AppTextStyles.heading3.copyWith(
+              fontWeight: FontWeight.w700,
+              color: AppColors.primaryGreen,
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          // About Me
+          _buildInfoSection(
+            'About me',
+            _helperProfile?['bio'] ??
+                _helperProfile?['about_me'] ??
+                'Professional helper ready to assist you.',
+            isMultiLine: true,
+          ),
+          const SizedBox(height: 16),
+
+          // Email
+          if (_helperProfile?['email'] != null) ...[
+            _buildInfoRow(
+              Icons.email,
+              'Email',
+              _helperProfile!['email'],
+            ),
+            const SizedBox(height: 12),
+          ],
+
+          // Phone Number
+          if (_helperProfile?['phone_number'] != null ||
+              _helperProfile?['phone'] != null) ...[
+            _buildInfoRow(
+              Icons.phone,
+              'Phone Number',
+              _helperProfile!['phone_number'] ?? _helperProfile!['phone'],
+            ),
+            const SizedBox(height: 12),
+          ],
+
+          // Location
+          if (_helperProfile?['location'] != null ||
+              _helperProfile?['location_city'] != null) ...[
+            _buildInfoRow(
+              Icons.location_on,
+              'Location',
+              _helperProfile!['location'] ?? _helperProfile!['location_city'],
+            ),
+            const SizedBox(height: 12),
+          ],
+
+          // Age
+          _buildInfoRow(
+            Icons.calendar_today,
+            'Age',
+            _calculateAge(_helperProfile?['date_of_birth']),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatItem(
+      String label, String value, IconData icon, Color color) {
+    return Expanded(
+      child: Column(
+        children: [
+          Icon(
+            icon,
+            color: color,
+            size: 24,
+          ),
+          const SizedBox(height: 8),
+          Text(
+            value,
+            style: AppTextStyles.heading3.copyWith(
+              color: color,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            label,
+            style: AppTextStyles.bodySmall.copyWith(
+              color: AppColors.textSecondary,
+              fontWeight: FontWeight.w500,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatDivider() {
+    return Container(
+      width: 1,
+      height: 40,
+      color: AppColors.borderLight,
+      margin: const EdgeInsets.symmetric(horizontal: 8),
+    );
+  }
+
+  Widget _buildInfoSection(String label, String value,
+      {bool isMultiLine = false}) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: AppTextStyles.bodyMedium.copyWith(
+            fontWeight: FontWeight.w600,
+            color: AppColors.textPrimary,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          value,
+          style: AppTextStyles.bodyMedium.copyWith(
+            color: AppColors.textSecondary,
+            height: isMultiLine ? 1.5 : 1.0,
+          ),
+        ),
+      ],
+    );
+  }
+
+  String _calculateAge(dynamic dateOfBirth) {
+    if (dateOfBirth == null) return 'Not provided';
+
+    try {
+      DateTime birthDate;
+      if (dateOfBirth is String) {
+        birthDate = DateTime.parse(dateOfBirth);
+      } else if (dateOfBirth is DateTime) {
+        birthDate = dateOfBirth;
+      } else {
+        return 'Not provided';
+      }
+
+      final now = DateTime.now();
+      int age = now.year - birthDate.year;
+
+      if (now.month < birthDate.month ||
+          (now.month == birthDate.month && now.day < birthDate.day)) {
+        age--;
+      }
+
+      return '$age years old';
+    } catch (e) {
+      return 'Not provided';
+    }
   }
 
   Widget _buildJobsTab() {
@@ -612,6 +805,124 @@ class _Helpee14HelperProfilePageState extends State<Helpee14HelperProfilePage>
           ],
           if (_helperProfile?['email'] != null) ...[
             _buildInfoRow(Icons.email, 'Email', _helperProfile!['email']),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEmergencyContactSection() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: const [
+          BoxShadow(
+            color: AppColors.shadowColorLight,
+            blurRadius: 8,
+            offset: Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Emergency Contacts',
+            style: AppTextStyles.heading3.copyWith(
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 16),
+          if (_emergencyContacts == null || _emergencyContacts!.isEmpty) ...[
+            Center(
+              child: Column(
+                children: [
+                  Icon(
+                    Icons.contact_emergency_outlined,
+                    size: 48,
+                    color: AppColors.textSecondary,
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    'No emergency contacts available',
+                    style: AppTextStyles.bodyLarge.copyWith(
+                      color: AppColors.textSecondary,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ] else ...[
+            ..._emergencyContacts!.map((contact) {
+              return Container(
+                margin: const EdgeInsets.only(bottom: 12),
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: AppColors.backgroundLight,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: AppColors.borderLight,
+                    width: 1,
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: AppColors.error.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Icon(
+                        Icons.contact_emergency,
+                        color: AppColors.error,
+                        size: 20,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            contact['contact_name'] ?? 'Unknown',
+                            style: AppTextStyles.bodyMedium.copyWith(
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            contact['contact_phone'] ?? 'No phone',
+                            style: AppTextStyles.bodyMedium.copyWith(
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: () {
+                        // Call emergency contact
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content:
+                                Text('Calling ${contact['contact_name']}...'),
+                          ),
+                        );
+                      },
+                      icon: Icon(
+                        Icons.call,
+                        color: AppColors.primaryGreen,
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }).toList(),
           ],
         ],
       ),
@@ -1029,21 +1340,13 @@ class _Helpee14HelperProfilePageState extends State<Helpee14HelperProfilePage>
   }
 
   Widget _buildActionButtons() {
-    final helperName = _helperProfile?['full_name'] ?? 'this helper';
-
     return Row(
       children: [
         Expanded(
           child: OutlinedButton.icon(
-            onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Message feature coming soon!'),
-                ),
-              );
-            },
+            onPressed: () => _openChat(),
             icon: const Icon(Icons.message, size: 18),
-            label: const Text('Message'),
+            label: Text('Message'.tr()),
             style: OutlinedButton.styleFrom(
               side: const BorderSide(color: AppColors.primaryGreen, width: 2),
               foregroundColor: AppColors.primaryGreen,
@@ -1057,13 +1360,11 @@ class _Helpee14HelperProfilePageState extends State<Helpee14HelperProfilePage>
         const SizedBox(width: 16),
         Expanded(
           child: ElevatedButton.icon(
-            onPressed: () {
-              _showHireDialog(context);
-            },
-            icon: const Icon(Icons.person_add, size: 18),
-            label: const Text('Hire Now'),
+            onPressed: () => _makeCall(),
+            icon: const Icon(Icons.call, size: 18),
+            label: Text('Call'.tr()),
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primaryGreen,
+              backgroundColor: AppColors.success,
               foregroundColor: AppColors.white,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
@@ -1077,61 +1378,106 @@ class _Helpee14HelperProfilePageState extends State<Helpee14HelperProfilePage>
     );
   }
 
-  void _showHireDialog(BuildContext context) {
-    final helperName = _helperProfile?['full_name'] ?? 'this helper';
+  Future<void> _openChat() async {
+    try {
+      final currentUser = CustomAuthService().currentUser;
+      if (currentUser == null || _helperId == null) {
+        _showErrorSnackBar('Cannot open chat: user not authenticated'.tr());
+        return;
+      }
 
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-          title: Text(
-            'Hire Helper',
-            style: AppTextStyles.heading3.copyWith(
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          content: Text(
-            'Do you want to send a job request to $helperName?',
-            style: AppTextStyles.bodyMedium,
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: Text(
-                'Cancel',
-                style: AppTextStyles.buttonMedium.copyWith(
-                  color: AppColors.textSecondary,
-                ),
-              ),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('Job request sent to $helperName!'),
-                    backgroundColor: AppColors.success,
-                  ),
-                );
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primaryGreen,
-                foregroundColor: Colors.white,
-              ),
-              child: Text(
-                'Send Request',
-                style: AppTextStyles.buttonMedium.copyWith(
-                  color: Colors.white,
-                ),
-              ),
-            ),
-          ],
+      final currentUserId = currentUser['user_id'];
+      final helpeeId = currentUserId; // Current user is helpee
+      final helperId = _helperId!; // The helper we're viewing
+
+      // We need a job context for the conversation
+      // For now, we'll use a general conversation without specific job
+      final conversationId = await MessagingService().getOrCreateConversation(
+        jobId:
+            '00000000-0000-0000-0000-000000000000', // Use null job ID for general conversation
+        helperId: helperId,
+        helpeeId: helpeeId,
+      );
+
+      if (conversationId != null && mounted) {
+        final helperName = _helperProfile?['full_name'] ?? 'Helper';
+
+        context.push('/chat', extra: {
+          'conversationId': conversationId,
+          'jobId': null,
+          'otherUserId': helperId,
+          'otherUserName': helperName,
+          'jobTitle': null,
+        });
+      } else {
+        _showErrorSnackBar('Failed to open chat'.tr());
+      }
+    } catch (e) {
+      print('❌ Error opening chat: $e');
+      _showErrorSnackBar('Error opening chat'.tr());
+    }
+  }
+
+  Future<void> _makeCall() async {
+    try {
+      final currentUser = CustomAuthService().currentUser;
+      if (currentUser == null || _helperId == null) {
+        _showErrorSnackBar('Cannot make call: user not authenticated'.tr());
+        return;
+      }
+
+      final currentUserId = currentUser['user_id'];
+      final helpeeId = currentUserId; // Current user is helpee
+      final helperId = _helperId!; // The helper we're viewing
+
+      // Get or create conversation for the call
+      final conversationId = await MessagingService().getOrCreateConversation(
+        jobId:
+            '00000000-0000-0000-0000-000000000000', // Use null job ID for general conversation
+        helperId: helperId,
+        helpeeId: helpeeId,
+      );
+
+      if (conversationId != null) {
+        final helperName = _helperProfile?['full_name'] ?? 'Helper';
+
+        // Initialize WebRTC service
+        final webrtcService = WebRTCService();
+        await webrtcService.initialize();
+
+        final success = await webrtcService.makeCall(
+          conversationId: conversationId,
+          receiverId: helperId,
+          callType: CallType.audio,
         );
-      },
-    );
+
+        if (success && mounted) {
+          context.push('/call', extra: {
+            'callType': 'audio',
+            'isIncoming': false,
+            'otherUserName': helperName,
+          });
+        } else {
+          _showErrorSnackBar('Failed to initiate call'.tr());
+        }
+      } else {
+        _showErrorSnackBar('Failed to initiate call'.tr());
+      }
+    } catch (e) {
+      print('❌ Error making call: $e');
+      _showErrorSnackBar('Error making call'.tr());
+    }
+  }
+
+  void _showErrorSnackBar(String message) {
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(message),
+          backgroundColor: AppColors.error,
+        ),
+      );
+    }
   }
 
   Widget _buildCompactStatisticsSection() {
@@ -1161,15 +1507,14 @@ class _Helpee14HelperProfilePageState extends State<Helpee14HelperProfilePage>
           ),
           const SizedBox(height: 16),
 
-          // Row 1: Private Requests & Completed Jobs
+          // Row 1: Total Jobs & Completed Jobs
           Row(
             children: [
               Expanded(
                 child: _buildCompactStatCard(
-                  'Private Requests',
-                  (_helperProfile?['private_requests_received'] ?? 0)
-                      .toString(),
-                  Icons.person_outline,
+                  'Total Jobs',
+                  (_helperProfile?['total_jobs'] ?? 0).toString(),
+                  Icons.work_outline,
                   AppColors.primaryGreen,
                 ),
               ),
@@ -1187,7 +1532,7 @@ class _Helpee14HelperProfilePageState extends State<Helpee14HelperProfilePage>
 
           const SizedBox(height: 12),
 
-          // Row 2: Average Rating & Response Time
+          // Row 2: Average Rating & Total Reviews
           Row(
             children: [
               Expanded(
@@ -1202,10 +1547,10 @@ class _Helpee14HelperProfilePageState extends State<Helpee14HelperProfilePage>
               const SizedBox(width: 12),
               Expanded(
                 child: _buildCompactStatCard(
-                  'Response Time',
-                  '${(_helperProfile?['avg_response_time'] ?? 2)} mins',
-                  Icons.schedule,
-                  AppColors.primaryGreen,
+                  'Total Reviews',
+                  (_helperProfile?['total_reviews'] ?? 0).toString(),
+                  Icons.rate_review_outlined,
+                  AppColors.info,
                 ),
               ),
             ],

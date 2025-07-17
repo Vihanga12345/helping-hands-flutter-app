@@ -22,30 +22,30 @@ class _PublicJobTileState extends State<PublicJobTile> {
     return Column(
       children: [
         GestureDetector(
-      onTap: () {
-        // Navigate to comprehensive job detail page, passing the job ID
-        final jobId = job['id'] as String;
-        context.push('/helper/comprehensive-job-detail/$jobId');
-      },
-      child: Container(
+          onTap: () {
+            // Navigate to comprehensive job detail page, passing the job ID
+            final jobId = job['id'] as String;
+            context.push('/helper/comprehensive-job-detail/$jobId');
+          },
+          child: Container(
             padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
+            decoration: BoxDecoration(
               color: AppColors.white,
               borderRadius: BorderRadius.circular(15),
-          boxShadow: [
-            BoxShadow(
+              boxShadow: [
+                BoxShadow(
                   color: Colors.black.withOpacity(0.1),
                   blurRadius: 8,
                   offset: const Offset(0, 2),
+                ),
+              ],
             ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-                // Header with title and status
-            Row(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // Header with title and status
+                Row(
+                  children: [
                     Expanded(
                       child: Text(
                         job['title'] ?? 'Unknown Job',
@@ -55,24 +55,37 @@ class _PublicJobTileState extends State<PublicJobTile> {
                         ),
                       ),
                     ),
-                Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                        color: isPrivate
-                            ? AppColors.primaryGreen.withOpacity(0.1)
-                            : AppColors.warning.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                      child: Text(
-                        isPrivate ? 'PRIVATE' : 'PUBLIC',
-                        style: AppTextStyles.bodySmall.copyWith(
+                    // Status Label
+                    Row(
+                      children: [
+                        Icon(
+                          isPrivate ? Icons.lock : Icons.public,
+                          size: 16,
                           color: isPrivate
                               ? AppColors.primaryGreen
                               : AppColors.warning,
-                          fontWeight: FontWeight.bold,
                         ),
-                      ),
+                        const SizedBox(width: 4),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: isPrivate
+                                ? AppColors.primaryGreen.withOpacity(0.1)
+                                : AppColors.warning.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Text(
+                            isPrivate ? 'PRIVATE' : 'PUBLIC',
+                            style: AppTextStyles.bodySmall.copyWith(
+                              color: isPrivate
+                                  ? AppColors.primaryGreen
+                                  : AppColors.warning,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
@@ -86,7 +99,7 @@ class _PublicJobTileState extends State<PublicJobTile> {
                       padding: const EdgeInsets.symmetric(
                           horizontal: 12, vertical: 6),
                       decoration: BoxDecoration(
-                      color: AppColors.primaryGreen,
+                        color: AppColors.primaryGreen,
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: Text(
@@ -113,46 +126,6 @@ class _PublicJobTileState extends State<PublicJobTile> {
                 _buildCategoryPill(job['category'] ?? 'General'),
                 const SizedBox(height: 16),
 
-                // Client info
-                if (job['helpee_name'] != null)
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: AppColors.backgroundLight,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Client Information',
-                          style: AppTextStyles.bodySmall.copyWith(
-                            color: AppColors.textSecondary,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          job['helpee_name'] ?? 'Unknown Client',
-                          style: AppTextStyles.bodyMedium.copyWith(
-                            color: AppColors.textPrimary,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        if (job['helpee_location'] != null)
-                          Text(
-                            job['helpee_location'],
-                            style: AppTextStyles.bodySmall.copyWith(
-                              color: AppColors.textSecondary,
-                            ),
-                          ),
-                      ],
-                    ),
-                  ),
-
-                const SizedBox(height: 16),
-
                 // Action buttons for requests
                 JobActionButtons(
                   job: job,
@@ -163,8 +136,8 @@ class _PublicJobTileState extends State<PublicJobTile> {
               ],
             ),
           ),
-            ),
-            const SizedBox(height: 16),
+        ),
+        const SizedBox(height: 16),
       ],
     );
   }

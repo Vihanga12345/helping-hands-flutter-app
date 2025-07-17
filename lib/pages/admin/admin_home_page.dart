@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import '../../models/user_type.dart';
 import 'package:go_router/go_router.dart';
 import '../../utils/app_colors.dart';
 import '../../services/admin_auth_service.dart';
+import 'admin_reports_page.dart';
 
 class AdminHomePage extends StatefulWidget {
   const AdminHomePage({super.key});
@@ -394,6 +396,28 @@ class _AdminHomePageState extends State<AdminHomePage> {
                 AppColors.primaryOrange,
                 () => context.go('/admin/analytics'),
               ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        Row(
+          children: [
+            Expanded(
+              child: _buildActionButton(
+                'Application Issues & Reports',
+                Icons.report_problem,
+                AppColors.primaryPurple,
+                () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const AdminReportsPage(),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Container(), // Empty space for symmetry
             ),
           ],
         ),

@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import '../../models/user_type.dart';
 import 'package:go_router/go_router.dart';
 import '../../utils/app_colors.dart';
 import '../../utils/app_text_styles.dart';
 import '../../widgets/common/app_header.dart';
 import '../../widgets/common/app_navigation_bar.dart';
+import '../../services/localization_service.dart';
 
 class HelperAboutUsPage extends StatelessWidget {
   const HelperAboutUsPage({super.key});
@@ -25,8 +27,8 @@ class HelperAboutUsPage extends StatelessWidget {
           child: Column(
             children: [
               // Header
-              const AppHeader(
-                title: 'About Us',
+              AppHeader(
+                title: 'About Us'.tr(),
                 showBackButton: true,
                 showMenuButton: false,
                 showNotificationButton: false,

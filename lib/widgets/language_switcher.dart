@@ -423,50 +423,126 @@ class LanguageButton extends StatelessWidget {
   }
 
   void _showLanguageSelector(BuildContext context) {
-    showModalBottomSheet(
+    // Show center popup instead of bottom sheet
+    showDialog(
       context: context,
-      backgroundColor: Colors.transparent,
-      builder: (context) => Container(
-        padding: const EdgeInsets.all(20),
-        decoration: const BoxDecoration(
-          color: AppColors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: AppColors.lightGrey,
-                borderRadius: BorderRadius.circular(2),
-              ),
+      barrierDismissible: true,
+      barrierColor: Colors.black.withOpacity(0.5),
+      builder: (BuildContext context) => Material(
+        color: Colors.transparent,
+        child: Center(
+          child: Container(
+            width: 340,
+            height: 400,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.25),
+                  blurRadius: 8,
+                  offset: const Offset(0, 4),
+                  spreadRadius: 2,
+                ),
+              ],
             ),
-            const SizedBox(height: 20),
-            Text(
-              'Select Language'.tr(),
-              style: const TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 20),
-            ...LocalizationService().getSupportedLanguages().map(
-                  (languageCode) => ListTile(
-                    leading: Text(
-                      _getLanguageFlag(languageCode),
-                      style: const TextStyle(fontSize: 24),
-                    ),
-                    title: Text(LocalizationService()
-                        .getNativeLanguageName(languageCode)),
-                    onTap: () async {
-                      Navigator.of(context).pop();
-                      await LocalizationService().changeLanguage(languageCode);
-                    },
+            child: Column(
+              children: [
+                // Header with close button
+                Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Select Language'.tr(),
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      GestureDetector(
+                        onTap: () => Navigator.of(context).pop(),
+                        child: Container(
+                          width: 30,
+                          height: 30,
+                          decoration: BoxDecoration(
+                            color: AppColors.lightGrey.withOpacity(0.3),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            Icons.close,
+                            size: 18,
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-          ],
+
+                // Language options
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: Column(
+                      children: LocalizationService()
+                          .getSupportedLanguages()
+                          .map(
+                            (languageCode) => Container(
+                              margin: const EdgeInsets.only(bottom: 12),
+                              child: Material(
+                                color: Colors.transparent,
+                                child: InkWell(
+                                  borderRadius: BorderRadius.circular(12),
+                                  onTap: () async {
+                                    Navigator.of(context).pop();
+                                    await LocalizationService()
+                                        .changeLanguage(languageCode);
+                                  },
+                                  child: Container(
+                                    padding: const EdgeInsets.all(16),
+                                    decoration: BoxDecoration(
+                                      color:
+                                          AppColors.lightGrey.withOpacity(0.1),
+                                      borderRadius: BorderRadius.circular(12),
+                                      border: Border.all(
+                                        color: AppColors.lightGrey
+                                            .withOpacity(0.3),
+                                        width: 1,
+                                      ),
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        Text(
+                                          _getLanguageFlag(languageCode),
+                                          style: const TextStyle(fontSize: 24),
+                                        ),
+                                        const SizedBox(width: 16),
+                                        Text(
+                                          LocalizationService()
+                                              .getNativeLanguageName(
+                                                  languageCode),
+                                          style: const TextStyle(
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          )
+                          .toList(),
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 20),
+              ],
+            ),
+          ),
         ),
       ),
     );

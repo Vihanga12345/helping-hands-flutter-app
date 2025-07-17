@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../models/user_type.dart';
 import 'package:go_router/go_router.dart';
 import '../../utils/app_colors.dart';
 import '../../utils/app_text_styles.dart';
@@ -16,20 +17,21 @@ class Helpee27JobOngoingPage extends StatefulWidget {
 class _Helpee27JobOngoingPageState extends State<Helpee27JobOngoingPage> {
   @override
   Widget build(BuildContext context) {
-    final jobData = GoRouterState.of(context).extra as Map<String, dynamic>? ?? {
-      'jobId': 'JOB1001',
-      'jobTitle': 'House Cleaning',
-      'helperName': 'Saman Perera',
-      'helperRating': '4.8',
-      'startTime': '10:00 AM',
-      'estimatedEndTime': '2:00 PM',
-      'progress': 65,
-      'currentTask': 'Cleaning kitchen',
-      'address': '123 Galle Road, Colombo 03',
-      'price': 'LKR 2,500',
-      'elapsedTime': '2h 30m',
-      'helperPhone': '+94 77 123 4567',
-    };
+    final jobData = GoRouterState.of(context).extra as Map<String, dynamic>? ??
+        {
+          'jobId': 'JOB1001',
+          'jobTitle': 'House Cleaning',
+          'helperName': 'Saman Perera',
+          'helperRating': '4.8',
+          'startTime': '10:00 AM',
+          'estimatedEndTime': '2:00 PM',
+          'progress': 65,
+          'currentTask': 'Cleaning kitchen',
+          'address': '123 Galle Road, Colombo 03',
+          'price': 'LKR 2,500',
+          'elapsedTime': '2h 30m',
+          'helperPhone': '+94 77 123 4567',
+        };
 
     return Scaffold(
       body: Column(
@@ -41,7 +43,7 @@ class _Helpee27JobOngoingPageState extends State<Helpee27JobOngoingPage> {
             showMenuButton: false,
             showNotificationButton: false,
           ),
-          
+
           // Body Content
           Expanded(
             child: Container(
@@ -67,7 +69,8 @@ class _Helpee27JobOngoingPageState extends State<Helpee27JobOngoingPage> {
                         decoration: BoxDecoration(
                           color: AppColors.primaryGreen.withOpacity(0.1),
                           borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: AppColors.primaryGreen.withOpacity(0.3)),
+                          border: Border.all(
+                              color: AppColors.primaryGreen.withOpacity(0.3)),
                         ),
                         child: Row(
                           children: [
@@ -114,9 +117,9 @@ class _Helpee27JobOngoingPageState extends State<Helpee27JobOngoingPage> {
                           ],
                         ),
                       ),
-                      
+
                       const SizedBox(height: 20),
-                      
+
                       // Progress Card
                       Container(
                         width: double.infinity,
@@ -140,7 +143,8 @@ class _Helpee27JobOngoingPageState extends State<Helpee27JobOngoingPage> {
                                 Container(
                                   padding: const EdgeInsets.all(8),
                                   decoration: BoxDecoration(
-                                    color: AppColors.primaryGreen.withOpacity(0.1),
+                                    color:
+                                        AppColors.primaryGreen.withOpacity(0.1),
                                     borderRadius: BorderRadius.circular(8),
                                   ),
                                   child: const Icon(
@@ -152,7 +156,8 @@ class _Helpee27JobOngoingPageState extends State<Helpee27JobOngoingPage> {
                                 const SizedBox(width: 12),
                                 Expanded(
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       Text(
                                         jobData['jobTitle'],
@@ -181,9 +186,9 @@ class _Helpee27JobOngoingPageState extends State<Helpee27JobOngoingPage> {
                                 ),
                               ],
                             ),
-                            
+
                             const SizedBox(height: 20),
-                            
+
                             // Progress Bar
                             const Text(
                               'Progress',
@@ -199,7 +204,9 @@ class _Helpee27JobOngoingPageState extends State<Helpee27JobOngoingPage> {
                                   child: LinearProgressIndicator(
                                     value: jobData['progress'] / 100,
                                     backgroundColor: AppColors.lightGrey,
-                                    valueColor: const AlwaysStoppedAnimation<Color>(AppColors.primaryGreen),
+                                    valueColor:
+                                        const AlwaysStoppedAnimation<Color>(
+                                            AppColors.primaryGreen),
                                     minHeight: 8,
                                   ),
                                 ),
@@ -214,9 +221,9 @@ class _Helpee27JobOngoingPageState extends State<Helpee27JobOngoingPage> {
                                 ),
                               ],
                             ),
-                            
+
                             const SizedBox(height: 16),
-                            
+
                             // Current Task
                             Container(
                               width: double.infinity,
@@ -243,26 +250,28 @@ class _Helpee27JobOngoingPageState extends State<Helpee27JobOngoingPage> {
                                 ],
                               ),
                             ),
-                            
+
                             const SizedBox(height: 16),
-                            
+
                             // Time Information
                             Row(
                               children: [
                                 Expanded(
-                                  child: _buildTimeInfo('Started', jobData['startTime']),
+                                  child: _buildTimeInfo(
+                                      'Started', jobData['startTime']),
                                 ),
                                 Expanded(
-                                  child: _buildTimeInfo('Est. End', jobData['estimatedEndTime']),
+                                  child: _buildTimeInfo(
+                                      'Est. End', jobData['estimatedEndTime']),
                                 ),
                               ],
                             ),
                           ],
                         ),
                       ),
-                      
+
                       const SizedBox(height: 20),
-                      
+
                       // Helper Information Card
                       Container(
                         width: double.infinity,
@@ -289,7 +298,6 @@ class _Helpee27JobOngoingPageState extends State<Helpee27JobOngoingPage> {
                               ),
                             ),
                             const SizedBox(height: 16),
-                            
                             Row(
                               children: [
                                 // Helper Avatar
@@ -297,10 +305,12 @@ class _Helpee27JobOngoingPageState extends State<Helpee27JobOngoingPage> {
                                   width: 50,
                                   height: 50,
                                   decoration: BoxDecoration(
-                                    color: AppColors.primaryGreen.withOpacity(0.1),
+                                    color:
+                                        AppColors.primaryGreen.withOpacity(0.1),
                                     borderRadius: BorderRadius.circular(25),
                                     border: Border.all(
-                                      color: AppColors.primaryGreen.withOpacity(0.3),
+                                      color: AppColors.primaryGreen
+                                          .withOpacity(0.3),
                                       width: 2,
                                     ),
                                   ),
@@ -310,13 +320,14 @@ class _Helpee27JobOngoingPageState extends State<Helpee27JobOngoingPage> {
                                     size: 24,
                                   ),
                                 ),
-                                
+
                                 const SizedBox(width: 12),
-                                
+
                                 // Helper Details
                                 Expanded(
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       Text(
                                         jobData['helperName'],
@@ -346,49 +357,14 @@ class _Helpee27JobOngoingPageState extends State<Helpee27JobOngoingPage> {
                                     ],
                                   ),
                                 ),
-                                
-                                // Quick Action Buttons
-                                Row(
-                                  children: [
-                                    Container(
-                                      decoration: BoxDecoration(
-                                        color: AppColors.primaryGreen,
-                                        borderRadius: BorderRadius.circular(16),
-                                      ),
-                                      child: IconButton(
-                                        onPressed: () => _callHelper(context),
-                                        icon: const Icon(
-                                          Icons.phone,
-                                          color: AppColors.white,
-                                          size: 18,
-                                        ),
-                                      ),
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Container(
-                                      decoration: BoxDecoration(
-                                        color: AppColors.primaryGreen.withOpacity(0.1),
-                                        borderRadius: BorderRadius.circular(16),
-                                      ),
-                                      child: IconButton(
-                                        onPressed: () => _messageHelper(context),
-                                        icon: const Icon(
-                                          Icons.message,
-                                          color: AppColors.primaryGreen,
-                                          size: 18,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
                               ],
                             ),
                           ],
                         ),
                       ),
-                      
+
                       const SizedBox(height: 20),
-                      
+
                       // Location & Instructions
                       Container(
                         width: double.infinity,
@@ -415,7 +391,6 @@ class _Helpee27JobOngoingPageState extends State<Helpee27JobOngoingPage> {
                               ),
                             ),
                             const SizedBox(height: 12),
-                            
                             Row(
                               children: [
                                 const Icon(
@@ -438,9 +413,9 @@ class _Helpee27JobOngoingPageState extends State<Helpee27JobOngoingPage> {
                           ],
                         ),
                       ),
-                      
+
                       const SizedBox(height: 20),
-                      
+
                       // Action Buttons
                       Column(
                         children: [
@@ -461,9 +436,9 @@ class _Helpee27JobOngoingPageState extends State<Helpee27JobOngoingPage> {
                               ),
                             ),
                           ),
-                          
+
                           const SizedBox(height: 12),
-                          
+
                           // Emergency Contact
                           SizedBox(
                             width: double.infinity,
@@ -483,9 +458,9 @@ class _Helpee27JobOngoingPageState extends State<Helpee27JobOngoingPage> {
                           ),
                         ],
                       ),
-                      
+
                       const SizedBox(height: 20),
-                      
+
                       // Info Card
                       Container(
                         width: double.infinity,
@@ -493,7 +468,8 @@ class _Helpee27JobOngoingPageState extends State<Helpee27JobOngoingPage> {
                         decoration: BoxDecoration(
                           color: AppColors.primaryGreen.withOpacity(0.05),
                           borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: AppColors.primaryGreen.withOpacity(0.2)),
+                          border: Border.all(
+                              color: AppColors.primaryGreen.withOpacity(0.2)),
                         ),
                         child: const Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -526,7 +502,7 @@ class _Helpee27JobOngoingPageState extends State<Helpee27JobOngoingPage> {
                           ],
                         ),
                       ),
-                      
+
                       const SizedBox(height: 20),
                     ],
                   ),
@@ -534,7 +510,7 @@ class _Helpee27JobOngoingPageState extends State<Helpee27JobOngoingPage> {
               ),
             ),
           ),
-          
+
           // Navigation Bar
           const AppNavigationBar(
             currentTab: NavigationTab.home,
@@ -592,7 +568,8 @@ class _Helpee27JobOngoingPageState extends State<Helpee27JobOngoingPage> {
       builder: (BuildContext context) {
         return AlertDialog(
           title: const Text('Request Pause'),
-          content: const Text('Do you want to request a pause for this job? Your helper will be notified.'),
+          content: const Text(
+              'Do you want to request a pause for this job? Your helper will be notified.'),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
@@ -626,7 +603,8 @@ class _Helpee27JobOngoingPageState extends State<Helpee27JobOngoingPage> {
       builder: (BuildContext context) {
         return AlertDialog(
           title: const Text('Emergency Contact'),
-          content: const Text('For urgent assistance, you can call our 24/7 emergency hotline or contact support.'),
+          content: const Text(
+              'For urgent assistance, you can call our 24/7 emergency hotline or contact support.'),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
@@ -653,4 +631,4 @@ class _Helpee27JobOngoingPageState extends State<Helpee27JobOngoingPage> {
       },
     );
   }
-} 
+}

@@ -3,7 +3,7 @@ import 'package:go_router/go_router.dart';
 import '../../utils/app_colors.dart';
 import '../../services/custom_auth_service.dart';
 
-class AppHeader extends StatelessWidget {
+class AppHeader extends StatelessWidget implements PreferredSizeWidget {
   final String title;
   final bool showBackButton;
   final bool showMenuButton;
@@ -24,6 +24,9 @@ class AppHeader extends StatelessWidget {
     this.onNotificationPressed,
     this.rightWidget,
   });
+
+  @override
+  Size get preferredSize => const Size.fromHeight(88);
 
   @override
   Widget build(BuildContext context) {
@@ -175,9 +178,11 @@ class AppHeader extends StatelessWidget {
   void _navigateToNotifications(BuildContext context) {
     final currentUser = CustomAuthService().currentUser;
     if (currentUser != null && currentUser['user_type'] == 'helper') {
-      context.go('/helper/notifications');
+      context.push(
+          '/helper/notification'); // Fixed: Changed from notifications to notification
     } else {
-      context.go('/helpee/notifications');
+      context
+          .push('/helpee/notifications'); // Fixed: Use correct route with 's'
     }
   }
 

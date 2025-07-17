@@ -1,10 +1,16 @@
 import 'package:flutter/material.dart';
+import '../../models/user_type.dart';
 import 'package:go_router/go_router.dart';
 import '../../utils/app_colors.dart';
 import '../../utils/app_text_styles.dart';
 import '../../widgets/common/app_header.dart';
 import '../../widgets/common/app_navigation_bar.dart';
 import '../../services/helper_data_service.dart';
+import '../../services/custom_auth_service.dart';
+import '../../services/localization_service.dart';
+import '../common/report_page.dart';
+import '../../services/messaging_service.dart';
+import '../../services/webrtc_calling_service.dart';
 
 class HelperHelpeeProfilePage extends StatefulWidget {
   final Map<String, dynamic>? helpeeData;
@@ -29,6 +35,7 @@ class _HelperHelpeeProfilePageState extends State<HelperHelpeeProfilePage> {
   Map<String, dynamic>? _helpeeProfile;
   Map<String, dynamic>? _helpeeStatistics;
   List<Map<String, dynamic>>? _helpeeReviews;
+  List<Map<String, dynamic>>? _emergencyContacts;
   bool _isLoading = true;
   String? _error;
 
@@ -88,41 +95,8 @@ class _HelperHelpeeProfilePageState extends State<HelperHelpeeProfilePage> {
     }
   }
 
-  Widget _buildLoadingState() {
-    return Scaffold(
-      body: Container(
-        width: double.infinity,
-        height: double.infinity,
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment(0.50, 0.00),
-            end: Alignment(0.50, 1.00),
-            colors: AppColors.backgroundGradient,
-          ),
-        ),
-        child: const Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              CircularProgressIndicator(
-                color: AppColors.primaryGreen,
-              ),
-              SizedBox(height: 16),
-              Text(
-                'Loading helpee profile...',
-                style: TextStyle(
-                  color: AppColors.textSecondary,
-                  fontSize: 16,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildErrorState() {
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
       body: Container(
         width: double.infinity,
@@ -137,58 +111,596 @@ class _HelperHelpeeProfilePageState extends State<HelperHelpeeProfilePage> {
         child: SafeArea(
           child: Column(
             children: [
+              // Header
               AppHeader(
-                title: 'Helpee Profile',
+                title: 'Helpee Profile'.tr(),
                 showBackButton: true,
                 onBackPressed: () => context.pop(),
-              ),
-              Expanded(
-                child: Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(
-                        Icons.error_outline,
-                        size: 64,
-                        color: AppColors.error,
-                      ),
-                      const SizedBox(height: 16),
-                      const Text(
-                        'Failed to load helpee profile',
-                        style: TextStyle(
-                          color: AppColors.textPrimary,
-                          fontSize: 18,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        _error ?? 'Please try again later',
-                        style: const TextStyle(
-                          color: AppColors.textSecondary,
-                          fontSize: 14,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 24),
-                      ElevatedButton(
-                        onPressed: _loadHelpeeData,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primaryGreen,
-                        ),
-                        child: const Text(
-                          'Retry',
-                          style: TextStyle(color: AppColors.white),
-                        ),
-                      ),
-                    ],
+                rightWidget: IconButton(
+                  icon: const Icon(Icons.report),
+                  onPressed: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) =>
+                          const ReportPage(userType: 'helper'),
+                    ),
                   ),
                 ),
+              ),
+
+              // Content
+              Expanded(
+                child: _isLoading
+                    ? _buildLoadingState()
+                    : _error != null
+                        ? _buildErrorState()
+                        : _buildContent(),
+              ),
+
+              // Navigation Bar
+              const AppNavigationBar(
+                currentTab: NavigationTab.home,
+                userType: UserType.helper,
               ),
             ],
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildLoadingState() {
+    return const Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          CircularProgressIndicator(
+            valueColor: AlwaysStoppedAnimation<Color>(AppColors.primaryGreen),
+          ),
+          SizedBox(height: 16),
+          Text(
+            'Loading helpee profile...',
+            style: TextStyle(
+              color: AppColors.textSecondary,
+              fontSize: 16,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildErrorState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Icon(
+            Icons.error_outline,
+            size: 64,
+            color: AppColors.error,
+          ),
+          const SizedBox(height: 16),
+          const Text(
+            'Failed to load helpee profile',
+            style: TextStyle(
+              color: AppColors.textPrimary,
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            _error ?? 'Please try again later',
+            style: const TextStyle(
+              color: AppColors.textSecondary,
+              fontSize: 14,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 24),
+          ElevatedButton(
+            onPressed: _loadHelpeeData,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primaryGreen,
+            ),
+            child: const Text(
+              'Retry',
+              style: TextStyle(color: AppColors.white),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildContent() {
+    return SingleChildScrollView(
+      child: Column(
+        children: [
+          // Profile Header Section
+          _buildProfileHeader(),
+
+          // Content with padding
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              children: [
+                // Stats Section (Rating | Reviews | Jobs)
+                _buildStatsSection(),
+
+                const SizedBox(height: 20),
+
+                // Personal Information Section
+                _buildPersonalInfoSection(),
+
+                const SizedBox(height: 20),
+
+                // Reviews Section
+                _buildReviewsSection(),
+
+                const SizedBox(height: 20),
+
+                // Emergency Contact Section
+                _buildEmergencyContactSection(),
+
+                const SizedBox(height: 20),
+
+                // Action Buttons
+                _buildActionButtons(),
+
+                const SizedBox(height: 20),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildProfileHeader() {
+    final firstName = _helpeeProfile?['first_name'] ?? 'Unknown';
+    final lastName = _helpeeProfile?['last_name'] ?? 'User';
+    final fullName = '$firstName $lastName'.trim();
+    final profileImageUrl = _helpeeProfile?['profile_image_url'];
+
+    return Container(
+      color: Colors.white,
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        children: [
+          // Profile Picture
+          Container(
+            width: 120,
+            height: 120,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: AppColors.primaryGreen,
+                width: 3,
+              ),
+            ),
+            child: CircleAvatar(
+              radius: 57,
+              backgroundColor: AppColors.primaryGreen,
+              backgroundImage:
+                  profileImageUrl != null && profileImageUrl.isNotEmpty
+                      ? NetworkImage(profileImageUrl)
+                      : null,
+              child: profileImageUrl == null || profileImageUrl.isEmpty
+                  ? Text(
+                      fullName.isNotEmpty ? fullName[0].toUpperCase() : 'H',
+                      style: const TextStyle(
+                        fontSize: 36,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    )
+                  : null,
+            ),
+          ),
+
+          const SizedBox(height: 16),
+
+          // Helpee Name
+          Text(
+            fullName,
+            style: AppTextStyles.heading2.copyWith(
+              fontWeight: FontWeight.w700,
+              color: AppColors.textPrimary,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatsSection() {
+    final rating = (_helpeeStatistics?['average_rating'] ?? 0.0).toDouble();
+    final totalReviews = _helpeeStatistics?['total_reviews'] ?? 0;
+    final totalJobs = _helpeeStatistics?['total_jobs'] ?? 0;
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: const [
+          BoxShadow(
+            color: AppColors.shadowColorLight,
+            blurRadius: 8,
+            offset: Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        children: [
+          _buildStatItem(
+            'Rating',
+            rating.toStringAsFixed(1),
+            Icons.star,
+            AppColors.warning,
+          ),
+          _buildStatDivider(),
+          _buildStatItem(
+            'Reviews',
+            totalReviews.toString(),
+            Icons.rate_review,
+            AppColors.primaryGreen,
+          ),
+          _buildStatDivider(),
+          _buildStatItem(
+            'Jobs',
+            totalJobs.toString(),
+            Icons.work,
+            AppColors.info,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatItem(
+      String label, String value, IconData icon, Color color) {
+    return Expanded(
+      child: Column(
+        children: [
+          Icon(icon, color: color, size: 24),
+          const SizedBox(height: 8),
+          Text(
+            value,
+            style: AppTextStyles.heading3.copyWith(
+              fontWeight: FontWeight.w700,
+              color: color,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            label.tr(),
+            style: AppTextStyles.bodySmall.copyWith(
+              color: AppColors.textSecondary,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatDivider() {
+    return Container(
+      height: 40,
+      width: 1,
+      color: AppColors.borderLight,
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+    );
+  }
+
+  Widget _buildPersonalInfoSection() {
+    final location = _helpeeProfile?['location_city'] ?? 'Not specified';
+    final phone = _helpeeProfile?['phone'] ?? 'Not provided';
+    final email = _helpeeProfile?['email'] ?? 'Not provided';
+    final memberSince = _helpeeStatistics?['member_since'] ?? 'Recently';
+    final age = _helpeeProfile?['age']?.toString() ?? 'Not specified';
+    final aboutMe = _helpeeProfile?['about_me'] ?? 'No description provided.';
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: const [
+          BoxShadow(
+            color: AppColors.shadowColorLight,
+            blurRadius: 8,
+            offset: Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Personal Information'.tr(),
+            style: AppTextStyles.heading3.copyWith(
+              fontWeight: FontWeight.w700,
+              color: AppColors.textPrimary,
+            ),
+          ),
+          const SizedBox(height: 16),
+          _buildInfoRow(Icons.info_outline, 'About me'.tr(), aboutMe),
+          _buildInfoRow(Icons.email, 'Email'.tr(), email),
+          _buildInfoRow(Icons.phone, 'Phone'.tr(), phone),
+          _buildInfoRow(Icons.location_on, 'Location'.tr(), location),
+          _buildInfoRow(Icons.cake, 'Age'.tr(), age),
+          _buildInfoRow(Icons.access_time, 'Member since'.tr(), memberSince),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInfoRow(IconData icon, String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, size: 20, color: AppColors.textSecondary),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: AppTextStyles.bodySmall.copyWith(
+                    color: AppColors.textSecondary,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  value,
+                  style: AppTextStyles.bodyMedium.copyWith(
+                    color: AppColors.textPrimary,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildReviewsSection() {
+    final totalReviews = _helpeeStatistics?['total_reviews'] ?? 0;
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: const [
+          BoxShadow(
+            color: AppColors.shadowColorLight,
+            blurRadius: 8,
+            offset: Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Text(
+                'Reviews from Helpers'.tr(),
+                style: AppTextStyles.heading3.copyWith(
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              const Spacer(),
+              Text(
+                '$totalReviews ${'reviews'.tr()}',
+                style: AppTextStyles.bodySmall.copyWith(
+                  color: AppColors.textSecondary,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          if (_helpeeReviews?.isNotEmpty == true)
+            ..._helpeeReviews!
+                .take(3)
+                .map((review) => _buildReviewItem(review))
+                .toList()
+          else
+            _buildEmptyReviews(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildReviewItem(Map<String, dynamic> review) {
+    final reviewerName = review['helper'] != null
+        ? '${review['helper']['first_name']} ${review['helper']['last_name'].substring(0, 1)}.'
+        : 'Helper';
+    final reviewText = review['review_text'] ?? 'No review text provided';
+    final rating = review['rating'] ?? 0;
+    final date = _formatReviewDate(review['created_at']);
+    final reviewerImageUrl = review['helper']?['profile_image_url'];
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.backgroundLight,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.borderLight),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              CircleAvatar(
+                radius: 16,
+                backgroundColor: AppColors.primaryGreen,
+                backgroundImage:
+                    reviewerImageUrl != null && reviewerImageUrl.isNotEmpty
+                        ? NetworkImage(reviewerImageUrl)
+                        : null,
+                child: reviewerImageUrl == null || reviewerImageUrl.isEmpty
+                    ? Text(
+                        reviewerName.isNotEmpty
+                            ? reviewerName[0].toUpperCase()
+                            : 'H',
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      )
+                    : null,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  reviewerName,
+                  style: AppTextStyles.bodyMedium.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+              ),
+              Row(
+                children: List.generate(5, (index) {
+                  return Icon(
+                    index < rating ? Icons.star : Icons.star_border,
+                    size: 16,
+                    color: AppColors.warning,
+                  );
+                }),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Text(
+            reviewText,
+            style: AppTextStyles.bodyMedium.copyWith(
+              color: AppColors.textSecondary,
+              height: 1.4,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            date,
+            style: AppTextStyles.bodySmall.copyWith(
+              color: AppColors.textSecondary,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEmptyReviews() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 20),
+        child: Text(
+          'No reviews yet'.tr(),
+          style: AppTextStyles.bodyMedium.copyWith(
+            color: AppColors.textSecondary,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEmergencyContactSection() {
+    final emergencyName = _helpeeProfile?['emergency_contact_name'];
+    final emergencyPhone = _helpeeProfile?['emergency_contact_phone'];
+
+    if (emergencyName == null && emergencyPhone == null) {
+      return const SizedBox.shrink();
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: const [
+          BoxShadow(
+            color: AppColors.shadowColorLight,
+            blurRadius: 8,
+            offset: Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Emergency Contact'.tr(),
+            style: AppTextStyles.heading3.copyWith(
+              fontWeight: FontWeight.w700,
+              color: AppColors.textPrimary,
+            ),
+          ),
+          const SizedBox(height: 16),
+          if (emergencyName != null)
+            _buildInfoRow(Icons.person, 'Name'.tr(), emergencyName),
+          if (emergencyPhone != null)
+            _buildInfoRow(Icons.phone, 'Phone'.tr(), emergencyPhone),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildActionButtons() {
+    return Row(
+      children: [
+        Expanded(
+          child: OutlinedButton.icon(
+            onPressed: _openChat,
+            icon: const Icon(Icons.message, size: 18),
+            label: Text('Message'.tr()),
+            style: OutlinedButton.styleFrom(
+              side: const BorderSide(color: AppColors.primaryGreen, width: 2),
+              foregroundColor: AppColors.primaryGreen,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              padding: const EdgeInsets.symmetric(vertical: 16),
+            ),
+          ),
+        ),
+        const SizedBox(width: 16),
+        Expanded(
+          child: ElevatedButton.icon(
+            onPressed: _makeCall,
+            icon: const Icon(Icons.call, size: 18),
+            label: Text('Call'.tr()),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.success,
+              foregroundColor: AppColors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              elevation: 3,
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -219,598 +731,120 @@ class _HelperHelpeeProfilePageState extends State<HelperHelpeeProfilePage> {
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    if (_isLoading) {
-      return _buildLoadingState();
+  Future<void> _openChat() async {
+    try {
+      final currentUser = CustomAuthService().currentUser;
+      if (currentUser == null || _helpeeProfile == null) {
+        _showErrorSnackBar('Cannot open chat: user not authenticated'.tr());
+        return;
+      }
+
+      final currentUserId = currentUser['user_id'];
+      final helperId = currentUserId; // Current user is helper
+      final helpeeId =
+          _helpeeProfile!['id'] ?? widget.helpeeId; // The helpee we're viewing
+
+      if (helpeeId == null) {
+        _showErrorSnackBar('Cannot open chat: helpee not found'.tr());
+        return;
+      }
+
+      // Get or create conversation
+      final conversationId = await MessagingService().getOrCreateConversation(
+        jobId:
+            '00000000-0000-0000-0000-000000000000', // Use null job ID for general conversation
+        helperId: helperId,
+        helpeeId: helpeeId,
+      );
+
+      if (conversationId != null && mounted) {
+        final helpeeName =
+            '${_helpeeProfile!['first_name'] ?? ''} ${_helpeeProfile!['last_name'] ?? ''}'
+                .trim();
+
+        context.push('/chat', extra: {
+          'conversationId': conversationId,
+          'jobId': null,
+          'otherUserId': helpeeId,
+          'otherUserName': helpeeName.isNotEmpty ? helpeeName : 'Helpee',
+          'jobTitle': null,
+        });
+      } else {
+        _showErrorSnackBar('Failed to open chat'.tr());
+      }
+    } catch (e) {
+      print('❌ Error opening chat: $e');
+      _showErrorSnackBar('Error opening chat'.tr());
     }
-
-    if (_error != null || _helpeeProfile == null) {
-      return _buildErrorState();
-    }
-
-    // Extract real helpee data
-    final firstName = _helpeeProfile!['first_name'] ?? 'Unknown';
-    final lastName = _helpeeProfile!['last_name'] ?? 'User';
-    final fullName = '$firstName $lastName'.trim();
-    final rating = (_helpeeStatistics!['average_rating'] ?? 0.0).toDouble();
-    final totalJobs = _helpeeStatistics!['total_jobs'] ?? 0;
-    final completedJobs = _helpeeStatistics!['completed_jobs'] ?? 0;
-    final profileImage = _helpeeProfile!['profile_image_url'];
-    final location =
-        _helpeeProfile!['location_city'] ?? 'Location not specified';
-    final memberSince = _helpeeStatistics!['member_since'] ?? 'Recently joined';
-    final aboutMe = _helpeeProfile!['about_me'] ?? 'No description provided.';
-    final responseRate =
-        (_helpeeStatistics!['response_rate'] ?? 0.0).toDouble();
-    final totalReviews = _helpeeStatistics!['total_reviews'] ?? 0;
-    return Scaffold(
-      body: Container(
-        width: double.infinity,
-        height: double.infinity,
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment(0.50, 0.00),
-            end: Alignment(0.50, 1.00),
-            colors: AppColors.backgroundGradient,
-          ),
-        ),
-        child: SafeArea(
-          child: Column(
-            children: [
-              // Header
-              AppHeader(
-                title: 'Helpee Profile',
-                showBackButton: true,
-                onBackPressed: () => context.pop(),
-                rightWidget: IconButton(
-                  icon: const Icon(Icons.report),
-                  onPressed: () {
-                    _showReportDialog(context);
-                  },
-                ),
-              ),
-
-              // Content
-              Expanded(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    children: [
-                      // Profile Header
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(20),
-                        decoration: BoxDecoration(
-                          color: AppColors.white,
-                          borderRadius: BorderRadius.circular(16),
-                          boxShadow: const [
-                            BoxShadow(
-                              color: AppColors.shadowColorLight,
-                              blurRadius: 8,
-                              offset: Offset(0, 4),
-                            ),
-                          ],
-                        ),
-                        child: Column(
-                          children: [
-                            // Profile Photo
-                            Container(
-                              width: 100,
-                              height: 100,
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(50),
-                                image: profileImage != null
-                                    ? DecorationImage(
-                                        image: NetworkImage(profileImage),
-                                        fit: BoxFit.cover,
-                                      )
-                                    : null,
-                                color: profileImage == null
-                                    ? AppColors.primaryGreen.withOpacity(0.1)
-                                    : null,
-                              ),
-                              child: profileImage == null
-                                  ? const Icon(
-                                Icons.person,
-                                size: 50,
-                                color: AppColors.primaryGreen,
-                                    )
-                                  : null,
-                            ),
-                            const SizedBox(height: 16),
-                            Text(
-                              fullName,
-                              style: AppTextStyles.heading3.copyWith(
-                                color: AppColors.textPrimary,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                const Icon(Icons.star,
-                                    color: AppColors.warning, size: 20),
-                                const SizedBox(width: 4),
-                                Text(
-                                  rating.toStringAsFixed(1),
-                                  style: AppTextStyles.bodyLarge.copyWith(
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                Text(
-                                  '($totalJobs jobs completed)',
-                                  style: AppTextStyles.bodyMedium.copyWith(
-                                    color: AppColors.textSecondary,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 12),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 12, vertical: 6),
-                                  decoration: BoxDecoration(
-                                    color: AppColors.success.withOpacity(0.1),
-                                    borderRadius: BorderRadius.circular(20),
-                                  ),
-                                  child: Text(
-                                    'Verified Member',
-                                    style: AppTextStyles.bodySmall.copyWith(
-                                      color: AppColors.success,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 12),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 12, vertical: 6),
-                                  decoration: BoxDecoration(
-                                    color: AppColors.info.withOpacity(0.1),
-                                    borderRadius: BorderRadius.circular(20),
-                                  ),
-                                  child: Text(
-                                    'Member since $memberSince',
-                                    style: AppTextStyles.bodySmall.copyWith(
-                                      color: AppColors.info,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-
-                      const SizedBox(height: 24),
-
-                      // Personal Information
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(20),
-                        decoration: BoxDecoration(
-                          color: AppColors.white,
-                          borderRadius: BorderRadius.circular(16),
-                          boxShadow: const [
-                            BoxShadow(
-                              color: AppColors.shadowColorLight,
-                              blurRadius: 8,
-                              offset: Offset(0, 4),
-                            ),
-                          ],
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Personal Information',
-                              style: AppTextStyles.heading3.copyWith(
-                                color: AppColors.textPrimary,
-                              ),
-                            ),
-                            const SizedBox(height: 16),
-                            _buildInfoRow(
-                                Icons.location_on, 'Location', location),
-                            _buildInfoRow(Icons.phone, 'Phone',
-                                _helpeeProfile!['phone'] ?? 'Not provided'),
-                            _buildInfoRow(Icons.email, 'Email',
-                                _helpeeProfile!['email'] ?? 'Not provided'),
-                            _buildInfoRow(
-                                Icons.access_time, 'Joined', memberSince),
-                          ],
-                        ),
-                      ),
-
-                      const SizedBox(height: 24),
-
-                      // Statistics
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(20),
-                        decoration: BoxDecoration(
-                          color: AppColors.white,
-                          borderRadius: BorderRadius.circular(16),
-                          boxShadow: const [
-                            BoxShadow(
-                              color: AppColors.shadowColorLight,
-                              blurRadius: 8,
-                              offset: Offset(0, 4),
-                            ),
-                          ],
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Statistics',
-                              style: AppTextStyles.heading3.copyWith(
-                                color: AppColors.textPrimary,
-                              ),
-                            ),
-                            const SizedBox(height: 16),
-                            Row(
-                              children: [
-                                Expanded(
-                                    child: _buildStatCard('$totalJobs',
-                                        'Jobs Posted', AppColors.primaryGreen)),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                    child: _buildStatCard('$completedJobs',
-                                        'Completed', AppColors.success)),
-                              ],
-                            ),
-                            const SizedBox(height: 12),
-                            Row(
-                              children: [
-                                Expanded(
-                                    child: _buildStatCard(
-                                        '${rating.toStringAsFixed(1)}★',
-                                        'Average Rating',
-                                        AppColors.warning)),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                    child: _buildStatCard(
-                                        '${responseRate.toStringAsFixed(0)}%',
-                                        'Response Rate',
-                                        AppColors.info)),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-
-                      const SizedBox(height: 24),
-
-                      // About Section
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(20),
-                        decoration: BoxDecoration(
-                          color: AppColors.white,
-                          borderRadius: BorderRadius.circular(16),
-                          boxShadow: const [
-                            BoxShadow(
-                              color: AppColors.shadowColorLight,
-                              blurRadius: 8,
-                              offset: Offset(0, 4),
-                            ),
-                          ],
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'About Me',
-                              style: AppTextStyles.heading3.copyWith(
-                                color: AppColors.textPrimary,
-                              ),
-                            ),
-                            const SizedBox(height: 16),
-                            Text(
-                              aboutMe,
-                              style: AppTextStyles.bodyMedium.copyWith(
-                                color: AppColors.textSecondary,
-                                height: 1.5,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-
-                      const SizedBox(height: 24),
-
-                      // Reviews Section
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(20),
-                        decoration: BoxDecoration(
-                          color: AppColors.white,
-                          borderRadius: BorderRadius.circular(16),
-                          boxShadow: const [
-                            BoxShadow(
-                              color: AppColors.shadowColorLight,
-                              blurRadius: 8,
-                              offset: Offset(0, 4),
-                            ),
-                          ],
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                Text(
-                                  'Reviews from Helpers',
-                                  style: AppTextStyles.heading3.copyWith(
-                                    color: AppColors.textPrimary,
-                                  ),
-                                ),
-                                const Spacer(),
-                                Text(
-                                  '$totalReviews reviews',
-                                  style: AppTextStyles.bodySmall.copyWith(
-                                    color: AppColors.textSecondary,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 16),
-                            ...(_helpeeReviews
-                                    ?.map((review) => _buildReviewItem(
-                                          '${review['helper']['first_name']} ${review['helper']['last_name'].substring(0, 1)}.',
-                                          review['review_text'] ??
-                                              'No review text provided',
-                                          review['rating'] ?? 0,
-                                          _formatReviewDate(
-                                              review['created_at']),
-                                        ))
-                                    .toList() ??
-                                []),
-                            if (_helpeeReviews?.isEmpty ?? true)
-                              Padding(
-                                padding:
-                                    const EdgeInsets.symmetric(vertical: 20),
-                                child: Center(
-                                  child: Text(
-                                    'No reviews yet',
-                                    style: AppTextStyles.bodyMedium.copyWith(
-                                      color: AppColors.textSecondary,
-                                    ),
-                                  ),
-                                ),
-                            ),
-                          ],
-                        ),
-                      ),
-
-                      const SizedBox(height: 32),
-
-                      // Contact Buttons
-                      Row(
-                        children: [
-                          Expanded(
-                            child: OutlinedButton.icon(
-                              onPressed: () {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                      content:
-                                          Text('Opening chat with helpee')),
-                                );
-                              },
-                              icon: const Icon(Icons.message, size: 18),
-                              label: const Text('Message'),
-                              style: OutlinedButton.styleFrom(
-                                side: const BorderSide(
-                                    color: AppColors.primaryGreen),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                padding:
-                                    const EdgeInsets.symmetric(vertical: 16),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: ElevatedButton.icon(
-                              onPressed: () {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                      content: Text('Calling helpee')),
-                                );
-                              },
-                              icon: const Icon(Icons.call, size: 18),
-                              label: const Text('Call'),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: AppColors.primaryGreen,
-                                foregroundColor: AppColors.white,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                padding:
-                                    const EdgeInsets.symmetric(vertical: 16),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-
-                      const SizedBox(height: 20),
-                    ],
-                  ),
-                ),
-              ),
-
-              // Navigation Bar
-              const AppNavigationBar(
-                currentTab: NavigationTab.home,
-                userType: UserType.helper,
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
   }
 
-  Widget _buildInfoRow(IconData icon, String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Row(
-        children: [
-          Icon(icon, size: 20, color: AppColors.textSecondary),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  label,
-                  style: AppTextStyles.bodySmall.copyWith(
-                    color: AppColors.textSecondary,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  value,
-                  style: AppTextStyles.bodyMedium.copyWith(
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+  Future<void> _makeCall() async {
+    try {
+      final currentUser = CustomAuthService().currentUser;
+      if (currentUser == null || _helpeeProfile == null) {
+        _showErrorSnackBar('Cannot make call: user not authenticated'.tr());
+        return;
+      }
 
-  Widget _buildStatCard(String value, String label, Color color) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Column(
-        children: [
-          Text(
-            value,
-            style: AppTextStyles.heading3.copyWith(
-              color: color,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            label,
-            style: AppTextStyles.bodySmall.copyWith(
-              color: color,
-            ),
-            textAlign: TextAlign.center,
-          ),
-        ],
-      ),
-    );
-  }
+      final currentUserId = currentUser['user_id'];
+      final helperId = currentUserId; // Current user is helper
+      final helpeeId =
+          _helpeeProfile!['id'] ?? widget.helpeeId; // The helpee we're viewing
 
-  Widget _buildReviewItem(String name, String review, int rating, String date) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.lightGrey.withOpacity(0.3),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Text(
-                name,
-                style: AppTextStyles.bodyMedium.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              const Spacer(),
-              Row(
-                children: List.generate(5, (index) {
-                  return Icon(
-                    index < rating ? Icons.star : Icons.star_border,
-                    size: 16,
-                    color: AppColors.warning,
-                  );
-                }),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Text(
-            review,
-            style: AppTextStyles.bodyMedium.copyWith(
-              color: AppColors.textSecondary,
-              height: 1.4,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            date,
-            style: AppTextStyles.bodySmall.copyWith(
-              color: AppColors.textSecondary,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+      if (helpeeId == null) {
+        _showErrorSnackBar('Cannot make call: helpee not found'.tr());
+        return;
+      }
 
-  void _showReportDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('Report User'),
-          content: const Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                  'If you believe this user has violated our community guidelines, please report them.'),
-              SizedBox(height: 16),
-              Text(
-                  'Our team will review the report and take appropriate action.'),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Cancel'),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Report submitted successfully'),
-                    backgroundColor: AppColors.success,
-                  ),
-                );
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.error,
-                foregroundColor: AppColors.white,
-              ),
-              child: const Text('Report'),
-            ),
-          ],
+      // Get or create conversation for the call
+      final conversationId = await MessagingService().getOrCreateConversation(
+        jobId:
+            '00000000-0000-0000-0000-000000000000', // Use null job ID for general conversation
+        helperId: helperId,
+        helpeeId: helpeeId,
+      );
+
+      if (conversationId != null) {
+        final helpeeName =
+            '${_helpeeProfile!['first_name'] ?? ''} ${_helpeeProfile!['last_name'] ?? ''}'
+                .trim();
+
+        // Initialize WebRTC service
+        final webrtcService = WebRTCService();
+        await webrtcService.initialize();
+
+        final success = await webrtcService.makeCall(
+          conversationId: conversationId,
+          receiverId: helpeeId,
+          callType: CallType.audio,
         );
-      },
-    );
+
+        if (success && mounted) {
+          context.push('/call', extra: {
+            'callType': 'audio',
+            'isIncoming': false,
+            'otherUserName': helpeeName.isNotEmpty ? helpeeName : 'Helpee',
+          });
+        } else {
+          _showErrorSnackBar('Failed to initiate call'.tr());
+        }
+      } else {
+        _showErrorSnackBar('Failed to initiate call'.tr());
+      }
+    } catch (e) {
+      print('❌ Error making call: $e');
+      _showErrorSnackBar('Error making call'.tr());
+    }
+  }
+
+  void _showErrorSnackBar(String message) {
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(message),
+          backgroundColor: AppColors.error,
+        ),
+      );
+    }
   }
 }

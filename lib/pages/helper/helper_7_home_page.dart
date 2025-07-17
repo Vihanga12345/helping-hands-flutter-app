@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../models/user_type.dart';
 import 'package:go_router/go_router.dart';
 import '../../utils/app_colors.dart';
 import '../../utils/app_text_styles.dart';
@@ -6,6 +7,8 @@ import '../../widgets/common/app_header.dart';
 import '../../widgets/common/app_navigation_bar.dart';
 import '../../services/user_data_service.dart';
 import '../../services/custom_auth_service.dart';
+import '../../services/localization_service.dart';
+import '../../models/user_type.dart';
 
 class Helper7HomePage extends StatefulWidget {
   const Helper7HomePage({super.key});
@@ -24,14 +27,14 @@ class _Helper7HomePageState extends State<Helper7HomePage> {
       body: Column(
         children: [
           AppHeader(
-            title: 'Helper Home',
+            title: 'Helper Home'.tr(),
             showMenuButton: true,
             showNotificationButton: true,
             onMenuPressed: () {
               context.push('/helper/menu');
             },
             onNotificationPressed: () {
-              context.push('/helper/notification');
+              context.push('/helper/notifications');
             },
           ),
           Expanded(
@@ -81,7 +84,7 @@ class _Helper7HomePageState extends State<Helper7HomePage> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                'Job Opportunities',
+                                'Job Opportunities'.tr(),
                                 style: AppTextStyles.heading3.copyWith(
                                   color: AppColors.textPrimary,
                                 ),
@@ -101,7 +104,7 @@ class _Helper7HomePageState extends State<Helper7HomePage> {
                                             vertical: 12),
                                       ),
                                       child: Text(
-                                        'Private Requests',
+                                        'Private Requests'.tr(),
                                         style:
                                             AppTextStyles.buttonMedium.copyWith(
                                           color: AppColors.white,
@@ -123,7 +126,7 @@ class _Helper7HomePageState extends State<Helper7HomePage> {
                                             vertical: 12),
                                       ),
                                       child: Text(
-                                        'Public Requests',
+                                        'Public Requests'.tr(),
                                         style:
                                             AppTextStyles.buttonMedium.copyWith(
                                           color: AppColors.primaryGreen,
@@ -156,12 +159,12 @@ class _Helper7HomePageState extends State<Helper7HomePage> {
     return FutureBuilder<Map<String, dynamic>?>(
       future: _userDataService.getCurrentUserProfile(),
       builder: (context, snapshot) {
-        String welcomeName = 'Welcome back!';
+        String welcomeName = 'Welcome back!'.tr();
 
         if (snapshot.hasData && snapshot.data != null) {
           final firstName = snapshot.data!['first_name'] ?? '';
           if (firstName.isNotEmpty) {
-            welcomeName = 'Welcome back, $firstName!';
+            welcomeName = '${'Welcome back,'.tr()} $firstName!';
           }
         }
 
@@ -210,7 +213,7 @@ class _Helper7HomePageState extends State<Helper7HomePage> {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          'Ready to help today?',
+                          'Ready to help today?'.tr(),
                           style: AppTextStyles.bodyMedium.copyWith(
                             color: AppColors.textSecondary,
                           ),
@@ -257,7 +260,7 @@ class _Helper7HomePageState extends State<Helper7HomePage> {
                 },
                 child: _buildStatCard(
                   '${stats['pending_jobs']}',
-                  'Pending',
+                  'Pending'.tr(),
                   AppColors.primaryGreen,
                 ),
               ),
@@ -271,7 +274,7 @@ class _Helper7HomePageState extends State<Helper7HomePage> {
                 },
                 child: _buildStatCard(
                   '${stats['ongoing_jobs']}',
-                  'Ongoing',
+                  'Ongoing'.tr(),
                   AppColors.warning,
                 ),
               ),
@@ -285,7 +288,7 @@ class _Helper7HomePageState extends State<Helper7HomePage> {
                 },
                 child: _buildStatCard(
                   '${stats['completed_jobs']}',
-                  'Completed',
+                  'Completed'.tr(),
                   AppColors.success,
                 ),
               ),
@@ -347,9 +350,9 @@ class _Helper7HomePageState extends State<Helper7HomePage> {
                 ),
               ],
             ),
-            child: const Column(
+            child: Column(
               children: [
-                SizedBox(
+                const SizedBox(
                   width: 20,
                   height: 20,
                   child: CircularProgressIndicator(
@@ -357,10 +360,10 @@ class _Helper7HomePageState extends State<Helper7HomePage> {
                     color: AppColors.primaryGreen,
                   ),
                 ),
-                SizedBox(height: 8),
+                const SizedBox(height: 8),
                 Text(
-                  'Loading...',
-                  style: TextStyle(
+                  'Loading...'.tr(),
+                  style: const TextStyle(
                     fontSize: 12,
                     color: AppColors.textSecondary,
                   ),
@@ -384,9 +387,9 @@ class _Helper7HomePageState extends State<Helper7HomePage> {
                 ),
               ],
             ),
-            child: const Column(
+            child: Column(
               children: [
-                SizedBox(
+                const SizedBox(
                   width: 20,
                   height: 20,
                   child: CircularProgressIndicator(
@@ -394,10 +397,10 @@ class _Helper7HomePageState extends State<Helper7HomePage> {
                     color: AppColors.warning,
                   ),
                 ),
-                SizedBox(height: 8),
+                const SizedBox(height: 8),
                 Text(
-                  'Loading...',
-                  style: TextStyle(
+                  'Loading...'.tr(),
+                  style: const TextStyle(
                     fontSize: 12,
                     color: AppColors.textSecondary,
                   ),
@@ -421,9 +424,9 @@ class _Helper7HomePageState extends State<Helper7HomePage> {
                 ),
               ],
             ),
-            child: const Column(
+            child: Column(
               children: [
-                SizedBox(
+                const SizedBox(
                   width: 20,
                   height: 20,
                   child: CircularProgressIndicator(
@@ -431,10 +434,10 @@ class _Helper7HomePageState extends State<Helper7HomePage> {
                     color: AppColors.success,
                   ),
                 ),
-                SizedBox(height: 8),
+                const SizedBox(height: 8),
                 Text(
-                  'Loading...',
-                  style: TextStyle(
+                  'Loading...'.tr(),
+                  style: const TextStyle(
                     fontSize: 12,
                     color: AppColors.textSecondary,
                   ),
@@ -451,15 +454,15 @@ class _Helper7HomePageState extends State<Helper7HomePage> {
     return Row(
       children: [
         Expanded(
-          child: _buildStatCard('0', 'Pending', AppColors.primaryGreen),
+          child: _buildStatCard('0', 'Pending'.tr(), AppColors.primaryGreen),
         ),
         const SizedBox(width: 12),
         Expanded(
-          child: _buildStatCard('0', 'Ongoing', AppColors.warning),
+          child: _buildStatCard('0', 'Ongoing'.tr(), AppColors.warning),
         ),
         const SizedBox(width: 12),
         Expanded(
-          child: _buildStatCard('0', 'Completed', AppColors.success),
+          child: _buildStatCard('0', 'Completed'.tr(), AppColors.success),
         ),
       ],
     );

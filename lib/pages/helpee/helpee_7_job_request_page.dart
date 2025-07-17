@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../models/user_type.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../../utils/app_colors.dart';
@@ -7,21 +8,16 @@ import '../../widgets/common/app_header.dart';
 import '../../widgets/common/app_navigation_bar.dart';
 import '../../widgets/job_questions_widget.dart';
 import '../../widgets/ui_elements/helper_profile_bar.dart';
-import '../../widgets/location_picker_widget.dart';
 import '../../services/supabase_service.dart';
 import '../../services/job_questions_service.dart';
 import '../../services/custom_auth_service.dart';
 import '../../services/job_data_service.dart';
 import '../../services/localization_service.dart';
+import '../../services/popup_manager_service.dart';
 
 class Helpee7JobRequestPage extends StatefulWidget {
-  final bool isEdit;
-  final Map<String, dynamic>? jobData;
-
   const Helpee7JobRequestPage({
     super.key,
-    this.isEdit = false,
-    this.jobData,
   });
 
   @override
@@ -54,84 +50,137 @@ class _Helpee7JobRequestPageState extends State<Helpee7JobRequestPage> {
   List<Map<String, dynamic>> _jobCategories = [];
   List<Map<String, dynamic>> _jobQuestions = [];
   List<Map<String, dynamic>> _questionAnswers = [];
+  bool _hasAIBotAnswers = false; // Track if answers came from AI bot
   double? _defaultHourlyRate;
   bool _isLoading = false;
 
   final _authService = CustomAuthService();
+  final _popupManager = PopupManagerService();
 
   @override
   void initState() {
     super.initState();
     _loadJobCategories();
 
-    // If in edit mode, pre-populate fields
-    if (widget.isEdit && widget.jobData != null) {
-      _prePopulateFieldsForEdit();
+    // Handle returning data from helper selection and AI bot
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _handleReturningData();
+      _handleAIBotData();
+    });
+  }
+
+  // Handle extracted data from AI bot conversation
+  void _handleAIBotData() {
+    final context = this.context;
+    if (context.mounted) {
+      final extra = GoRouterState.of(context).extra as Map<String, dynamic>?;
+
+      if (extra != null && extra['extractedData'] != null) {
+        final extractedData = extra['extractedData'] as Map<String, dynamic>;
+        print('🤖 AI Bot data received: $extractedData');
+
+        setState(() {
+          // Populate form fields with AI extracted data
+          if (extractedData['jobCategoryId'] != null) {
+            _selectedCategoryId = extractedData['jobCategoryId'];
+          }
+
+          if (extractedData['title'] != null) {
+            _titleController.text = extractedData['title'];
+          }
+
+          if (extractedData['description'] != null) {
+            _descriptionController.text = extractedData['description'];
+            _notesController.text = extractedData['description'];
+          }
+
+          if (extractedData['location'] != null) {
+            _locationController.text = extractedData['location'];
+          }
+
+          if (extractedData['defaultHourlyRate'] != null) {
+            _defaultHourlyRate = extractedData['defaultHourlyRate'].toDouble();
+          }
+
+          // Handle job posting type and selected helper
+          if (extractedData['jobPostingType'] != null) {
+            _jobPostingType = extractedData['jobPostingType'];
+            print('✅ Job posting type set to: $_jobPostingType');
+          }
+
+          if (extractedData['selectedHelper'] != null) {
+            _selectedHelper = extractedData['selectedHelper'];
+            _helperSearchController.text =
+                _selectedHelper!['full_name']?.toString() ?? '';
+            print('✅ Selected helper: ${_selectedHelper!['full_name']}');
+          }
+
+          if (extractedData['preferredDate'] != null) {
+            try {
+              _selectedDate = DateTime.parse(extractedData['preferredDate']);
+            } catch (e) {
+              print('Error parsing date: $e');
+            }
+          }
+
+          if (extractedData['preferredTime'] != null) {
+            try {
+              final timeStr = extractedData['preferredTime'] as String;
+              final timeParts = timeStr.split(':');
+              if (timeParts.length >= 2) {
+                _selectedTime = TimeOfDay(
+                  hour: int.parse(timeParts[0]),
+                  minute: int.parse(timeParts[1]),
+                );
+              }
+            } catch (e) {
+              print('Error parsing time: $e');
+            }
+          }
+
+          // Handle job-specific question answers
+          if (extractedData['jobQuestionAnswers'] != null) {
+            final answers = extractedData['jobQuestionAnswers'] as List;
+            _questionAnswers = answers
+                .map((answer) => {
+                      'question_id': answer['questionId'],
+                      'answer_text': answer[
+                          'answer'], // Map 'answer' to 'answer_text' for widget compatibility
+                      'selected_options':
+                          null, // Initialize for multiple choice questions
+                    })
+                .toList();
+            _hasAIBotAnswers = true; // Mark that these answers came from AI bot
+            print(
+                '✅ Job-specific answers populated: ${_questionAnswers.length} answers');
+            print('📋 Answer details: $_questionAnswers');
+          }
+        });
+
+        // Load job questions for the selected category
+        if (_selectedCategoryId != null) {
+          _loadJobQuestions(_selectedCategoryId!);
+        }
+
+        print('✅ Job request form populated with AI bot data');
+      }
     }
   }
 
-  void _prePopulateFieldsForEdit() {
-    final jobData = widget.jobData!;
-
-    // Pre-populate basic fields
-    _titleController.text = jobData['title'] ?? '';
-    _descriptionController.text = jobData['description'] ?? '';
-    _locationController.text = jobData['location_address'] ?? '';
-    _notesController.text = jobData['notes'] ?? '';
-
-    // Set location coordinates if available
-    if (jobData['location_latitude'] != null) {
-      _selectedLatitude = jobData['location_latitude'].toDouble();
-    }
-    if (jobData['location_longitude'] != null) {
-      _selectedLongitude = jobData['location_longitude'].toDouble();
-    }
-
-    // Set category
-    _selectedCategoryId = jobData['category_id'];
-
-    // Set job type (private/public)
-    _jobPostingType = jobData['is_private'] == true ? 'private' : 'public';
-
-    // Set date and time
-    if (jobData['scheduled_date'] != null) {
-      try {
-        _selectedDate = DateTime.parse(jobData['scheduled_date']);
-      } catch (e) {
-        print('Error parsing scheduled_date: $e');
+  // Handle returning data from helper selection
+  void _handleReturningData() {
+    // Check if returning from helper selection
+    final context = this.context;
+    if (context.mounted) {
+      final routeData = ModalRoute.of(context)?.settings.arguments;
+      if (routeData is Map<String, dynamic> &&
+          routeData['selectedHelper'] != null) {
+        setState(() {
+          _selectedHelper = routeData['selectedHelper'];
+          _helperSearchController.text =
+              _selectedHelper!['full_name']?.toString() ?? '';
+        });
       }
-    }
-
-    if (jobData['scheduled_time'] != null ||
-        jobData['scheduled_start_time'] != null) {
-      try {
-        final timeString =
-            jobData['scheduled_time'] ?? jobData['scheduled_start_time'];
-        final time =
-            TimeOfDay.fromDateTime(DateTime.parse('2000-01-01 $timeString'));
-        _selectedTime = time;
-      } catch (e) {
-        print('Error parsing scheduled_time: $e');
-      }
-    }
-
-    // Load questions for the selected category
-    if (_selectedCategoryId != null) {
-      _loadJobQuestions(_selectedCategoryId!);
-
-      // Pre-populate question answers
-      final parsedQuestions = jobData['parsed_questions'] as List? ?? [];
-      _questionAnswers = parsedQuestions.map((qa) {
-        return {
-          'question_id': qa['question_id'],
-          'answer_text': qa['answer_text'],
-          'answer_number': qa['answer_number'],
-          'answer_date': qa['answer_date'],
-          'answer_time': qa['answer_time'],
-          'answer_boolean': qa['answer_boolean'],
-          'selected_options': qa['selected_options'],
-        };
-      }).toList();
     }
   }
 
@@ -151,49 +200,63 @@ class _Helpee7JobRequestPageState extends State<Helpee7JobRequestPage> {
       final questions =
           await JobQuestionsService().getQuestionsForCategory(categoryId);
 
-      // Get default hourly rate for this category (this would come from a job_category_rates table)
-      // For now, we'll use a sample rate calculation
-      double defaultRate = _calculateDefaultRate(categoryId);
+      // Get the selected category to access its default hourly rate
+      final selectedCategory = _jobCategories.firstWhere(
+        (cat) => cat['id'] == categoryId,
+        orElse: () => {},
+      );
+
+      // Get default hourly rate from the category
+      double defaultRate = selectedCategory.isNotEmpty &&
+              selectedCategory['default_hourly_rate'] != null
+          ? double.parse(selectedCategory['default_hourly_rate'].toString())
+          : 2500.0; // Fallback default rate
 
       setState(() {
         _jobQuestions = questions;
         _defaultHourlyRate = defaultRate;
-        _questionAnswers.clear(); // Reset answers when category changes
+        // Only clear answers if they're not from AI bot
+        if (_questionAnswers.isEmpty || !_hasAIBotAnswers) {
+          _questionAnswers.clear(); // Reset answers when category changes
+          _hasAIBotAnswers = false; // Reset flag when clearing manually
+        } else {
+          print('🤖 Preserving AI bot answers during job questions load');
+        }
       });
+
+      // Update the UI to show the hourly rate
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+                'Default hourly rate for this category: LKR ${defaultRate.toStringAsFixed(2)}'),
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
     } catch (e) {
       print('Error loading job questions: $e');
     }
   }
 
-  double _calculateDefaultRate(String categoryId) {
-    // This would typically come from a database table with category-specific rates
-    // For now, using sample rates based on category
-    final Map<String, double> categoryRates = {
-      'house_cleaning': 2500.0,
-      'deep_cleaning': 3000.0,
-      'gardening': 2000.0,
-      'pet_care': 1800.0,
-      'elderly_care': 3500.0,
-      'tutoring': 2800.0,
-      'tech_support': 4000.0,
-      'photography': 5000.0,
-      'fitness_training': 3200.0,
-      'cooking': 2200.0,
-    };
-
-    // Try to find rate by category name or return default
-    final category = _jobCategories.firstWhere(
-      (cat) => cat['id'] == categoryId,
-      orElse: () => {},
+  // Navigation method for helper search
+  Future<void> _navigateToHelperSearch() async {
+    final selectedHelper = await context.push<Map<String, dynamic>>(
+      '/helpee/search-helper',
+      extra: {
+        'isSelectionMode': true,
+        'selectedCategoryId': _selectedCategoryId,
+        'returnRoute': '/helpee/job-request',
+      },
     );
 
-    if (category.isNotEmpty) {
-      String categoryName =
-          category['name'].toString().toLowerCase().replaceAll(' ', '_');
-      return categoryRates[categoryName] ?? 2500.0;
+    if (selectedHelper != null) {
+      setState(() {
+        _selectedHelper = selectedHelper;
+        _helperSearchController.text =
+            selectedHelper['full_name']?.toString() ?? '';
+      });
     }
-
-    return 2500.0; // Default rate
   }
 
   Future<void> _searchHelpers(String query) async {
@@ -275,7 +338,7 @@ class _Helpee7JobRequestPageState extends State<Helpee7JobRequestPage> {
         children: [
           // Header
           AppHeader(
-            title: widget.isEdit ? 'Edit Job Request' : 'Request Helper',
+            title: 'Request Helper',
             showBackButton: true,
             showMenuButton: false,
             showNotificationButton: false,
@@ -348,6 +411,7 @@ class _Helpee7JobRequestPageState extends State<Helpee7JobRequestPage> {
                       const SizedBox(height: 8),
                       JobQuestionsWidget(
                         questions: _jobQuestions,
+                        initialAnswers: _questionAnswers, // Pass AI bot answers
                         onAnswersChanged: (answers) {
                           setState(() {
                             _questionAnswers = answers;
@@ -839,16 +903,13 @@ class _Helpee7JobRequestPageState extends State<Helpee7JobRequestPage> {
                             children: [
                               Expanded(
                                 child: HelperProfileBar(
-                                  name: _selectedHelper!['name'],
-                                  rating: _selectedHelper!['rating'],
-                                  jobCount: _selectedHelper!['jobCount'],
-                                  jobTypes: [
-                                    _selectedHelper!['category']
-                                            ?.toLowerCase() ??
-                                        'general'
-                                  ],
+                                  name: _selectedHelper!['full_name']
+                                          ?.toString() ??
+                                      'Helper',
+                                  jobTypes:
+                                      _selectedHelper!['job_type_names'] ?? [],
                                   profileImageUrl:
-                                      _selectedHelper!['profileImageUrl'],
+                                      _selectedHelper!['profile_image_url'],
                                 ),
                               ),
                               IconButton(
@@ -865,39 +926,50 @@ class _Helpee7JobRequestPageState extends State<Helpee7JobRequestPage> {
                           ),
                         ),
                       ] else ...[
-                        // Helper Search Field
-                        TextFormField(
-                          controller: _helperSearchController,
-                          decoration: InputDecoration(
-                            hintText: 'Search helper by name...',
-                            prefixIcon: const Icon(Icons.search),
-                            suffixIcon: _isSearching
-                                ? const SizedBox(
-                                    width: 20,
-                                    height: 20,
-                                    child: Padding(
-                                      padding: EdgeInsets.all(12),
-                                      child: CircularProgressIndicator(
-                                          strokeWidth: 2),
-                                    ),
-                                  )
-                                : null,
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide:
-                                  const BorderSide(color: AppColors.lightGrey),
+                        // Helper Search Field with Search Button
+                        Row(
+                          children: [
+                            Expanded(
+                              child: TextFormField(
+                                controller: _helperSearchController,
+                                decoration: InputDecoration(
+                                  hintText: 'Search helper by name...',
+                                  prefixIcon: const Icon(Icons.search),
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                    borderSide: const BorderSide(
+                                        color: AppColors.lightGrey),
+                                  ),
+                                  filled: true,
+                                  fillColor: AppColors.white,
+                                ),
+                                readOnly:
+                                    true, // Make it read-only, search via button
+                                validator: (value) {
+                                  if (_jobPostingType == 'private' &&
+                                      _selectedHelper == null) {
+                                    return 'Please select a helper for private jobs';
+                                  }
+                                  return null;
+                                },
+                              ),
                             ),
-                            filled: true,
-                            fillColor: AppColors.white,
-                          ),
-                          onChanged: _searchHelpers,
-                          validator: (value) {
-                            if (_jobPostingType == 'private' &&
-                                _selectedHelper == null) {
-                              return 'Please select a helper for private jobs';
-                            }
-                            return null;
-                          },
+                            const SizedBox(width: 12),
+                            ElevatedButton.icon(
+                              onPressed: _navigateToHelperSearch,
+                              icon: const Icon(Icons.search),
+                              label: const Text('Search'),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppColors.primaryGreen,
+                                foregroundColor: AppColors.white,
+                                padding: const EdgeInsets.symmetric(
+                                    vertical: 16, horizontal: 20),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
 
                         // Search Results
@@ -996,11 +1068,9 @@ class _Helpee7JobRequestPageState extends State<Helpee7JobRequestPage> {
                                     AppColors.white),
                               )
                             : Text(
-                                widget.isEdit
-                                    ? 'Update Job Request'
-                                    : (_jobPostingType == 'private'
-                                        ? 'Send Private Request'
-                                        : 'Post Public Job'),
+                                (_jobPostingType == 'private'
+                                    ? 'Send Private Request'
+                                    : 'Post Public Job'),
                                 style: const TextStyle(
                                   fontSize: 18,
                                   fontWeight: FontWeight.w600,
@@ -1053,52 +1123,279 @@ class _Helpee7JobRequestPageState extends State<Helpee7JobRequestPage> {
   }
 
   Future<void> _showLocationPicker() async {
-    final result = await showModalBottomSheet<Map<String, dynamic>>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => DraggableScrollableSheet(
-        initialChildSize: 0.8,
-        maxChildSize: 0.9,
-        minChildSize: 0.5,
-        builder: (context, scrollController) => Container(
-          padding: const EdgeInsets.all(16),
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-          ),
-          child: LocationPickerWidget(
-            initialLocation:
-                _selectedLatitude != null && _selectedLongitude != null
-                    ? LatLng(_selectedLatitude!, _selectedLongitude!)
-                    : null,
-            initialAddress: _locationController.text.trim().isNotEmpty
-                ? _locationController.text.trim()
-                : null,
-            onLocationSelected: (coordinates, address) {
-              // Update state with selected location
-              setState(() {
-                _selectedLatitude = coordinates.latitude;
-                _selectedLongitude = coordinates.longitude;
-                _locationController.text = address;
-              });
-
-              // Close the bottom sheet
-              Navigator.of(context).pop({
-                'latitude': coordinates.latitude,
-                'longitude': coordinates.longitude,
-                'address': address,
-              });
-            },
+    try {
+      // Show center popup instead of bottom sheet
+      showDialog(
+        context: context,
+        barrierDismissible: true,
+        barrierColor: Colors.black.withOpacity(0.5),
+        builder: (BuildContext context) => Material(
+          color: Colors.transparent,
+          child: Center(
+            child: Container(
+              width: 340,
+              height: 500,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.25),
+                    blurRadius: 8,
+                    offset: const Offset(0, 4),
+                    spreadRadius: 2,
+                  ),
+                ],
+              ),
+              child: _buildLocationSelectionContent(),
+            ),
           ),
         ),
-      ),
-    );
+      );
+    } catch (e) {
+      print('❌ Error selecting location: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error selecting location: $e'),
+            backgroundColor: AppColors.error,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    }
+  }
 
-    // Additional handling if needed
-    if (result != null) {
-      print('✅ Location selected: ${result['address']}');
-      print('📍 Coordinates: ${result['latitude']}, ${result['longitude']}');
+  Widget _buildLocationSelectionContent() {
+    final List<String> predefinedLocations = [
+      'Colombo, Sri Lanka',
+      'Kandy, Sri Lanka',
+      'Galle, Sri Lanka',
+      'Jaffna, Sri Lanka',
+      'Anuradhapura, Sri Lanka',
+      'Batticaloa, Sri Lanka',
+      'Negombo, Sri Lanka',
+      'Kurunegala, Sri Lanka',
+    ];
+
+    return Column(
+      children: [
+        // Header with close button
+        Padding(
+          padding: const EdgeInsets.all(20),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Select Location'.tr(),
+                style: AppTextStyles.heading3.copyWith(
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              GestureDetector(
+                onTap: () => Navigator.of(context).pop(),
+                child: Container(
+                  width: 30,
+                  height: 30,
+                  decoration: BoxDecoration(
+                    color: AppColors.lightGrey.withOpacity(0.3),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.close,
+                    size: 18,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+
+        // Custom address input
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Enter Custom Address'.tr(),
+                style: AppTextStyles.bodyMedium.copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              const SizedBox(height: 8),
+              TextField(
+                controller: _locationController,
+                decoration: InputDecoration(
+                  hintText: 'Type your address here...'.tr(),
+                  hintStyle: AppTextStyles.bodyMedium.copyWith(
+                    color: AppColors.textSecondary,
+                  ),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(
+                      color: AppColors.lightGrey.withOpacity(0.5),
+                    ),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(
+                      color: AppColors.primaryGreen,
+                      width: 2,
+                    ),
+                  ),
+                  contentPadding: const EdgeInsets.all(12),
+                  suffixIcon: GestureDetector(
+                    onTap: () {
+                      if (_locationController.text.trim().isNotEmpty) {
+                        Navigator.of(context).pop();
+                        _showLocationSuccess();
+                      }
+                    },
+                    child: Container(
+                      margin: const EdgeInsets.all(4),
+                      decoration: BoxDecoration(
+                        color: AppColors.primaryGreen,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Icon(
+                        Icons.check,
+                        color: Colors.white,
+                        size: 20,
+                      ),
+                    ),
+                  ),
+                ),
+                maxLines: 2,
+                onSubmitted: (value) {
+                  if (value.trim().isNotEmpty) {
+                    Navigator.of(context).pop();
+                    _showLocationSuccess();
+                  }
+                },
+              ),
+            ],
+          ),
+        ),
+
+        const SizedBox(height: 20),
+
+        // Divider
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          child: Row(
+            children: [
+              const Expanded(child: Divider()),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                child: Text(
+                  'OR'.tr(),
+                  style: AppTextStyles.bodySmall.copyWith(
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              ),
+              const Expanded(child: Divider()),
+            ],
+          ),
+        ),
+
+        const SizedBox(height: 16),
+
+        // Predefined locations
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          child: Text(
+            'Popular Locations'.tr(),
+            style: AppTextStyles.bodyMedium.copyWith(
+              fontWeight: FontWeight.w600,
+              color: AppColors.textPrimary,
+            ),
+          ),
+        ),
+
+        const SizedBox(height: 12),
+
+        // Location options
+        Expanded(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: ListView.builder(
+              itemCount: predefinedLocations.length,
+              itemBuilder: (context, index) {
+                final location = predefinedLocations[index];
+                return Container(
+                  margin: const EdgeInsets.only(bottom: 8),
+                  child: Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(12),
+                      onTap: () {
+                        setState(() {
+                          _locationController.text = location;
+                        });
+                        Navigator.of(context).pop();
+                        _showLocationSuccess();
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: AppColors.lightGrey.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: AppColors.lightGrey.withOpacity(0.3),
+                            width: 1,
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.location_on,
+                              color: AppColors.primaryGreen,
+                              size: 20,
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                location,
+                                style: AppTextStyles.bodyMedium.copyWith(
+                                  color: AppColors.textPrimary,
+                                ),
+                              ),
+                            ),
+                            Icon(
+                              Icons.arrow_forward_ios,
+                              color: AppColors.textSecondary,
+                              size: 16,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        ),
+
+        const SizedBox(height: 20),
+      ],
+    );
+  }
+
+  void _showLocationSuccess() {
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Location selected successfully!'.tr()),
+          backgroundColor: AppColors.primaryGreen,
+          duration: const Duration(seconds: 2),
+        ),
+      );
     }
   }
 
@@ -1206,51 +1503,36 @@ class _Helpee7JobRequestPageState extends State<Helpee7JobRequestPage> {
             '   Question ${answer['question_id']}: ${answer['answer_text']} (${answer.keys.where((k) => k != 'question_id' && answer[k] != null).join(', ')})');
       }
 
-      if (widget.isEdit && widget.jobData != null) {
-        // Update existing job
-        final jobDataService = JobDataService();
-        final jobCategoryName = _jobCategories.firstWhere(
-          (cat) => cat['id'] == _selectedCategoryId,
-          orElse: () => {'name': 'Unknown'},
-        )['name'];
+      // Create new job
+      final jobCategoryName = _jobCategories.firstWhere(
+        (cat) => cat['id'] == _selectedCategoryId,
+        orElse: () => {'name': 'Unknown'},
+      )['name'];
 
-        final success = await jobDataService.updateJobWithQuestions(
-          jobId: widget.jobData!['id'],
-          title: _titleController.text.trim(),
-          description: _notesController.text.trim(),
+      Map<String, dynamic>? jobData;
+
+      if (_jobPostingType == 'private' && _selectedHelper != null) {
+        // Use enhanced service for private jobs with helper assignment
+        jobData = await SupabaseService().createPrivateJobWithHelperAssignment(
+          helpeeId: _authService.currentUser?['user_id'] ?? '',
           categoryId: _selectedCategoryId!,
           jobCategoryName: jobCategoryName,
+          title: _titleController.text.trim(),
+          description: _notesController.text.trim(),
           hourlyRate: _defaultHourlyRate ?? 2500.0,
-          scheduledDate: _selectedDate!,
-          scheduledTime:
+          scheduledDate: _selectedDate!.toIso8601String().split('T')[0],
+          scheduledStartTime:
               '${_selectedTime!.hour.toString().padLeft(2, '0')}:${_selectedTime!.minute.toString().padLeft(2, '0')}',
+          locationLatitude: _selectedLatitude ?? 6.9271,
+          locationLongitude: _selectedLongitude ?? 79.8612,
           locationAddress: _locationController.text.trim(),
-          isPrivate: _jobPostingType == 'private',
-          notes: _notesController.text.trim(),
           questionAnswers: questionAnswers,
+          selectedHelper: _selectedHelper!,
+          specialInstructions: _notesController.text.trim(),
         );
-
-        if (success) {
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Job request updated successfully!'),
-                backgroundColor: AppColors.success,
-              ),
-            );
-            context.pop();
-          }
-        } else {
-          throw Exception('Failed to update job');
-        }
       } else {
-        // Create new job
-        final jobCategoryName = _jobCategories.firstWhere(
-          (cat) => cat['id'] == _selectedCategoryId,
-          orElse: () => {'name': 'Unknown'},
-        )['name'];
-
-        final jobData = await SupabaseService().createJobWithQuestions(
+        // Use standard service for public jobs
+        jobData = await SupabaseService().createJobWithQuestions(
           helpeeId: _authService.currentUser?['user_id'] ?? '',
           categoryId: _selectedCategoryId!,
           jobCategoryName: jobCategoryName,
@@ -1261,49 +1543,46 @@ class _Helpee7JobRequestPageState extends State<Helpee7JobRequestPage> {
           scheduledDate: _selectedDate!.toIso8601String().split('T')[0],
           scheduledStartTime:
               '${_selectedTime!.hour.toString().padLeft(2, '0')}:${_selectedTime!.minute.toString().padLeft(2, '0')}',
-          locationLatitude:
-              _selectedLatitude ?? 6.9271, // TODO: Get from map selection
-          locationLongitude:
-              _selectedLongitude ?? 79.8612, // TODO: Get from map selection
+          locationLatitude: _selectedLatitude ?? 6.9271,
+          locationLongitude: _selectedLongitude ?? 79.8612,
           locationAddress: _locationController.text.trim(),
           questionAnswers: questionAnswers,
-          invitedHelperEmail:
-              _jobPostingType == 'private' && _selectedHelper != null
-                  ? _selectedHelper![
-                      'email'] // This would come from the helper data
-                  : null,
+          invitedHelperEmail: null,
           specialInstructions: _notesController.text.trim(),
         );
+      }
 
-        if (jobData != null) {
-          print('✅ Job created successfully with ID: ${jobData['id']}');
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(_jobPostingType == 'private'
-                    ? 'Private job request sent successfully!'
-                    : 'Public job posted successfully!'),
-                backgroundColor: AppColors.success,
-              ),
-            );
-            // Navigate back to home or jobs page
-            if (context.canPop()) {
-              context.pop();
-            } else {
-              context.go('/helpee/home');
-            }
+      if (jobData != null) {
+        print('✅ Job created successfully with ID: ${jobData['id']}');
+
+        // Show success popup
+        _popupManager.showJobCreatedPopup(jobData);
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(_jobPostingType == 'private'
+                  ? 'Private job request sent successfully!'
+                  : 'Public job posted successfully!'),
+              backgroundColor: AppColors.success,
+            ),
+          );
+          // Navigate back to home or jobs page
+          if (context.canPop()) {
+            context.pop();
+          } else {
+            context.go('/helpee/home');
           }
-        } else {
-          throw Exception('Failed to create job - no data returned');
         }
+      } else {
+        throw Exception('Failed to create job - no data returned');
       }
     } catch (e) {
-      print('❌ Error ${widget.isEdit ? 'updating' : 'submitting'} job: $e');
+      print('❌ Error submitting job: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(
-                'Error ${widget.isEdit ? 'updating' : 'submitting'} job: ${e.toString()}'),
+            content: Text('Error submitting job: ${e.toString()}'),
             backgroundColor: AppColors.error,
             duration: const Duration(seconds: 4),
           ),

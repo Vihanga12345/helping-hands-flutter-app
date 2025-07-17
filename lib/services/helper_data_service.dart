@@ -324,7 +324,7 @@ class HelperDataService {
       final response = await _supabase
           .from('jobs')
           .select('''
-            id, title, scheduled_date, scheduled_time, status,
+            id, title, scheduled_date, scheduled_start_time, status,
             helper:users!assigned_helper_id(first_name, last_name)
           ''')
           .eq('helpee_id', helpeeId)
@@ -507,13 +507,16 @@ class HelperDataService {
     try {
       print('📊 Fetching job statistics for helper: $helperId');
 
-      final completedJobs = await _supabase
+      // Get all jobs assigned to this helper
+      final allJobs = await _supabase
           .from('jobs')
-          .select('id, created_at, scheduled_date, hourly_rate')
-          .eq('assigned_helper_id', helperId)
-          .eq('status', 'completed');
+          .select(
+              'id, status, created_at, scheduled_date, hourly_rate, total_work_time_minutes')
+          .eq('assigned_helper_id', helperId);
 
-      final totalJobs = completedJobs.length;
+      final completedJobs =
+          allJobs.where((job) => job['status'] == 'completed').toList();
+      final totalJobs = allJobs.length;
       double totalEarnings = 0;
       int totalHours = 0;
 
@@ -521,8 +524,11 @@ class HelperDataService {
       DateTime? firstJobDate;
       for (var job in completedJobs) {
         totalEarnings += (job['hourly_rate'] ?? 0).toDouble();
-        totalHours +=
-            3; // Average 3 hours per job (this should be calculated from actual time)
+
+        // Use actual work time if available, otherwise estimate
+        int workTimeMinutes =
+            job['total_work_time_minutes'] ?? 180; // Default 3 hours
+        totalHours += (workTimeMinutes / 60).round();
 
         DateTime jobDate = DateTime.parse(job['created_at']);
         if (firstJobDate == null || jobDate.isBefore(firstJobDate)) {
@@ -538,6 +544,7 @@ class HelperDataService {
 
       return {
         'total_jobs': totalJobs,
+        'completed_jobs': completedJobs.length,
         'total_earnings': totalEarnings,
         'total_hours': totalHours,
         'experience_years': experienceYears.ceil(),
@@ -547,6 +554,7 @@ class HelperDataService {
       print('❌ Error fetching helper job statistics: $e');
       return {
         'total_jobs': 0,
+        'completed_jobs': 0,
         'total_earnings': 0.0,
         'total_hours': 0,
         'experience_years': 0,
@@ -684,7 +692,7 @@ class HelperDataService {
       final allJobs = await _supabase
           .from('jobs')
           .select(
-              'id, status, hourly_rate, category_id, created_at, time_taken_hours')
+              'id, status, hourly_rate, category_id, created_at, total_work_time_minutes')
           .eq('assigned_helper_id', helperId);
 
       int completedJobs = 0;
@@ -708,7 +716,7 @@ class HelperDataService {
       for (var job in allJobs) {
         final jobDate = DateTime.parse(job['created_at']);
         final pay = (job['hourly_rate'] ?? 0).toDouble();
-        final hours = ((job['time_taken_hours'] ?? 3) as num)
+        final hours = (((job['total_work_time_minutes'] ?? 180) as num) / 60)
             .toInt(); // Default 3 hours if not specified
 
         switch (job['status']?.toLowerCase()) {
@@ -769,12 +777,12 @@ class HelperDataService {
               .eq('id', entry.key)
               .single();
 
-          // Get ratings for this category
+          // Get ratings for this category through jobs table
           final ratingsResponse = await _supabase
               .from('ratings_reviews')
-              .select('rating')
+              .select('rating, jobs!inner(category_id)')
               .eq('reviewee_id', helperId)
-              .eq('job_category_id', entry.key);
+              .eq('jobs.category_id', entry.key);
 
           double avgRating = 0.0;
           if (ratingsResponse.isNotEmpty) {

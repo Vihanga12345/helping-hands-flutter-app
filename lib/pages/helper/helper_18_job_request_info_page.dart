@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../models/user_type.dart';
 import 'package:go_router/go_router.dart';
 import '../../utils/app_colors.dart';
 import '../../utils/app_text_styles.dart';
@@ -213,21 +214,6 @@ class Helper18JobRequestInfoPage extends StatelessWidget {
                                         style: TextStyle().copyWith(
                                           fontWeight: FontWeight.w600,
                                         ),
-                                      ),
-                                      const SizedBox(height: 4),
-                                      Row(
-                                        children: [
-                                          const Icon(Icons.star,
-                                              color: AppColors.warning,
-                                              size: 16),
-                                          const SizedBox(width: 4),
-                                          Text(
-                                            '4.9 (42 reviews)',
-                                            style: TextStyle().copyWith(
-                                              color: AppColors.textSecondary,
-                                            ),
-                                          ),
-                                        ],
                                       ),
                                       const SizedBox(height: 4),
                                       Row(

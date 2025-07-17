@@ -14,7 +14,7 @@ class FirebaseMessagingService {
   factory FirebaseMessagingService() => _instance;
   FirebaseMessagingService._internal();
 
-  final FirebaseMessaging _firebaseMessaging = FirebaseMessaging.instance;
+  FirebaseMessaging? _firebaseMessaging;
   final FlutterLocalNotificationsPlugin _localNotifications =
       FlutterLocalNotificationsPlugin();
 
@@ -28,6 +28,16 @@ class FirebaseMessagingService {
 
     try {
       print('🔔 Initializing Firebase Messaging Service...');
+
+      // Skip Firebase initialization on web platform
+      if (kIsWeb) {
+        print('! Firebase Messaging skipped on web platform');
+        _isInitialized = true;
+        return;
+      }
+
+      // Initialize Firebase Messaging instance for non-web platforms
+      _firebaseMessaging = FirebaseMessaging.instance;
 
       // Request notification permissions
       await _requestPermissions();
@@ -51,9 +61,11 @@ class FirebaseMessagingService {
   /// Request notification permissions
   Future<void> _requestPermissions() async {
     try {
+      if (_firebaseMessaging == null) return;
+
       // Request Firebase Messaging permissions
       NotificationSettings settings =
-          await _firebaseMessaging.requestPermission(
+          await _firebaseMessaging!.requestPermission(
         alert: true,
         announcement: false,
         badge: true,
@@ -108,7 +120,9 @@ class FirebaseMessagingService {
   /// Get and store FCM token
   Future<void> _getAndStoreFCMToken() async {
     try {
-      _fcmToken = await _firebaseMessaging.getToken();
+      if (_firebaseMessaging == null) return;
+
+      _fcmToken = await _firebaseMessaging!.getToken();
 
       if (_fcmToken != null) {
         print('🔑 FCM Token: ${_fcmToken!.substring(0, 20)}...');
@@ -121,7 +135,7 @@ class FirebaseMessagingService {
       }
 
       // Listen for token refresh
-      _firebaseMessaging.onTokenRefresh.listen((newToken) {
+      _firebaseMessaging!.onTokenRefresh.listen((newToken) {
         print('🔄 FCM Token refreshed');
         _fcmToken = newToken;
         _storeFCMToken(newToken);
@@ -162,6 +176,8 @@ class FirebaseMessagingService {
 
   /// Setup message handlers for different app states
   void _setupMessageHandlers() {
+    if (_firebaseMessaging == null) return;
+
     // Handle messages when app is in foreground
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
       print('📨 Foreground message received: ${message.messageId}');
@@ -175,9 +191,7 @@ class FirebaseMessagingService {
     });
 
     // Handle messages when app is opened from terminated state
-    FirebaseMessaging.instance
-        .getInitialMessage()
-        .then((RemoteMessage? message) {
+    _firebaseMessaging!.getInitialMessage().then((RemoteMessage? message) {
       if (message != null) {
         print('📨 Terminated state message: ${message.messageId}');
         _handleMessage(message, false);
@@ -393,7 +407,8 @@ class FirebaseMessagingService {
   /// Subscribe to topic for job category notifications
   Future<void> subscribeToJobCategory(String categoryId) async {
     try {
-      await _firebaseMessaging.subscribeToTopic('job_category_$categoryId');
+      if (_firebaseMessaging == null) return;
+      await _firebaseMessaging!.subscribeToTopic('job_category_$categoryId');
       print('✅ Subscribed to job category: $categoryId');
     } catch (e) {
       print('❌ Error subscribing to job category: $e');
@@ -403,7 +418,9 @@ class FirebaseMessagingService {
   /// Unsubscribe from topic
   Future<void> unsubscribeFromJobCategory(String categoryId) async {
     try {
-      await _firebaseMessaging.unsubscribeFromTopic('job_category_$categoryId');
+      if (_firebaseMessaging == null) return;
+      await _firebaseMessaging!
+          .unsubscribeFromTopic('job_category_$categoryId');
       print('✅ Unsubscribed from job category: $categoryId');
     } catch (e) {
       print('❌ Error unsubscribing from job category: $e');

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../models/user_type.dart';
 import 'package:go_router/go_router.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../../utils/app_colors.dart';
@@ -1001,7 +1002,7 @@ class _HelperEarningsPageState extends State<HelperEarningsPage> {
               margin: const EdgeInsets.only(bottom: 12),
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: AppColors.backgroundSecondary.withOpacity(0.5),
+                color: AppColors.lightGrey.withOpacity(0.5),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Row(
@@ -1124,7 +1125,7 @@ class _HelperEarningsPageState extends State<HelperEarningsPage> {
               margin: const EdgeInsets.only(bottom: 12),
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: AppColors.backgroundSecondary.withOpacity(0.5),
+                color: AppColors.lightGrey.withOpacity(0.5),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Row(

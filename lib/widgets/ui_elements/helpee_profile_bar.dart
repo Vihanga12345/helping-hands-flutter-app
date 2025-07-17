@@ -7,8 +7,6 @@ import '../../utils/app_text_styles.dart';
 class HelpeeProfileBar extends StatelessWidget {
   final String name;
   final String? profileImageUrl;
-  final double rating;
-  final int jobCount;
   final String? serviceType;
   final VoidCallback? onMessage;
   final VoidCallback? onCall;
@@ -20,8 +18,6 @@ class HelpeeProfileBar extends StatelessWidget {
     super.key,
     required this.name,
     this.profileImageUrl,
-    required this.rating,
-    required this.jobCount,
     this.serviceType,
     this.onMessage,
     this.onCall,
@@ -103,55 +99,19 @@ class HelpeeProfileBar extends StatelessWidget {
                     ),
                     overflow: TextOverflow.ellipsis,
                   ),
+                  if (serviceType != null && serviceType!.isNotEmpty) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      serviceType!,
+                      style: AppTextStyles.bodyMedium.copyWith(
+                        color: AppColors.textSecondary,
+                        fontWeight: FontWeight.w400,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
                 ],
               ),
-            ),
-
-            // Rating and Job Count Section
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                // Rating
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(
-                      Icons.star,
-                      color: AppColors.warning,
-                      size: 16,
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      rating.toStringAsFixed(1),
-                      style: AppTextStyles.bodyMedium.copyWith(
-                        color: AppColors.textPrimary,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 4),
-                // Job Count
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      '#',
-                      style: AppTextStyles.bodyMedium.copyWith(
-                        color: AppColors.textPrimary,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    Text(
-                      jobCount.toString(),
-                      style: AppTextStyles.bodyMedium.copyWith(
-                        color: AppColors.textPrimary,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
             ),
 
             // Arrow Icon
