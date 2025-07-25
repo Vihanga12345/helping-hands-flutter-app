@@ -222,18 +222,55 @@ class UserDataService {
       // Get user's average rating from users table (automatically calculated)
       final userResponse = await _supabase
           .from('users')
-          .select('average_rating')
+          .select('average_rating, user_type')
           .eq('id', userId)
           .single();
 
-      // Get count of ratings from ratings_reviews table
-      final ratingsResponse = await _supabase
+      final userType = userResponse['user_type'];
+      print('📋 User type: $userType');
+
+      // Get ratings from ratings_reviews table first
+      final ratingsReviewsResponse = await _supabase
           .from('ratings_reviews')
           .select('rating')
           .eq('reviewee_id', userId);
 
-      final averageRating = (userResponse['average_rating'] ?? 0.0).toDouble();
-      final totalReviews = ratingsResponse.length;
+      print(
+          '📊 Found ${ratingsReviewsResponse.length} ratings in ratings_reviews');
+
+      // Also get ratings from ratings table as fallback
+      final ratingsResponse = await _supabase
+          .from('ratings')
+          .select('rating')
+          .eq('rated_user_id', userId);
+
+      print('📊 Found ${ratingsResponse.length} ratings in ratings table');
+
+      // Combine all ratings
+      List<double> allRatings = [];
+
+      // Add ratings from ratings_reviews
+      for (var rating in ratingsReviewsResponse) {
+        if (rating['rating'] != null) {
+          allRatings.add((rating['rating'] ?? 0).toDouble());
+        }
+      }
+
+      // Add ratings from ratings table
+      for (var rating in ratingsResponse) {
+        if (rating['rating'] != null) {
+          allRatings.add((rating['rating'] ?? 0).toDouble());
+        }
+      }
+
+      // Calculate statistics
+      double averageRating = 0.0;
+      int totalReviews = allRatings.length;
+
+      if (totalReviews > 0) {
+        double ratingSum = allRatings.fold(0.0, (sum, rating) => sum + rating);
+        averageRating = ratingSum / totalReviews;
+      }
 
       print('✅ Rating data: avg=$averageRating, count=$totalReviews');
 
@@ -424,17 +461,45 @@ class UserDataService {
     }
   }
 
-  // Add this method to update user profile data
+  /// Upload profile image as base64 and save to database
+  Future<String?> uploadProfileImage(String base64Data, String fileName) async {
+    try {
+      final currentUser = _authService.currentUser;
+      if (currentUser == null) {
+        print('❌ No current user found for image upload');
+        return null;
+      }
+
+      final userId = currentUser['user_id'];
+
+      print('📸 Saving profile image for user: $userId');
+
+      // Save base64 image data directly to the database
+      final imageData = 'data:image/jpeg;base64,$base64Data';
+
+      // Update user profile with base64 image data
+      await _supabase.from('users').update({
+        'profile_image_url': imageData,
+        'updated_at': DateTime.now().toIso8601String(),
+      }).eq('id', userId);
+
+      print('✅ Profile image saved successfully to database');
+      return imageData;
+    } catch (e) {
+      print('❌ Error saving profile image: $e');
+      return null;
+    }
+  }
+
+  /// Update user profile data
   Future<void> updateUserProfile(Map<String, dynamic> profileData) async {
     try {
       final currentUser = _authService.currentUser;
       if (currentUser == null) {
-        throw Exception('User not authenticated');
+        throw Exception('No current user found');
       }
 
-      print('📝 Updating user profile for user ID: ${currentUser['user_id']}');
-
-      // Update users table with new profile data
+      // Update the users table
       await _supabase
           .from('users')
           .update(profileData)

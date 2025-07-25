@@ -3,7 +3,7 @@ import '../../models/user_type.dart';
 import 'package:go_router/go_router.dart';
 import '../../utils/app_colors.dart';
 import '../../services/admin_auth_service.dart';
-import 'admin_reports_page.dart';
+import '../../widgets/common/app_header.dart';
 
 class AdminHomePage extends StatefulWidget {
   const AdminHomePage({super.key});
@@ -178,6 +178,8 @@ class _AdminHomePageState extends State<AdminHomePage> {
   }
 
   Widget _buildDashboardContent() {
+    final bool isDesktop = MediaQuery.of(context).size.width > 600;
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20),
       child: Column(
@@ -219,7 +221,7 @@ class _AdminHomePageState extends State<AdminHomePage> {
                 ),
                 const SizedBox(height: 8),
                 const Text(
-                  'Here\'s an overview of your Helping Hands platform',
+                  'Manage users, oversee jobs, and monitor your Helping Hands platform',
                   style: TextStyle(
                     color: AppColors.white,
                     fontSize: 16,
@@ -230,295 +232,243 @@ class _AdminHomePageState extends State<AdminHomePage> {
             ),
           ),
 
-          const SizedBox(height: 24),
+          const SizedBox(height: 32),
 
-          // Statistics Grid
-          if (_dashboardStats != null) _buildStatisticsGrid(),
+          // Users Segment
+          _buildSegment(
+            'Users',
+            Icons.people,
+            [
+              _buildTile(
+                'Helpees',
+                'View all helpee profiles',
+                Icons.person,
+                AppColors.primaryBlue,
+                () => context.go('/admin/users/helpees'),
+                isDesktop: isDesktop,
+              ),
+              _buildTile(
+                'Helpers',
+                'View all helper profiles',
+                Icons.person_pin,
+                AppColors.primaryOrange,
+                () => context.go('/admin/users/helpers'),
+                isDesktop: isDesktop,
+              ),
+            ],
+            isDesktop: isDesktop,
+          ),
 
-          const SizedBox(height: 24),
+          const SizedBox(height: 32),
 
-          // Quick Actions Section
-          _buildQuickActionsSection(),
+          // Jobs Segment
+          _buildSegment(
+            'Jobs',
+            Icons.work,
+            [
+              _buildTile(
+                'Pending Jobs',
+                'View pending job requests',
+                Icons.pending_actions,
+                AppColors.warning,
+                () => context.go('/admin/jobs/pending'),
+                isDesktop: isDesktop,
+              ),
+              _buildTile(
+                'Ongoing Jobs',
+                'Monitor active jobs',
+                Icons.work_outline,
+                AppColors.primaryGreen,
+                () => context.go('/admin/jobs/ongoing'),
+                isDesktop: isDesktop,
+              ),
+              _buildTile(
+                'Completed Jobs',
+                'Review completed jobs',
+                Icons.check_circle,
+                AppColors.primaryPurple,
+                () => context.go('/admin/jobs/completed'),
+                isDesktop: isDesktop,
+              ),
+            ],
+            isDesktop: isDesktop,
+          ),
 
-          const SizedBox(height: 24),
+          const SizedBox(height: 32),
 
-          // Recent Activity Section
-          _buildRecentActivitySection(),
+          // Reports Segment
+          _buildSegment(
+            'Reports',
+            Icons.analytics,
+            [
+              _buildTile(
+                'View Reports',
+                'System reports and analytics',
+                Icons.assessment,
+                AppColors.error,
+                () => context.go('/admin/reports'),
+                isDesktop: isDesktop,
+              ),
+            ],
+            isDesktop: isDesktop,
+          ),
+
+          const SizedBox(height: 32),
+
+          // Job Management Segment
+          _buildSegment(
+            'Job Management',
+            Icons.settings,
+            [
+              _buildTile(
+                'Create Jobs',
+                'Add new job categories and rates',
+                Icons.add_business,
+                AppColors.darkGreen,
+                () => context.go('/admin/job-categories'),
+                isDesktop: isDesktop,
+              ),
+              _buildTile(
+                'Job Questions',
+                'Manage job-related questions',
+                Icons.quiz,
+                AppColors.primaryBlue,
+                () => context.go('/admin/job-questions'),
+                isDesktop: isDesktop,
+              ),
+            ],
+            isDesktop: isDesktop,
+          ),
+
+          const SizedBox(height: 32),
         ],
       ),
     );
   }
 
-  Widget _buildStatisticsGrid() {
-    final stats = _dashboardStats!;
-
+  Widget _buildSegment(String title, IconData icon, List<Widget> tiles,
+      {required bool isDesktop}) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'System Overview',
-          style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-            color: AppColors.darkGreen,
+        // Segment Header
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          decoration: BoxDecoration(
+            color: AppColors.primaryGreen,
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.primaryGreen.withOpacity(0.3),
+                spreadRadius: 1,
+                blurRadius: 6,
+                offset: const Offset(0, 2),
+              ),
+            ],
           ),
-        ),
-        const SizedBox(height: 16),
-        GridView.count(
-          crossAxisCount: 2,
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          mainAxisSpacing: 16,
-          crossAxisSpacing: 16,
-          children: [
-            _buildStatCard(
-              'Total Users',
-              '${stats['total_users'] ?? 0}',
-              Icons.people,
-              AppColors.primaryBlue,
-            ),
-            _buildStatCard(
-              'Active Jobs',
-              '${stats['active_jobs'] ?? 0}',
-              Icons.work,
-              AppColors.primaryOrange,
-            ),
-            _buildStatCard(
-              'Completed Jobs',
-              '${stats['completed_jobs'] ?? 0}',
-              Icons.check_circle,
-              AppColors.primaryGreen,
-            ),
-            _buildStatCard(
-              'Today\'s Jobs',
-              '${stats['jobs_today'] ?? 0}',
-              Icons.today,
-              AppColors.primaryPurple,
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-
-  Widget _buildStatCard(
-      String title, String value, IconData icon, Color color) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
-            spreadRadius: 2,
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          child: Row(
             children: [
               Icon(
                 icon,
-                color: color,
+                color: AppColors.white,
                 size: 24,
               ),
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: color.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Icon(
-                  icon,
-                  color: color,
-                  size: 16,
+              const SizedBox(width: 12),
+              Text(
+                title,
+                style: const TextStyle(
+                  color: AppColors.white,
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 12),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 28,
-              fontWeight: FontWeight.bold,
-              color: AppColors.textPrimary,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            title,
-            style: TextStyle(
-              fontSize: 14,
-              color: AppColors.textSecondary,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+        ),
 
-  Widget _buildQuickActionsSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Quick Actions',
-          style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-            color: AppColors.darkGreen,
+        const SizedBox(height: 16),
+
+        // Tiles Grid
+        if (isDesktop)
+          GridView.count(
+            crossAxisCount: tiles.length > 2 ? 3 : 2,
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            mainAxisSpacing: 16,
+            crossAxisSpacing: 16,
+            childAspectRatio: 1.2,
+            children: tiles,
+          )
+        else
+          Column(
+            children: tiles
+                .map((tile) => Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: tile,
+                    ))
+                .toList(),
           ),
-        ),
-        const SizedBox(height: 16),
-        Row(
-          children: [
-            Expanded(
-              child: _buildActionButton(
-                'Manage Jobs',
-                Icons.work_outline,
-                AppColors.primaryBlue,
-                () => context.go('/admin/manage-jobs'),
-              ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: _buildActionButton(
-                'Analytics',
-                Icons.analytics,
-                AppColors.primaryOrange,
-                () => context.go('/admin/analytics'),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 16),
-        Row(
-          children: [
-            Expanded(
-              child: _buildActionButton(
-                'Application Issues & Reports',
-                Icons.report_problem,
-                AppColors.primaryPurple,
-                () => Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const AdminReportsPage(),
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Container(), // Empty space for symmetry
-            ),
-          ],
-        ),
       ],
     );
   }
 
-  Widget _buildActionButton(
-    String title,
-    IconData icon,
-    Color color,
-    VoidCallback onTap,
-  ) {
+  Widget _buildTile(String title, String subtitle, IconData icon, Color color,
+      VoidCallback onTap,
+      {required bool isDesktop}) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
+        width: double.infinity,
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
           color: AppColors.white,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: color.withOpacity(0.3),
-            width: 1,
-          ),
+          borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: Colors.grey.withOpacity(0.1),
+              color: Colors.grey.withOpacity(0.15),
               spreadRadius: 2,
               blurRadius: 8,
-              offset: const Offset(0, 2),
+              offset: const Offset(0, 4),
             ),
           ],
         ),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
                 color: color.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(12),
               ),
               child: Icon(
                 icon,
                 color: color,
-                size: 24,
+                size: isDesktop ? 32 : 28,
               ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 16),
             Text(
               title,
               style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
+                fontSize: isDesktop ? 18 : 16,
+                fontWeight: FontWeight.bold,
                 color: AppColors.textPrimary,
               ),
-              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              subtitle,
+              style: TextStyle(
+                fontSize: isDesktop ? 14 : 12,
+                color: AppColors.textSecondary,
+                fontWeight: FontWeight.w500,
+              ),
             ),
           ],
         ),
       ),
-    );
-  }
-
-  Widget _buildRecentActivitySection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Recent Activity',
-          style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-            color: AppColors.darkGreen,
-          ),
-        ),
-        const SizedBox(height: 16),
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: AppColors.white,
-            borderRadius: BorderRadius.circular(12),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.grey.withOpacity(0.1),
-                spreadRadius: 2,
-                blurRadius: 8,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
-          child: const Text(
-            'Recent activity will be displayed here',
-            style: TextStyle(
-              fontSize: 16,
-              color: AppColors.textSecondary,
-            ),
-            textAlign: TextAlign.center,
-          ),
-        ),
-      ],
     );
   }
 }

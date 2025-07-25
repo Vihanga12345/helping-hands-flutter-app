@@ -40,6 +40,7 @@ class AuthGuardService {
     '/intro2',
     '/intro3',
     '/user-selection',
+    '/information',
     '/helpee-auth',
     '/helpee-login',
     '/helpee-register',

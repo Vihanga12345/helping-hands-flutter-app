@@ -8,6 +8,7 @@ import '../pages/common/user_2_intro_page_1.dart';
 import '../pages/common/user_3_intro_page_2.dart';
 import '../pages/common/user_4_intro_page_3.dart';
 import '../pages/common/user_5_user_selection_page.dart';
+import '../pages/common/information_page.dart';
 
 // Helpee Pages
 import '../pages/helpee/helpee_1_auth_page.dart';
@@ -37,6 +38,7 @@ import '../pages/helpee/helpee_job_detail_completed.dart';
 import '../pages/helpee/helpee_23_help_support_my_jobs_page.dart';
 import '../pages/helpee/helpee_payment_confirmation_page.dart';
 import '../pages/helpee/helpee_rating_page.dart';
+import '../pages/helpee/helpee_reviews_page.dart';
 
 // Shared Pages (Chat & Calling)
 import '../pages/shared/chat_page.dart';
@@ -61,6 +63,7 @@ import '../pages/helper/helper_21_profile_tab_page.dart';
 import '../pages/helper/helper_22_profile_edit_page.dart';
 import '../pages/helper/helper_24_profile_jobs_edit_page.dart';
 import '../pages/helper/helper_26_profile_resume_edit_page.dart';
+import '../pages/helper/helper_reviews_page.dart';
 import '../pages/helper/helper_earnings_page.dart';
 import '../pages/helper/helper_help_support_page.dart';
 import '../pages/helper/helper_about_us_page.dart';
@@ -123,6 +126,11 @@ class NavigationService {
         name: 'userSelection',
         builder: (context, state) => const User5UserSelectionPage(),
       ),
+      GoRoute(
+        path: '/information',
+        name: 'information',
+        builder: (context, state) => const InformationPage(),
+      ),
 
       // Helpee Routes
       GoRoute(
@@ -181,6 +189,11 @@ class NavigationService {
         path: '/helpee/profile',
         name: 'helpee-profile',
         builder: (context, state) => const Helpee10ProfilePage(),
+      ),
+      GoRoute(
+        path: '/helpee/reviews',
+        name: 'helpee-reviews',
+        builder: (context, state) => const HelpeeReviewsPage(),
       ),
       GoRoute(
         path: '/helpee/activity/pending',
@@ -403,6 +416,11 @@ class NavigationService {
         path: '/helper/profile',
         name: 'helper-profile',
         builder: (context, state) => const Helper21ProfileTabPage(),
+      ),
+      GoRoute(
+        path: '/helper/reviews',
+        name: 'helper-reviews',
+        builder: (context, state) => const HelperReviewsPage(),
       ),
       GoRoute(
         path: '/helper/profile/edit',

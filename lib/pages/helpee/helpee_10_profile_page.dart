@@ -234,11 +234,15 @@ class _Helpee10ProfilePageState extends State<Helpee10ProfilePage> {
             AppColors.warning,
           ),
           _buildStatDivider(),
-          _buildStatItem(
+          _buildClickableStatItem(
             'Reviews',
             '${stats['total_reviews'] ?? 0}',
             Icons.rate_review,
             AppColors.primaryGreen,
+            onTap: () {
+              // Navigate to reviews page
+              context.push('/helpee/reviews');
+            },
           ),
           _buildStatDivider(),
           _buildStatItem(
@@ -421,6 +425,42 @@ class _Helpee10ProfilePageState extends State<Helpee10ProfilePage> {
             textAlign: TextAlign.center,
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildClickableStatItem(
+      String label, String value, IconData icon, Color color,
+      {VoidCallback? onTap}) {
+    return Expanded(
+      child: GestureDetector(
+        onTap: onTap,
+        child: Column(
+          children: [
+            Icon(
+              icon,
+              color: color,
+              size: 24,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              value,
+              style: AppTextStyles.heading3.copyWith(
+                color: color,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              label,
+              style: AppTextStyles.bodySmall.copyWith(
+                color: AppColors.textSecondary,
+                fontWeight: FontWeight.w500,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
       ),
     );
   }

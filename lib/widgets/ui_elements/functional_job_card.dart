@@ -176,24 +176,20 @@ class _FunctionalJobCardState extends State<FunctionalJobCard> {
   }
 
   Widget _buildJobDetail(IconData icon, String text) {
-    return Row(
-      children: [
-        Icon(
-          icon,
-          size: 16,
-          color: AppColors.textSecondary,
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      decoration: BoxDecoration(
+        color: AppColors.primaryGreen.withOpacity(0.2),
+        borderRadius: BorderRadius.circular(25),
+      ),
+      child: Text(
+        text,
+        style: AppTextStyles.bodyMedium.copyWith(
+          color: AppColors.primaryGreen,
+          fontWeight: FontWeight.w600,
         ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: Text(
-            text,
-            style: const TextStyle(
-              fontSize: 14,
-              color: AppColors.textSecondary,
-            ),
-          ),
-        ),
-      ],
+      ),
     );
   }
 

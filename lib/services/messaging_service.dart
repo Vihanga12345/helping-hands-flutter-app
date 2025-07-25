@@ -108,7 +108,7 @@ class MessagingService {
 
       // Subscribe to real-time message updates for this conversation
       _messageChannel = _supabase
-          .channel('messages:$conversationId')
+          .channel('messages_realtime_$conversationId')
           .onPostgresChanges(
             event: PostgresChangeEvent.insert,
             schema: 'public',
@@ -119,9 +119,13 @@ class MessagingService {
               value: conversationId,
             ),
             callback: (payload) {
-              print('💬 New message received in conversation: $conversationId');
+              print(
+                  '💬 Real-time: New message received in conversation: $conversationId');
+              print('💬 Message payload: ${payload.newRecord}');
               // Immediately reload messages when a new message is inserted
-              _loadMessages(conversationId);
+              Future.delayed(const Duration(milliseconds: 100), () {
+                _loadMessages(conversationId);
+              });
             },
           )
           .onPostgresChanges(
@@ -134,9 +138,12 @@ class MessagingService {
               value: conversationId,
             ),
             callback: (payload) {
-              print('💬 Message updated in conversation: $conversationId');
+              print(
+                  '💬 Real-time: Message updated in conversation: $conversationId');
               // Reload messages when any message is updated (e.g., read status)
-              _loadMessages(conversationId);
+              Future.delayed(const Duration(milliseconds: 100), () {
+                _loadMessages(conversationId);
+              });
             },
           )
           .subscribe();
@@ -209,16 +216,22 @@ class MessagingService {
   }) async {
     try {
       print('💬 Sending message to conversation: $conversationId');
+      print('💬 Message text: $messageText');
+      print('💬 Sender ID: $senderId');
 
-      await _supabase.rpc('send_message', params: {
+      final result = await _supabase.rpc('send_message', params: {
         'p_conversation_id': conversationId,
         'p_sender_id': senderId,
         'p_message_text': messageText,
         'p_message_type': 'text',
       });
 
-      // Reload messages after sending
-      _loadMessages(conversationId);
+      print('💬 Send message RPC result: $result');
+
+      // Reload messages after sending with a small delay to ensure database consistency
+      Future.delayed(const Duration(milliseconds: 200), () {
+        _loadMessages(conversationId);
+      });
 
       print('✅ Message sent successfully');
       return true;

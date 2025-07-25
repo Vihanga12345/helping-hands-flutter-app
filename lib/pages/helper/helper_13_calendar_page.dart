@@ -69,6 +69,9 @@ class _Helper13CalendarPageState extends State<Helper13CalendarPage>
     // Listen to real-time calendar data updates
     _calendarSubscription =
         liveDataService.calendarStream.listen((calendarJobs) {
+      print(
+          '🔄 Helper Calendar: Received ${calendarJobs.length} jobs from stream');
+
       if (mounted) {
         _processCalendarData(calendarJobs);
       }
@@ -229,6 +232,14 @@ class _Helper13CalendarPageState extends State<Helper13CalendarPage>
         return;
       }
 
+      print('🔄 Helper Calendar: Loading events...');
+
+      // Ensure the live data service is initialized
+      if (!liveDataService.isInitialized) {
+        print('⚠️ LiveDataService not initialized, initializing now...');
+        await liveDataService.initialize();
+      }
+
       // Use real-time service to refresh calendar data
       final now = DateTime.now();
       final startDate = DateTime(now.year, now.month, 1);
@@ -238,10 +249,86 @@ class _Helper13CalendarPageState extends State<Helper13CalendarPage>
         startDate: startDate,
         endDate: endDate,
       );
+
+      print('✅ Helper Calendar: Events loaded successfully');
     } catch (e) {
+      print('❌ Error loading calendar events: $e');
+
+      // Fallback: Load calendar data directly
+      print('🔄 Fallback: Loading calendar data directly...');
+      await _loadCalendarDataDirectly();
+    }
+  }
+
+  // Fallback method to load calendar data directly if live service fails
+  Future<void> _loadCalendarDataDirectly() async {
+    try {
+      final currentUser = _authService.currentUser;
+      if (currentUser == null) {
+        setState(() {
+          _isLoading = false;
+          _error = 'User not logged in';
+        });
+        return;
+      }
+
+      final helperId = currentUser['user_id'];
+      final now = DateTime.now();
+      final startDate = DateTime(now.year, now.month, 1);
+      final endDate = DateTime(now.year, now.month + 1, 0);
+
+      print('🔄 Loading calendar data directly for helper: $helperId');
+
+      // Load calendar jobs directly from JobDataService
+      final calendarJobs = <Map<String, dynamic>>[];
+
+      // Get assigned jobs for this month
+      final assignedJobs =
+          await _jobDataService.getJobsByHelperAndStatus(helperId, 'all');
+
+      // Filter by date range
+      final filteredJobs = assignedJobs.where((job) {
+        final scheduledDate = job['scheduled_date'];
+        if (scheduledDate != null) {
+          final date = DateTime.parse(scheduledDate);
+          return date.isAfter(startDate.subtract(const Duration(days: 1))) &&
+              date.isBefore(endDate.add(const Duration(days: 1)));
+        }
+        return false;
+      }).toList();
+
+      // Get pending jobs (public + private) for this month
+      final pendingJobs = await _jobDataService.getHelperPendingJobs(helperId);
+      final filteredPendingJobs = pendingJobs.where((job) {
+        final scheduledDate = job['scheduled_date'];
+        if (scheduledDate != null) {
+          final date = DateTime.parse(scheduledDate);
+          return date.isAfter(startDate.subtract(const Duration(days: 1))) &&
+              date.isBefore(endDate.add(const Duration(days: 1)));
+        }
+        return false;
+      }).toList();
+
+      calendarJobs.addAll(filteredJobs);
+      calendarJobs.addAll(filteredPendingJobs);
+
+      // Remove duplicates
+      final uniqueJobs = <String, Map<String, dynamic>>{};
+      for (final job in calendarJobs) {
+        final jobId = job['id'].toString();
+        uniqueJobs[jobId] = job;
+      }
+
+      final finalJobs = uniqueJobs.values.toList();
+      print('✅ Direct calendar data load completed: ${finalJobs.length} jobs');
+
+      // Process the calendar data
+      _processCalendarData(finalJobs);
+    } catch (e) {
+      print('❌ Error in direct calendar data loading: $e');
       setState(() {
         _isLoading = false;
-        _error = 'Failed to load calendar events: $e';
+        _error = 'Failed to load calendar data: $e';
       });
     }
   }

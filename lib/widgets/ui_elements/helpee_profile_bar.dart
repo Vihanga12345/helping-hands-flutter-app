@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../utils/app_colors.dart';
 import '../../utils/app_text_styles.dart';
+import '../common/profile_image_widget.dart';
 
 /// Helpee Profile Bar component with contact options
 /// Used for displaying helpee information with communication buttons
@@ -49,39 +50,11 @@ class HelpeeProfileBar extends StatelessWidget {
         child: Row(
           children: [
             // Profile Image Section
-            Container(
-              width: 50,
-              height: 50,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Colors.white,
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.1),
-                    blurRadius: 4,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: ClipOval(
-                child: profileImageUrl != null && profileImageUrl!.isNotEmpty
-                    ? Image.network(
-                        profileImageUrl!,
-                        width: 50,
-                        height: 50,
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) => Icon(
-                          Icons.person,
-                          size: 28,
-                          color: AppColors.textSecondary,
-                        ),
-                      )
-                    : Icon(
-                        Icons.person,
-                        size: 28,
-                        color: AppColors.textSecondary,
-                      ),
-              ),
+            ProfileImageWidget(
+              imageUrl: profileImageUrl,
+              size: 50,
+              fallbackText: name.isNotEmpty ? name[0].toUpperCase() : 'H',
+              borderWidth: 0,
             ),
             const SizedBox(width: 12),
 

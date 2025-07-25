@@ -5,6 +5,7 @@ import '../../utils/app_colors.dart';
 import '../../utils/app_text_styles.dart';
 import '../../widgets/common/app_header.dart';
 import '../../widgets/common/app_navigation_bar.dart';
+import '../../widgets/common/profile_image_widget.dart';
 import '../../services/helper_data_service.dart';
 import '../../services/custom_auth_service.dart';
 import '../../services/localization_service.dart';
@@ -82,8 +83,15 @@ class _Helpee14HelperProfilePageState extends State<Helpee14HelperProfilePage>
       }
 
       print('🆔 Found helperId: $_helperId. Fetching profile...');
-      var profile =
-          await _helperDataService.getHelperProfileForHelpee(_helperId!);
+
+      // Load helper profile and latest reviews in parallel
+      final results = await Future.wait([
+        _helperDataService.getHelperProfileForHelpee(_helperId!),
+        _helperDataService.getHelperLatestReviews(_helperId!),
+      ]);
+
+      var profile = results[0] as Map<String, dynamic>?;
+      final latestReviews = results[1] as List<Map<String, dynamic>>;
 
       if (profile != null) {
         // Normalise field names for consistency with helper-side page
@@ -100,6 +108,7 @@ class _Helpee14HelperProfilePageState extends State<Helpee14HelperProfilePage>
               profile['total_reviews'] ?? profile['completed_jobs'] ?? 0,
           'profile_image_url':
               profile['profile_image_url'] ?? profile['profile_pic'],
+          'latest_reviews': latestReviews,
         };
 
         // Get emergency contact data
@@ -138,16 +147,48 @@ class _Helpee14HelperProfilePageState extends State<Helpee14HelperProfilePage>
     try {
       print('🆘 Loading emergency contacts for helper: $_helperId');
 
-      final response = await Supabase.instance.client
+      // First, try to get emergency contacts from the separate emergency_contacts table
+      final emergencyContactsResponse = await Supabase.instance.client
           .from('emergency_contacts')
           .select('contact_name, contact_phone')
           .eq('user_id', _helperId!);
 
+      List<Map<String, dynamic>> emergencyContacts = [];
+
+      // Add contacts from emergency_contacts table
+      for (var contact in emergencyContactsResponse) {
+        emergencyContacts.add({
+          'contact_name': contact['contact_name'],
+          'contact_phone': contact['contact_phone'],
+        });
+      }
+
+      // Also check the users table for emergency contact fields
+      final userEmergencyResponse = await Supabase.instance.client
+          .from('users')
+          .select('emergency_contact_name, emergency_contact_phone')
+          .eq('id', _helperId!)
+          .maybeSingle();
+
+      // Add emergency contact from users table if it exists
+      if (userEmergencyResponse != null &&
+          userEmergencyResponse['emergency_contact_name'] != null &&
+          userEmergencyResponse['emergency_contact_name']
+              .toString()
+              .isNotEmpty) {
+        emergencyContacts.add({
+          'contact_name': userEmergencyResponse['emergency_contact_name'],
+          'contact_phone': userEmergencyResponse['emergency_contact_phone'] ??
+              'No phone provided',
+        });
+      }
+
       setState(() {
-        _emergencyContacts = List<Map<String, dynamic>>.from(response);
+        _emergencyContacts = emergencyContacts;
       });
 
-      print('✅ Emergency contacts loaded: ${_emergencyContacts?.length ?? 0}');
+      print(
+          '✅ Emergency contacts loaded: ${emergencyContacts.length} contacts found');
     } catch (e) {
       print('❌ Error loading emergency contacts: $e');
       setState(() {
@@ -361,34 +402,10 @@ class _Helpee14HelperProfilePageState extends State<Helpee14HelperProfilePage>
       child: Column(
         children: [
           // Profile Picture
-          Container(
-            width: 120,
-            height: 120,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              border: Border.all(
-                color: AppColors.primaryGreen,
-                width: 3,
-              ),
-            ),
-            child: CircleAvatar(
-              radius: 57,
-              backgroundColor: AppColors.primaryGreen,
-              backgroundImage:
-                  profileImageUrl != null && profileImageUrl.isNotEmpty
-                      ? NetworkImage(profileImageUrl)
-                      : null,
-              child: profileImageUrl == null || profileImageUrl.isEmpty
-                  ? Text(
-                      name.isNotEmpty ? name[0].toUpperCase() : 'H',
-                      style: const TextStyle(
-                        fontSize: 36,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                    )
-                  : null,
-            ),
+          ProfileImageWidget(
+            imageUrl: profileImageUrl,
+            size: 120,
+            fallbackText: name.isNotEmpty ? name[0].toUpperCase() : 'H',
           ),
 
           const SizedBox(height: 16),
@@ -1156,7 +1173,7 @@ class _Helpee14HelperProfilePageState extends State<Helpee14HelperProfilePage>
   }
 
   Widget _buildReviewsSection() {
-    final reviews = _helperProfile?['reviews'] as List? ?? [];
+    final latestReviews = _helperProfile?['latest_reviews'] as List? ?? [];
 
     return Container(
       width: double.infinity,
@@ -1182,7 +1199,7 @@ class _Helpee14HelperProfilePageState extends State<Helpee14HelperProfilePage>
             ),
           ),
           const SizedBox(height: 16),
-          if (reviews.isEmpty) ...[
+          if (latestReviews.isEmpty) ...[
             Center(
               child: Column(
                 children: [
@@ -1210,51 +1227,48 @@ class _Helpee14HelperProfilePageState extends State<Helpee14HelperProfilePage>
               ),
             ),
           ] else ...[
-            ...reviews.take(3).map((review) {
-              final helpeeName = review['reviewer']?['first_name'] != null
-                  ? '${review['reviewer']['first_name']} ${review['reviewer']['last_name'] ?? ''}'
-                      .trim()
-                  : 'Anonymous';
-              final reviewerImage = review['reviewer']?['profile_image_url'];
-              final reviewText = review['review'] ?? '';
-              final rating = review['rating'] ?? 0;
-              final createdAt = review['created_at'] ?? '';
-
-              // Format date
-              String timeAgo = 'Recently';
-              if (createdAt.isNotEmpty) {
-                try {
-                  final date = DateTime.parse(createdAt);
-                  final now = DateTime.now();
-                  final difference = now.difference(date);
-
-                  if (difference.inDays == 0) {
-                    timeAgo = 'Today';
-                  } else if (difference.inDays == 1) {
-                    timeAgo = 'Yesterday';
-                  } else if (difference.inDays < 7) {
-                    timeAgo = '${difference.inDays} days ago';
-                  } else if (difference.inDays < 30) {
-                    timeAgo = '${(difference.inDays / 7).floor()} weeks ago';
-                  } else {
-                    timeAgo = '${(difference.inDays / 30).floor()} months ago';
-                  }
-                } catch (e) {
-                  timeAgo = 'Recently';
-                }
-              }
-
-              return _buildReviewItem(
-                  helpeeName, reviewText, rating, timeAgo, reviewerImage);
-            }).toList(),
+            ...latestReviews.map((review) => _buildReviewItem(review)).toList(),
           ],
         ],
       ),
     );
   }
 
-  Widget _buildReviewItem(String helpeeName, String reviewText, int rating,
-      String timeAgo, String? reviewerImage) {
+  Widget _buildReviewItem(Map<String, dynamic> review) {
+    final reviewer = review['reviewer'];
+    final helpeeName = reviewer != null
+        ? '${reviewer['first_name'] ?? ''} ${reviewer['last_name'] ?? ''}'
+            .trim()
+        : 'Helpee';
+    final reviewerImage = reviewer?['profile_image_url'];
+    final reviewText = review['review_text'] ?? '';
+    final rating = review['rating'] ?? 0;
+    final createdAt = review['created_at'] ?? '';
+
+    // Format date
+    String timeAgo = 'Recently';
+    if (createdAt.isNotEmpty) {
+      try {
+        final date = DateTime.parse(createdAt);
+        final now = DateTime.now();
+        final difference = now.difference(date);
+
+        if (difference.inDays == 0) {
+          timeAgo = 'Today';
+        } else if (difference.inDays == 1) {
+          timeAgo = 'Yesterday';
+        } else if (difference.inDays < 7) {
+          timeAgo = '${difference.inDays} days ago';
+        } else if (difference.inDays < 30) {
+          timeAgo = '${(difference.inDays / 7).floor()} weeks ago';
+        } else {
+          timeAgo = '${(difference.inDays / 30).floor()} months ago';
+        }
+      } catch (e) {
+        timeAgo = 'Recently';
+      }
+    }
+
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(16),
@@ -1271,24 +1285,12 @@ class _Helpee14HelperProfilePageState extends State<Helpee14HelperProfilePage>
         children: [
           Row(
             children: [
-              CircleAvatar(
-                radius: 18,
-                backgroundColor: AppColors.primaryGreen,
-                backgroundImage:
-                    reviewerImage != null && reviewerImage.isNotEmpty
-                        ? NetworkImage(reviewerImage)
-                        : null,
-                child: (reviewerImage == null || reviewerImage.isEmpty)
-                    ? Text(
-                        helpeeName.isNotEmpty
-                            ? helpeeName[0].toUpperCase()
-                            : 'A',
-                        style: AppTextStyles.bodyMedium.copyWith(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      )
-                    : null,
+              ProfileImageWidget(
+                imageUrl: reviewerImage,
+                size: 36,
+                fallbackText:
+                    helpeeName.isNotEmpty ? helpeeName[0].toUpperCase() : 'H',
+                borderWidth: 0,
               ),
               const SizedBox(width: 12),
               Expanded(

@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import '../../utils/app_colors.dart';
+import '../../utils/app_text_styles.dart';
+import '../common/profile_image_widget.dart';
 
 /// Helper Profile Bar component for displaying helper information from helpee POV
 /// Redesigned to show: name, profile pic, job types only
@@ -71,42 +74,11 @@ class HelperProfileBar extends StatelessWidget {
         child: Row(
           children: [
             // Profile Image Section
-            Container(
-              width: 62,
-              height: 62,
-              decoration: const ShapeDecoration(
-                color: Colors.white,
-                shape: OvalBorder(),
-                shadows: [
-                  BoxShadow(
-                    color: Color(0x3F000000),
-                    blurRadius: 4,
-                    offset: Offset(0, 2),
-                    spreadRadius: 0,
-                  ),
-                ],
-              ),
-              child: Center(
-                child: profileImageUrl != null && profileImageUrl!.isNotEmpty
-                    ? ClipOval(
-                        child: Image.network(
-                          profileImageUrl!,
-                          width: 56,
-                          height: 56,
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) => Icon(
-                            Icons.person,
-                            size: 35,
-                            color: Colors.grey.shade600,
-                          ),
-                        ),
-                      )
-                    : Icon(
-                        Icons.person,
-                        size: 35,
-                        color: Colors.grey.shade600,
-                      ),
-              ),
+            ProfileImageWidget(
+              imageUrl: profileImageUrl,
+              size: 62,
+              fallbackText: name.isNotEmpty ? name[0].toUpperCase() : 'H',
+              borderWidth: 0,
             ),
             const SizedBox(width: 14),
 

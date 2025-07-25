@@ -556,6 +556,158 @@ class AdminDataService {
   }
 
   // ============================================================================
+  // HELPER MANAGEMENT OPERATIONS
+  // ============================================================================
+
+  /// Get all helpers with their jobs_visible status and basic info
+  Future<List<Map<String, dynamic>>> getAllHelpers() async {
+    await _logAdminAction('view', 'helper', actionDetails: {
+      'query_type': 'all_helpers',
+      'timestamp': DateTime.now().toIso8601String(),
+    });
+
+    try {
+      final response = await _supabase
+          .from('users')
+          .select('''
+            id, first_name, last_name, email, phone, profile_image_url,
+            jobs_visible, total_jobs_completed, rating, created_at,
+            job_type_names, location_city, location_address
+          ''')
+          .eq('user_type', 'helper')
+          .order('first_name', ascending: true);
+
+      return List<Map<String, dynamic>>.from(response);
+    } catch (e) {
+      print('❌ Error getting all helpers: $e');
+      return [];
+    }
+  }
+
+  /// Get specific helper details including jobs_visible status
+  Future<Map<String, dynamic>?> getHelperDetails(String helperId) async {
+    await _logAdminAction('view', 'helper', 
+      entityId: helperId,
+      actionDetails: {
+        'query_type': 'helper_details',
+        'timestamp': DateTime.now().toIso8601String(),
+      });
+
+    try {
+      final response = await _supabase
+          .from('users')
+          .select('''
+            id, first_name, last_name, email, phone, profile_image_url,
+            jobs_visible, total_jobs_completed, rating, created_at,
+            job_type_names, location_city, location_address, bio
+          ''')
+          .eq('id', helperId)
+          .eq('user_type', 'helper')
+          .single();
+
+      return Map<String, dynamic>.from(response);
+    } catch (e) {
+      print('❌ Error getting helper details: $e');
+      return null;
+    }
+  }
+
+  /// Toggle jobs_visible status for a helper (Admin only)
+  Future<bool> toggleHelperJobsVisibility(String helperId, bool jobsVisible) async {
+    if (!_adminAuth.isLoggedIn) {
+      throw Exception('Admin authentication required');
+    }
+
+    try {
+      // Get current helper data for logging
+      final currentHelper = await getHelperDetails(helperId);
+      final currentStatus = currentHelper?['jobs_visible'] ?? true;
+      
+      // Update the jobs_visible status
+      final response = await _supabase
+          .from('users')
+          .update({'jobs_visible': jobsVisible})
+          .eq('id', helperId)
+          .eq('user_type', 'helper')
+          .select('id, first_name, last_name, jobs_visible');
+
+      if (response.isEmpty) {
+        throw Exception('Helper not found or update failed');
+      }
+
+      // Log the admin action
+      await _logAdminAction(
+        'update',
+        'helper',
+        entityId: helperId,
+        entityName: '${currentHelper?['first_name']} ${currentHelper?['last_name']}',
+        actionDetails: {
+          'field_updated': 'jobs_visible',
+          'action': jobsVisible ? 'enabled_job_visibility' : 'disabled_job_visibility',
+          'timestamp': DateTime.now().toIso8601String(),
+        },
+        oldValues: {'jobs_visible': currentStatus},
+        newValues: {'jobs_visible': jobsVisible},
+      );
+
+      print('✅ Helper ${helperId} jobs_visible updated to: $jobsVisible');
+      return true;
+    } catch (e) {
+      print('❌ Error toggling helper jobs visibility: $e');
+      return false;
+    }
+  }
+
+  /// Get helper's current jobs_visible status
+  Future<bool> getHelperJobsVisibility(String helperId) async {
+    try {
+      final response = await _supabase
+          .from('users')
+          .select('jobs_visible')
+          .eq('id', helperId)
+          .eq('user_type', 'helper')
+          .single();
+
+      return response['jobs_visible'] ?? true;
+    } catch (e) {
+      print('❌ Error getting helper jobs visibility: $e');
+      return true; // Default to visible if error
+    }
+  }
+
+  /// Get statistics about helper job visibility
+  Future<Map<String, int>> getHelperVisibilityStats() async {
+    await _logAdminAction('view', 'helper', actionDetails: {
+      'query_type': 'visibility_stats',
+      'timestamp': DateTime.now().toIso8601String(),
+    });
+
+    try {
+      final response = await _supabase
+          .from('users')
+          .select('jobs_visible')
+          .eq('user_type', 'helper');
+
+      int totalHelpers = response.length;
+      int visibleHelpers = response.where((h) => h['jobs_visible'] == true).length;
+      int restrictedHelpers = totalHelpers - visibleHelpers;
+
+      return {
+        'total_helpers': totalHelpers,
+        'visible_helpers': visibleHelpers,
+        'restricted_helpers': restrictedHelpers,
+      };
+    } catch (e) {
+      print('❌ Error getting helper visibility stats: $e');
+      return {
+        'total_helpers': 0,
+        'visible_helpers': 0,
+        'restricted_helpers': 0,
+      };
+    }
+  }
+
+  // ============================================================================
   // HELPER METHODS
   // ============================================================================
 

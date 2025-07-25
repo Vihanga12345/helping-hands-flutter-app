@@ -11,18 +11,21 @@ import '../../services/custom_auth_service.dart';
 import '../../services/localization_service.dart';
 import '../../widgets/common/realtime_app_wrapper.dart';
 import 'dart:async';
+import '../../widgets/ui_elements/functional_job_card.dart';
 
 class Event {
   final String title;
   final String status;
   final String helper;
   final String jobId;
+  final Map<String, dynamic>? jobData; // Add original job data
 
   const Event({
     required this.title,
     required this.status,
     required this.helper,
     required this.jobId,
+    this.jobData, // Make it optional for backward compatibility
   });
 
   @override
@@ -63,6 +66,9 @@ class _Helpee8CalendarPageState extends State<Helpee8CalendarPage>
     // Listen to real-time calendar data updates
     _calendarSubscription =
         liveDataService.calendarStream.listen((calendarJobs) {
+      print(
+          '🔄 Helpee Calendar: Received ${calendarJobs.length} jobs from stream');
+
       if (mounted) {
         _processCalendarData(calendarJobs);
       }
@@ -88,6 +94,7 @@ class _Helpee8CalendarPageState extends State<Helpee8CalendarPage>
             status: job['status'] ?? 'PENDING',
             helper: job['users']?['display_name'] ?? 'Waiting for Helper'.tr(),
             jobId: job['id'] ?? '',
+            jobData: job, // Store the original job data
           );
 
           if (events[normalizedDate] == null) {
@@ -132,6 +139,14 @@ class _Helpee8CalendarPageState extends State<Helpee8CalendarPage>
         return;
       }
 
+      print('🔄 Helpee Calendar: Loading events...');
+
+      // Ensure the live data service is initialized
+      if (!liveDataService.isInitialized) {
+        print('⚠️ LiveDataService not initialized, initializing now...');
+        await liveDataService.initialize();
+      }
+
       // Use real-time service to refresh calendar data
       final now = DateTime.now();
       final startDate = DateTime(now.year, now.month, 1);
@@ -141,10 +156,93 @@ class _Helpee8CalendarPageState extends State<Helpee8CalendarPage>
         startDate: startDate,
         endDate: endDate,
       );
+
+      print('✅ Helpee Calendar: Events loaded successfully');
     } catch (e) {
+      print('❌ Error loading helpee calendar events: $e');
+
+      // Fallback: Load calendar data directly
+      print('🔄 Fallback: Loading helpee calendar data directly...');
+      await _loadCalendarDataDirectly();
+    }
+  }
+
+  // Fallback method to load calendar data directly if live service fails
+  Future<void> _loadCalendarDataDirectly() async {
+    try {
+      final currentUser = _authService.currentUser;
+      if (currentUser == null) {
+        setState(() {
+          _isLoading = false;
+          _error = 'User not logged in'.tr();
+        });
+        return;
+      }
+
+      final helpeeId = currentUser['user_id'];
+      final now = DateTime.now();
+      final startDate = DateTime(now.year, now.month, 1);
+      final endDate = DateTime(now.year, now.month + 1, 0);
+
+      print('🔄 Loading helpee calendar data directly for: $helpeeId');
+
+      // Load all job statuses for the current month
+      final allJobs = <Map<String, dynamic>>[];
+
+      // Get jobs with different statuses
+      final pendingJobs =
+          await _jobDataService.getJobsByUserAndStatus(helpeeId, 'pending');
+      final ongoingJobs =
+          await _jobDataService.getJobsByUserAndStatus(helpeeId, 'ongoing');
+      final completedJobs =
+          await _jobDataService.getJobsByUserAndStatus(helpeeId, 'completed');
+
+      allJobs.addAll(pendingJobs);
+      allJobs.addAll(ongoingJobs);
+      allJobs.addAll(completedJobs);
+
+      // Filter jobs by date range and convert to Events
+      final filteredEvents = <DateTime, List<Event>>{};
+
+      for (var job in allJobs) {
+        final scheduledDate = job['scheduled_date'];
+        if (scheduledDate != null) {
+          final date = DateTime.parse(scheduledDate);
+          final normalizedDate = DateTime(date.year, date.month, date.day);
+
+          // Check if date is within our range
+          if (date.isAfter(startDate.subtract(const Duration(days: 1))) &&
+              date.isBefore(endDate.add(const Duration(days: 1)))) {
+            // Create Event object from job data
+            final event = Event(
+              title: job['title'] ?? 'Unknown Job'.tr(),
+              status: job['status'] ?? 'PENDING',
+              helper: job['helper_name'] ?? 'Waiting for Helper'.tr(),
+              jobId: job['id'] ?? '',
+              jobData: job, // Store the original job data
+            );
+
+            if (filteredEvents[normalizedDate] == null) {
+              filteredEvents[normalizedDate] = [];
+            }
+            filteredEvents[normalizedDate]!.add(event);
+          }
+        }
+      }
+
+      print(
+          '✅ Direct helpee calendar data load completed: ${filteredEvents.length} days with events');
+
+      setState(() {
+        _events = filteredEvents;
+        _isLoading = false;
+        _error = null;
+      });
+    } catch (e) {
+      print('❌ Error in direct helpee calendar data loading: $e');
       setState(() {
         _isLoading = false;
-        _error = 'Failed to load calendar events: $e'.tr();
+        _error = 'Failed to load calendar data: $e'.tr();
       });
     }
   }
@@ -377,6 +475,22 @@ class _Helpee8CalendarPageState extends State<Helpee8CalendarPage>
   }
 
   Widget _buildJobCardFromEvent(Event event) {
+    // Use the stored job data directly if available
+    if (event.jobData != null) {
+      print('🔍 Calendar: Using stored job data for ${event.title}');
+      final formattedJobData = _formatJobDataForCard(event.jobData!, event);
+
+      return FunctionalJobCard(
+        jobData: formattedJobData,
+        userType: 'helpee',
+        onStatusChanged: () {
+          // Refresh calendar when job status changes
+          _loadCalendarEvents();
+        },
+      );
+    }
+
+    // Fallback to fetching job details (for backward compatibility)
     return FutureBuilder<List<Map<String, dynamic>>>(
       future: _getJobDetailsForEvent(event),
       builder: (context, snapshot) {
@@ -391,21 +505,164 @@ class _Helpee8CalendarPageState extends State<Helpee8CalendarPage>
         }
 
         final jobDetails = snapshot.data!.first;
-        return _buildJobCard(
-          context: context,
-          title: jobDetails['title'] ?? event.title,
-          pay: jobDetails['pay'] ?? 'Rate not set',
-          date: jobDetails['date'] ?? _formatDate(_selectedDay!),
-          time: jobDetails['time'] ?? 'Time not set',
-          location: jobDetails['location'] ?? 'Location not set',
-          status: event.status,
-          helper: event.helper,
-          jobType: _getJobTypeFromStatus(event.status),
-          jobId: event.jobId,
-          jobData: jobDetails,
+
+        // Format the job data to match FunctionalJobCard expectations
+        final formattedJobData = _formatJobDataForCard(jobDetails, event);
+
+        return FunctionalJobCard(
+          jobData: formattedJobData,
+          userType: 'helpee',
+          onStatusChanged: () {
+            // Refresh calendar when job status changes
+            _loadCalendarEvents();
+          },
         );
       },
     );
+  }
+
+  Map<String, dynamic> _formatJobDataForCard(
+      Map<String, dynamic> jobDetails, Event event) {
+    // Debug: Print ALL available fields to see what data we have
+    print('🔍 Calendar: Raw job details for ${event.title}:');
+    print('   ALL FIELDS: ${jobDetails.keys.toList()}');
+    jobDetails.forEach((key, value) {
+      print('   $key: $value');
+    });
+
+    // Extract time - prioritize pre-formatted field from live data service
+    String formattedTime = 'Time TBD';
+
+    // First check for pre-formatted time field (from live data service _transformJobData)
+    if (jobDetails['time'] != null && jobDetails['time'] != 'Time TBD') {
+      formattedTime = jobDetails['time'];
+      print('🔍 Calendar: Using pre-formatted time field: $formattedTime');
+    }
+    // Then try scheduled_start_time (raw field)
+    else if (jobDetails['scheduled_start_time'] != null) {
+      formattedTime = _formatTime(jobDetails['scheduled_start_time']);
+      print('🔍 Calendar: Using scheduled_start_time: $formattedTime');
+    }
+    // Fallback to scheduled_time field
+    else if (jobDetails['scheduled_time'] != null) {
+      formattedTime = jobDetails['scheduled_time'];
+      print('🔍 Calendar: Using scheduled_time: $formattedTime');
+    }
+    // Last resort: try to extract from scheduled_date
+    else if (jobDetails['scheduled_date'] != null) {
+      try {
+        final scheduledDateTime = DateTime.parse(jobDetails['scheduled_date']);
+        final hour = scheduledDateTime.hour;
+        final minute = scheduledDateTime.minute;
+
+        print(
+            '🔍 Calendar: Parsed from scheduled_date - hour: $hour, minute: $minute');
+
+        // Only format if there's actual time data (not just 00:00)
+        if (hour != 0 || minute != 0) {
+          // Format as 12-hour time
+          String period = hour >= 12 ? 'PM' : 'AM';
+          int displayHour = hour > 12 ? hour - 12 : (hour == 0 ? 12 : hour);
+          String formattedMinute = minute.toString().padLeft(2, '0');
+
+          formattedTime = '$displayHour:$formattedMinute $period';
+          print(
+              '🔍 Calendar: Formatted time from scheduled_date: $formattedTime');
+        } else {
+          print('🔍 Calendar: Time is 00:00 in scheduled_date, keeping as TBD');
+        }
+      } catch (e) {
+        print('❌ Calendar: Error formatting time from scheduled_date: $e');
+      }
+    }
+
+    // Debug pay formatting
+    print('🔍 Calendar: Pay fields available:');
+    print('   pay: ${jobDetails['pay']}');
+    print('   hourly_rate: ${jobDetails['hourly_rate']}');
+    print('   rate: ${jobDetails['rate']}');
+
+    // Format the date
+    String formattedDate = _formatDate(_selectedDay!);
+    if (jobDetails['scheduled_date'] != null) {
+      try {
+        final scheduledDateTime = DateTime.parse(jobDetails['scheduled_date']);
+        formattedDate = _formatDate(scheduledDateTime);
+      } catch (e) {
+        formattedDate = _formatDate(_selectedDay!);
+      }
+    }
+
+    final result = {
+      'id': event.jobId,
+      'title': jobDetails['title'] ?? event.title,
+      'pay': _formatPay(jobDetails),
+      'date': formattedDate,
+      'time': formattedTime,
+      'location': jobDetails['location_address'] ??
+          jobDetails['location'] ??
+          'Location TBD',
+      'status': event.status.toLowerCase(),
+      'helper': event.helper,
+      'is_private': jobDetails['is_private'] ?? false,
+      'job_category_id': jobDetails['job_category_id'],
+      'hourly_rate': jobDetails['hourly_rate'],
+      'scheduled_date': jobDetails['scheduled_date'],
+      'scheduled_start_time': jobDetails['scheduled_start_time'],
+      'created_at': jobDetails['created_at'],
+      'helpee_id': jobDetails['helpee_id'],
+      'assigned_helper_id': jobDetails['assigned_helper_id'],
+    };
+
+    print('🔍 Calendar: Final formatted data:');
+    print('   title: ${result['title']}');
+    print('   pay: ${result['pay']}');
+    print('   time: ${result['time']}');
+    print('   date: ${result['date']}');
+
+    return result;
+  }
+
+  // Add the same time formatting method used by job data service
+  String _formatTime(String? timeStr) {
+    if (timeStr == null) return 'Time TBD';
+    try {
+      final time = DateTime.parse(timeStr);
+      final hour = time.hour;
+      final minute = time.minute;
+
+      // Format as 12-hour time with AM/PM
+      String period = hour >= 12 ? 'PM' : 'AM';
+      int displayHour = hour > 12 ? hour - 12 : (hour == 0 ? 12 : hour);
+      String formattedMinute = minute.toString().padLeft(2, '0');
+
+      return '$displayHour:$formattedMinute $period';
+    } catch (e) {
+      print('❌ Calendar: Error in _formatTime: $e');
+      return 'Time TBD';
+    }
+  }
+
+  String _formatPay(Map<String, dynamic> jobDetails) {
+    // First check for pre-formatted pay field (from live data service _transformJobData)
+    if (jobDetails['pay'] != null && jobDetails['pay'] != 'Rate not set') {
+      print('🔍 Calendar: Using pre-formatted pay field: ${jobDetails['pay']}');
+      return jobDetails['pay'];
+    }
+
+    // Then try different field names for pay/rate information
+    if (jobDetails['hourly_rate'] != null) {
+      final formattedPay = 'LKR ${jobDetails['hourly_rate']}/hr';
+      print('🔍 Calendar: Formatted from hourly_rate: $formattedPay');
+      return formattedPay;
+    }
+    if (jobDetails['rate'] != null) {
+      print('🔍 Calendar: Using rate field: ${jobDetails['rate']}');
+      return 'LKR ${jobDetails['rate']}/hr';
+    }
+
+    print('❌ Calendar: No pay data found in available fields');
+    return 'Rate not set';
   }
 
   Future<List<Map<String, dynamic>>> _getJobDetailsForEvent(Event event) async {
@@ -437,18 +694,25 @@ class _Helpee8CalendarPageState extends State<Helpee8CalendarPage>
   }
 
   Widget _buildBasicJobCard(Event event) {
-    return _buildJobCard(
-      context: context,
-      title: event.title,
-      pay: 'Rate not available'.tr(),
-      date: _formatDate(_selectedDay!),
-      time: 'Time not available'.tr(),
-      location: 'Location not available'.tr(),
-      status: event.status,
-      helper: event.helper,
-      jobType: _getJobTypeFromStatus(event.status),
-      jobId: event.jobId,
-      jobData: null,
+    // Use FunctionalJobCard for basic events too
+    final basicJobData = {
+      'id': event.jobId,
+      'title': event.title,
+      'pay': 'Rate not available',
+      'date': _formatDate(_selectedDay!),
+      'time': 'Time TBD',
+      'location': 'Location TBD',
+      'status': event.status.toLowerCase(),
+      'helper': event.helper,
+      'is_private': false,
+    };
+
+    return FunctionalJobCard(
+      jobData: basicJobData,
+      userType: 'helpee',
+      onStatusChanged: () {
+        _loadCalendarEvents();
+      },
     );
   }
 
@@ -516,264 +780,6 @@ class _Helpee8CalendarPageState extends State<Helpee8CalendarPage>
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildJobCard({
-    required BuildContext context,
-    required String title,
-    required String pay,
-    required String date,
-    required String time,
-    required String location,
-    required String status,
-    required String helper,
-    required String jobType,
-    String? jobId,
-    Map<String, dynamic>? jobData,
-  }) {
-    Color statusColor = status == 'CONFIRMED' || status == 'ACCEPTED'
-        ? AppColors.success
-        : status == 'PENDING'
-            ? AppColors.warning
-            : status == 'STARTED'
-                ? AppColors.primaryGreen
-                : AppColors.textSecondary;
-
-    return Container(
-      width: double.infinity,
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.08),
-            blurRadius: 6,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: InkWell(
-        onTap: () {
-          // Navigate to appropriate job detail page based on job status - SAME AS FUNCTIONAL_JOB_CARD
-          String route;
-          switch (status.toLowerCase()) {
-            case 'pending':
-              route = '/helpee/job-detail/pending';
-              break;
-            case 'accepted':
-            case 'started':
-            case 'paused':
-            case 'confirmed':
-            case 'ongoing':
-              route = '/helpee/job-detail/ongoing';
-              break;
-            case 'completed':
-              route = '/helpee/job-detail/completed';
-              break;
-            default:
-              route = '/helpee/job-detail/pending';
-          }
-
-          context.push(route, extra: {
-            'jobId': jobId ?? '',
-            'jobData': jobData ??
-                {
-                  'id': jobId ?? '',
-                  'title': title,
-                  'pay': pay,
-                  'date': date,
-                  'time': time,
-                  'location': location,
-                  'status': status,
-                  'helper': helper,
-                },
-          });
-        },
-        borderRadius: BorderRadius.circular(12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Header with title and status
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: Text(
-                    title,
-                    style: AppTextStyles.heading3.copyWith(
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.textPrimary,
-                      fontSize: 18,
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: statusColor.withOpacity(0.15),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(
-                    status,
-                    style: AppTextStyles.bodySmall.copyWith(
-                      color: statusColor,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 12,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-
-            // Job details section
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Date
-                Row(
-                  children: [
-                    Icon(
-                      Icons.calendar_today,
-                      size: 16,
-                      color: AppColors.textSecondary,
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      date,
-                      style: AppTextStyles.bodyMedium.copyWith(
-                        color: AppColors.textSecondary,
-                        fontSize: 14,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 6),
-
-                // Time
-                Row(
-                  children: [
-                    Icon(
-                      Icons.access_time,
-                      size: 16,
-                      color: AppColors.textSecondary,
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      time,
-                      style: AppTextStyles.bodyMedium.copyWith(
-                        color: AppColors.textSecondary,
-                        fontSize: 14,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 6),
-
-                // Location
-                Row(
-                  children: [
-                    Icon(
-                      Icons.location_on,
-                      size: 16,
-                      color: AppColors.textSecondary,
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        location,
-                        style: AppTextStyles.bodyMedium.copyWith(
-                          color: AppColors.textSecondary,
-                          fontSize: 14,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-
-                // Public/Private Status Label
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: jobData?['is_private'] == true
-                            ? AppColors.primaryGreen.withOpacity(0.1)
-                            : AppColors.warning.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            jobData?['is_private'] == true
-                                ? Icons.lock
-                                : Icons.public,
-                            size: 14,
-                            color: jobData?['is_private'] == true
-                                ? AppColors.primaryGreen
-                                : AppColors.warning,
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            jobData?['is_private'] == true
-                                ? 'PRIVATE'
-                                : 'PUBLIC',
-                            style: AppTextStyles.bodySmall.copyWith(
-                              color: jobData?['is_private'] == true
-                                  ? AppColors.primaryGreen
-                                  : AppColors.warning,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 12,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-
-            const SizedBox(height: 12),
-
-            // Pay rate - moved to bottom and made more prominent
-            Row(
-              children: [
-                const Spacer(),
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: AppColors.primaryGreen,
-                    borderRadius: BorderRadius.circular(15),
-                  ),
-                  child: Text(
-                    pay,
-                    style: AppTextStyles.bodyMedium.copyWith(
-                      color: AppColors.white,
-                      fontWeight: FontWeight.w600,
-                      fontSize: 14,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
       ),
     );
   }

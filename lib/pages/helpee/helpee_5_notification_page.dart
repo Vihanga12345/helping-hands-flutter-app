@@ -7,6 +7,7 @@ import '../../utils/app_colors.dart';
 import '../../utils/app_text_styles.dart';
 import '../../widgets/common/app_header.dart';
 import '../../widgets/common/app_navigation_bar.dart';
+import '../../services/localization_service.dart';
 
 class Helpee5NotificationPage extends StatefulWidget {
   const Helpee5NotificationPage({super.key});
@@ -52,7 +53,7 @@ class _Helpee5NotificationPageState extends State<Helpee5NotificationPage> {
             children: [
               // Header
               AppHeader(
-                title: 'Notifications',
+                title: 'Notifications'.tr(),
                 showBackButton: true,
                 onBackPressed: _handleBackNavigation,
                 rightWidget: IconButton(
@@ -64,8 +65,9 @@ class _Helpee5NotificationPageState extends State<Helpee5NotificationPage> {
                           _userDataService.getNotifications();
                     });
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                          content: Text('All notifications marked as read')),
+                      SnackBar(
+                          content:
+                              Text('All notifications marked as read'.tr())),
                     );
                   },
                 ),
@@ -95,20 +97,22 @@ class _Helpee5NotificationPageState extends State<Helpee5NotificationPage> {
                     final notifications = snapshot.data;
 
                     if (notifications == null || notifications.isEmpty) {
-                      return const Center(
+                      return Center(
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(Icons.notifications_off_outlined,
+                            const Icon(Icons.notifications_off_outlined,
                                 size: 64, color: AppColors.textSecondary),
-                            SizedBox(height: 16),
-                            Text('No notifications yet',
+                            const SizedBox(height: 16),
+                            Text('No notifications yet'.tr(),
                                 style: AppTextStyles.heading3),
-                            SizedBox(height: 8),
+                            const SizedBox(height: 8),
                             Text(
-                              'We\'ll let you know when something important happens.',
+                              'We\'ll let you know when something important happens.'
+                                  .tr(),
                               textAlign: TextAlign.center,
-                              style: TextStyle(color: AppColors.textSecondary),
+                              style: const TextStyle(
+                                  color: AppColors.textSecondary),
                             ),
                           ],
                         ),

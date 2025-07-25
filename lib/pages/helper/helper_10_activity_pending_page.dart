@@ -56,6 +56,9 @@ class _Helper10ActivityPendingPageState
   void _initializeRealTimeUpdates() {
     // Listen to real-time activity data updates
     _activitySubscription = liveDataService.activityStream.listen((activities) {
+      print(
+          '🔄 Helper Activity: Received ${activities.length} activities from stream');
+
       if (mounted) {
         setState(() {
           // Group activities by status for helper
@@ -74,6 +77,11 @@ class _Helper10ActivityPendingPageState
           _jobsData['completed'] =
               activities.where((job) => job['status'] == 'completed').toList();
         });
+
+        print('📊 Helper Activity Data:');
+        print('   Pending: ${_jobsData['pending']?.length ?? 0}');
+        print('   Ongoing: ${_jobsData['ongoing']?.length ?? 0}');
+        print('   Completed: ${_jobsData['completed']?.length ?? 0}');
       }
     });
 
@@ -83,10 +91,60 @@ class _Helper10ActivityPendingPageState
 
   void _loadInitialData() async {
     try {
+      print('🔄 Helper Activity: Loading initial data...');
+
+      // Ensure the live data service is initialized
+      if (!liveDataService.isInitialized) {
+        print('⚠️ LiveDataService not initialized, initializing now...');
+        await liveDataService.initialize();
+      }
+
       // Load all activities without status filter to get complete data
       await liveDataService.refreshActivity();
+
+      print('✅ Helper Activity: Initial data load completed');
     } catch (e) {
       print('❌ Error loading initial helper activity data: $e');
+
+      // Fallback: Try to load data directly from JobDataService
+      print('🔄 Fallback: Loading data directly from JobDataService...');
+      _loadDataDirectly();
+    }
+  }
+
+  // Fallback method to load data directly if live service fails
+  void _loadDataDirectly() async {
+    try {
+      final currentUser = _authService.currentUser;
+      if (currentUser == null) {
+        print('❌ No current user found');
+        return;
+      }
+
+      final helperId = currentUser['user_id'];
+      print('🔄 Loading helper data directly for: $helperId');
+
+      // Load all job statuses in parallel
+      final results = await Future.wait([
+        _jobDataService.getHelperPendingJobs(helperId),
+        _jobDataService.getJobsByHelperAndStatus(helperId, 'ongoing'),
+        _jobDataService.getJobsByHelperAndStatus(helperId, 'completed'),
+      ]);
+
+      if (mounted) {
+        setState(() {
+          _jobsData['pending'] = results[0];
+          _jobsData['ongoing'] = results[1];
+          _jobsData['completed'] = results[2];
+        });
+
+        print('✅ Direct data load completed:');
+        print('   Pending: ${_jobsData['pending']?.length ?? 0}');
+        print('   Ongoing: ${_jobsData['ongoing']?.length ?? 0}');
+        print('   Completed: ${_jobsData['completed']?.length ?? 0}');
+      }
+    } catch (e) {
+      print('❌ Error in direct data loading: $e');
     }
   }
 
@@ -350,7 +408,7 @@ class _Helper10ActivityPendingPageState
             shape:
                 RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
           ),
-          child: Text('Rate Helpee',
+          child: Text('Rate Helpee'.tr(),
               style: AppTextStyles.buttonMedium.copyWith(
                   color: AppColors.white, fontWeight: FontWeight.w600)),
         ),
@@ -366,8 +424,8 @@ class _Helper10ActivityPendingPageState
             Expanded(
               child: OutlinedButton(
                 onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                        content: Text('Opening chat with helpee...'))),
+                    SnackBar(
+                        content: Text('Opening chat with helpee...'.tr()))),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: AppColors.primaryGreen,
                   side: const BorderSide(color: AppColors.primaryGreen),
@@ -375,7 +433,7 @@ class _Helper10ActivityPendingPageState
                   shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(25)),
                 ),
-                child: Text('Message',
+                child: Text('Message'.tr(),
                     style: AppTextStyles.buttonMedium.copyWith(
                         color: AppColors.primaryGreen,
                         fontWeight: FontWeight.w600)),
@@ -392,7 +450,7 @@ class _Helper10ActivityPendingPageState
                   shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(25)),
                 ),
-                child: Text('Complete Job',
+                child: Text('Complete Job'.tr(),
                     style: AppTextStyles.buttonMedium.copyWith(
                         color: AppColors.white, fontWeight: FontWeight.w600)),
               ),
@@ -412,7 +470,7 @@ class _Helper10ActivityPendingPageState
               shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(25)),
             ),
-            child: Text('Start Job',
+            child: Text('Start Job'.tr(),
                 style: AppTextStyles.buttonMedium.copyWith(
                     color: AppColors.white, fontWeight: FontWeight.w600)),
           ),
@@ -433,7 +491,7 @@ class _Helper10ActivityPendingPageState
                 shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(25)),
               ),
-              child: Text('Decline',
+              child: Text('Decline'.tr(),
                   style: AppTextStyles.buttonMedium.copyWith(
                       color: AppColors.error, fontWeight: FontWeight.w600)),
             ),
@@ -449,7 +507,7 @@ class _Helper10ActivityPendingPageState
                 shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(25)),
               ),
-              child: Text('Accept',
+              child: Text('Accept'.tr(),
                   style: AppTextStyles.buttonMedium.copyWith(
                       color: AppColors.white, fontWeight: FontWeight.w600)),
             ),
@@ -614,21 +672,21 @@ class _Helper10ActivityPendingPageState
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: const Text('Accept Job'),
-          content: Text('Accept "$jobTitle"?'),
+          title: Text('Accept Job'.tr()),
+          content: Text('Accept "$jobTitle"?'.tr()),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Cancel'),
+              child: Text('Cancel'.tr()),
             ),
             TextButton(
               onPressed: () {
                 Navigator.of(context).pop();
                 ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Accepted $jobTitle')),
+                  SnackBar(content: Text('Accepted $jobTitle'.tr())),
                 );
               },
-              child: const Text('Accept'),
+              child: Text('Accept'.tr()),
             ),
           ],
         );
@@ -641,21 +699,21 @@ class _Helper10ActivityPendingPageState
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: const Text('Decline Job'),
-          content: Text('Decline "$jobTitle"?'),
+          title: Text('Decline Job'.tr()),
+          content: Text('Decline "$jobTitle"?'.tr()),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Cancel'),
+              child: Text('Cancel'.tr()),
             ),
             TextButton(
               onPressed: () {
                 Navigator.of(context).pop();
                 ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Declined $jobTitle')),
+                  SnackBar(content: Text('Declined $jobTitle'.tr())),
                 );
               },
-              child: const Text('Decline'),
+              child: Text('Decline'.tr()),
             ),
           ],
         );
@@ -668,21 +726,21 @@ class _Helper10ActivityPendingPageState
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: const Text('Start Job'),
-          content: Text('Start working on "$jobTitle"?'),
+          title: Text('Start Job'.tr()),
+          content: Text('Start working on "$jobTitle"?'.tr()),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Cancel'),
+              child: Text('Cancel'.tr()),
             ),
             TextButton(
               onPressed: () {
                 Navigator.of(context).pop();
                 ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Started $jobTitle')),
+                  SnackBar(content: Text('Started $jobTitle'.tr())),
                 );
               },
-              child: const Text('Start'),
+              child: Text('Start'.tr()),
             ),
           ],
         );
@@ -695,21 +753,21 @@ class _Helper10ActivityPendingPageState
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: const Text('Complete Job'),
-          content: Text('Mark "$jobTitle" as completed?'),
+          title: Text('Complete Job'.tr()),
+          content: Text('Mark "$jobTitle" as completed?'.tr()),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Cancel'),
+              child: Text('Cancel'.tr()),
             ),
             TextButton(
               onPressed: () {
                 Navigator.of(context).pop();
                 ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Completed $jobTitle')),
+                  SnackBar(content: Text('Completed $jobTitle'.tr())),
                 );
               },
-              child: const Text('Complete'),
+              child: Text('Complete'.tr()),
             ),
           ],
         );

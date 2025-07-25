@@ -354,9 +354,9 @@ class _Helpee7JobRequestPageState extends State<Helpee7JobRequestPage> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     // Job Type Dropdown
-                    const Text(
-                      'Job Type',
-                      style: TextStyle(
+                    Text(
+                      'Job Type'.tr(),
+                      style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
                       ),
@@ -365,7 +365,7 @@ class _Helpee7JobRequestPageState extends State<Helpee7JobRequestPage> {
                     DropdownButtonFormField<String>(
                       value: _selectedCategoryId,
                       decoration: InputDecoration(
-                        hintText: 'Select job type',
+                        hintText: 'Select job type'.tr(),
                         prefixIcon: const Icon(Icons.work),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
@@ -391,7 +391,7 @@ class _Helpee7JobRequestPageState extends State<Helpee7JobRequestPage> {
                       },
                       validator: (value) {
                         if (value == null) {
-                          return 'Please select a job type';
+                          return 'Please select a job type'.tr();
                         }
                         return null;
                       },
@@ -401,9 +401,9 @@ class _Helpee7JobRequestPageState extends State<Helpee7JobRequestPage> {
 
                     // Job-Specific Questions
                     if (_jobQuestions.isNotEmpty) ...[
-                      const Text(
-                        'Job Requirements',
-                        style: TextStyle(
+                      Text(
+                        'Job Requirements'.tr(),
+                        style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
                         ),
@@ -422,9 +422,9 @@ class _Helpee7JobRequestPageState extends State<Helpee7JobRequestPage> {
                     ],
 
                     // Job Title
-                    const Text(
-                      'Job Title',
-                      style: TextStyle(
+                    Text(
+                      'Job Title'.tr(),
+                      style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
                       ),
@@ -433,7 +433,7 @@ class _Helpee7JobRequestPageState extends State<Helpee7JobRequestPage> {
                     TextFormField(
                       controller: _titleController,
                       decoration: InputDecoration(
-                        hintText: 'Enter a clear job title',
+                        hintText: 'Enter a clear job title'.tr(),
                         prefixIcon: const Icon(Icons.title),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
@@ -445,7 +445,7 @@ class _Helpee7JobRequestPageState extends State<Helpee7JobRequestPage> {
                       ),
                       validator: (value) {
                         if (value == null || value.isEmpty) {
-                          return 'Please enter a job title';
+                          return 'Please enter a job title'.tr();
                         }
                         return null;
                       },
@@ -454,9 +454,9 @@ class _Helpee7JobRequestPageState extends State<Helpee7JobRequestPage> {
                     const SizedBox(height: 20),
 
                     // Location
-                    const Text(
-                      'Location',
-                      style: TextStyle(
+                    Text(
+                      'Location'.tr(),
+                      style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
                       ),
@@ -465,7 +465,7 @@ class _Helpee7JobRequestPageState extends State<Helpee7JobRequestPage> {
                     TextFormField(
                       controller: _locationController,
                       decoration: InputDecoration(
-                        hintText: 'Enter job location',
+                        hintText: 'Enter job location'.tr(),
                         prefixIcon: const Icon(Icons.location_on),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
@@ -477,7 +477,7 @@ class _Helpee7JobRequestPageState extends State<Helpee7JobRequestPage> {
                       ),
                       validator: (value) {
                         if (value == null || value.isEmpty) {
-                          return 'Please enter the job location';
+                          return 'Please enter the job location'.tr();
                         }
                         return null;
                       },
@@ -511,8 +511,8 @@ class _Helpee7JobRequestPageState extends State<Helpee7JobRequestPage> {
                         label: Text(
                           _selectedLatitude != null &&
                                   _selectedLongitude != null
-                              ? 'Location Selected ✓'
-                              : 'Pick Location on Map',
+                              ? 'Location Selected ✓'.tr()
+                              : 'Pick Location on Map'.tr(),
                           style: const TextStyle(
                             color: AppColors.primaryGreen,
                             fontWeight: FontWeight.w600,
@@ -588,9 +588,9 @@ class _Helpee7JobRequestPageState extends State<Helpee7JobRequestPage> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Text(
-                                'Date',
-                                style: TextStyle(
+                              Text(
+                                'Date'.tr(),
+                                style: const TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.w600,
                                 ),
@@ -615,7 +615,7 @@ class _Helpee7JobRequestPageState extends State<Helpee7JobRequestPage> {
                                       Text(
                                         _selectedDate != null
                                             ? '${_selectedDate!.day}/${_selectedDate!.month}/${_selectedDate!.year}'
-                                            : 'Select date',
+                                            : 'Select date'.tr(),
                                         style: TextStyle(
                                           color: _selectedDate != null
                                               ? Colors.black
@@ -634,9 +634,9 @@ class _Helpee7JobRequestPageState extends State<Helpee7JobRequestPage> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Text(
-                                'Time',
-                                style: TextStyle(
+                              Text(
+                                'Time'.tr(),
+                                style: const TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.w600,
                                 ),
@@ -661,7 +661,7 @@ class _Helpee7JobRequestPageState extends State<Helpee7JobRequestPage> {
                                       Text(
                                         _selectedTime != null
                                             ? _selectedTime!.format(context)
-                                            : 'Select time',
+                                            : 'Select time'.tr(),
                                         style: TextStyle(
                                           color: _selectedTime != null
                                               ? Colors.black
@@ -696,7 +696,8 @@ class _Helpee7JobRequestPageState extends State<Helpee7JobRequestPage> {
                                 color: AppColors.primaryGreen),
                             const SizedBox(width: 8),
                             Text(
-                              'Suggested Rate: LKR ${_defaultHourlyRate!.toStringAsFixed(0)}/hour',
+                              'Suggested Rate: LKR ${_defaultHourlyRate!.toStringAsFixed(0)}/hour'
+                                  .tr(),
                               style: const TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w600,
@@ -710,9 +711,9 @@ class _Helpee7JobRequestPageState extends State<Helpee7JobRequestPage> {
                     ],
 
                     // Job Type Selection (Public/Private) - Styled Radio Buttons
-                    const Text(
-                      'Job Visibility',
-                      style: TextStyle(
+                    Text(
+                      'Job Visibility'.tr(),
+                      style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
                       ),
@@ -775,16 +776,16 @@ class _Helpee7JobRequestPageState extends State<Helpee7JobRequestPage> {
                                       crossAxisAlignment:
                                           CrossAxisAlignment.start,
                                       children: [
-                                        const Text(
-                                          'Public Job',
-                                          style: TextStyle(
+                                        Text(
+                                          'Public Job'.tr(),
+                                          style: const TextStyle(
                                             fontSize: 16,
                                             fontWeight: FontWeight.w600,
                                           ),
                                         ),
                                         const SizedBox(height: 4),
                                         Text(
-                                          'All helpers can see and apply',
+                                          'All helpers can see and apply'.tr(),
                                           style: TextStyle(
                                             fontSize: 12,
                                             color: Colors.grey[600],
@@ -851,16 +852,16 @@ class _Helpee7JobRequestPageState extends State<Helpee7JobRequestPage> {
                                       crossAxisAlignment:
                                           CrossAxisAlignment.start,
                                       children: [
-                                        const Text(
-                                          'Private Job',
-                                          style: TextStyle(
+                                        Text(
+                                          'Private Job'.tr(),
+                                          style: const TextStyle(
                                             fontSize: 16,
                                             fontWeight: FontWeight.w600,
                                           ),
                                         ),
                                         const SizedBox(height: 4),
                                         Text(
-                                          'Invite specific helper',
+                                          'Invite specific helper'.tr(),
                                           style: TextStyle(
                                             fontSize: 12,
                                             color: Colors.grey[600],
@@ -880,9 +881,9 @@ class _Helpee7JobRequestPageState extends State<Helpee7JobRequestPage> {
                     // Helper Search for Private Jobs
                     if (_jobPostingType == 'private') ...[
                       const SizedBox(height: 20),
-                      const Text(
-                        'Search Helper',
-                        style: TextStyle(
+                      Text(
+                        'Search Helper'.tr(),
+                        style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
                         ),
@@ -933,7 +934,7 @@ class _Helpee7JobRequestPageState extends State<Helpee7JobRequestPage> {
                               child: TextFormField(
                                 controller: _helperSearchController,
                                 decoration: InputDecoration(
-                                  hintText: 'Search helper by name...',
+                                  hintText: 'Search helper by name...'.tr(),
                                   prefixIcon: const Icon(Icons.search),
                                   border: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(12),
@@ -948,7 +949,8 @@ class _Helpee7JobRequestPageState extends State<Helpee7JobRequestPage> {
                                 validator: (value) {
                                   if (_jobPostingType == 'private' &&
                                       _selectedHelper == null) {
-                                    return 'Please select a helper for private jobs';
+                                    return 'Please select a helper for private jobs'
+                                        .tr();
                                   }
                                   return null;
                                 },
@@ -958,7 +960,7 @@ class _Helpee7JobRequestPageState extends State<Helpee7JobRequestPage> {
                             ElevatedButton.icon(
                               onPressed: _navigateToHelperSearch,
                               icon: const Icon(Icons.search),
-                              label: const Text('Search'),
+                              label: Text('Search'.tr()),
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: AppColors.primaryGreen,
                                 foregroundColor: AppColors.white,
@@ -1022,9 +1024,9 @@ class _Helpee7JobRequestPageState extends State<Helpee7JobRequestPage> {
                     const SizedBox(height: 20),
 
                     // Additional Notes
-                    const Text(
-                      'Additional Notes (Optional)',
-                      style: TextStyle(
+                    Text(
+                      'Additional Notes (Optional)'.tr(),
+                      style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
                       ),
@@ -1035,7 +1037,8 @@ class _Helpee7JobRequestPageState extends State<Helpee7JobRequestPage> {
                       maxLines: 3,
                       decoration: InputDecoration(
                         hintText:
-                            'Any additional information or special requirements...',
+                            'Any additional information or special requirements...'
+                                .tr(),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
                           borderSide:
@@ -1070,7 +1073,8 @@ class _Helpee7JobRequestPageState extends State<Helpee7JobRequestPage> {
                             : Text(
                                 (_jobPostingType == 'private'
                                     ? 'Send Private Request'
-                                    : 'Post Public Job'),
+                                        : 'Post Public Job')
+                                    .tr(),
                                 style: const TextStyle(
                                   fontSize: 18,
                                   fontWeight: FontWeight.w600,
@@ -1406,8 +1410,8 @@ class _Helpee7JobRequestPageState extends State<Helpee7JobRequestPage> {
 
     if (_selectedDate == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please select a date for the job'),
+        SnackBar(
+          content: Text('Please select a date for the job'.tr()),
           backgroundColor: AppColors.error,
         ),
       );
@@ -1416,8 +1420,8 @@ class _Helpee7JobRequestPageState extends State<Helpee7JobRequestPage> {
 
     if (_selectedTime == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please select a time for the job'),
+        SnackBar(
+          content: Text('Please select a time for the job'.tr()),
           backgroundColor: AppColors.error,
         ),
       );
@@ -1464,7 +1468,8 @@ class _Helpee7JobRequestPageState extends State<Helpee7JobRequestPage> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            'Please answer all required questions:\n• ${missingRequiredQuestions.join('\n• ')}',
+            'Please answer all required questions:\n• ${missingRequiredQuestions.join('\n• ')}'
+                .tr(),
             style: const TextStyle(fontSize: 14),
           ),
           backgroundColor: AppColors.error,
@@ -1562,8 +1567,8 @@ class _Helpee7JobRequestPageState extends State<Helpee7JobRequestPage> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(_jobPostingType == 'private'
-                  ? 'Private job request sent successfully!'
-                  : 'Public job posted successfully!'),
+                  ? 'Private job request sent successfully!'.tr()
+                  : 'Public job posted successfully!'.tr()),
               backgroundColor: AppColors.success,
             ),
           );

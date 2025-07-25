@@ -5,8 +5,13 @@ import '../../utils/app_colors.dart';
 import '../../utils/app_text_styles.dart';
 import '../../widgets/common/app_header.dart';
 import '../../widgets/common/app_navigation_bar.dart';
+import '../../widgets/common/profile_image_widget.dart';
 import '../../services/user_data_service.dart';
 import '../../services/custom_auth_service.dart';
+import 'package:file_picker/file_picker.dart';
+import 'dart:convert';
+import 'dart:typed_data';
+import 'package:flutter/foundation.dart';
 
 class Helper22ProfileEditPage extends StatefulWidget {
   const Helper22ProfileEditPage({super.key});
@@ -35,8 +40,11 @@ class _Helper22ProfileEditPageState extends State<Helper22ProfileEditPage> {
 
   bool _isLoading = true;
   bool _isSaving = false;
+  bool _isUploadingImage = false;
   Map<String, dynamic>? _userProfile;
   String? _currentUserId;
+  Uint8List? _selectedImageBytes;
+  String? _profileImageUrl;
 
   @override
   void initState() {
@@ -77,6 +85,9 @@ class _Helper22ProfileEditPageState extends State<Helper22ProfileEditPage> {
           _emergencyPhoneController.text =
               userProfile['emergency_contact_phone'] ?? '';
 
+          // Set profile image URL
+          _profileImageUrl = userProfile['profile_image_url'];
+
           // Set birth date
           if (userProfile['date_of_birth'] != null) {
             try {
@@ -106,6 +117,170 @@ class _Helper22ProfileEditPageState extends State<Helper22ProfileEditPage> {
           ),
         );
       }
+    }
+  }
+
+  Future<void> _selectProfileImage() async {
+    try {
+      showModalBottomSheet(
+        context: context,
+        builder: (BuildContext context) {
+          return Container(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'Select Profile Photo',
+                  style: AppTextStyles.heading3.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 20),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    _buildImageSourceOption(
+                      icon: Icons.photo_library,
+                      label: 'Gallery',
+                      onTap: () {
+                        Navigator.pop(context);
+                        _pickImage();
+                      },
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 20),
+              ],
+            ),
+          );
+        },
+      );
+    } catch (e) {
+      print('Error showing image picker: $e');
+    }
+  }
+
+  Widget _buildImageSourceOption({
+    required IconData icon,
+    required String label,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        decoration: BoxDecoration(
+          color: AppColors.primaryGreen.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: AppColors.primaryGreen.withOpacity(0.3)),
+        ),
+        child: Column(
+          children: [
+            Icon(
+              icon,
+              color: AppColors.primaryGreen,
+              size: 32,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              label,
+              style: AppTextStyles.bodyMedium.copyWith(
+                color: AppColors.primaryGreen,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _pickImage() async {
+    try {
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.image,
+        allowMultiple: false,
+        withData: true,
+      );
+
+      if (result != null && result.files.isNotEmpty) {
+        final file = result.files.first;
+        final bytes = file.bytes;
+
+        // Validate file size (max 5MB)
+        if (file.size > 5 * 1024 * 1024) {
+          throw Exception('File size must be less than 5MB');
+        }
+
+        if (bytes != null) {
+          setState(() {
+            _selectedImageBytes = bytes;
+          });
+
+          // Upload image immediately after selection
+          await _uploadProfileImage();
+        }
+      }
+    } catch (e) {
+      print('Error picking image: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to select image: $e'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _uploadProfileImage() async {
+    if (_selectedImageBytes == null) return;
+
+    setState(() {
+      _isUploadingImage = true;
+    });
+
+    try {
+      // Convert bytes to base64
+      final base64Data = base64Encode(_selectedImageBytes!);
+      final fileName = 'profile_${DateTime.now().millisecondsSinceEpoch}.jpg';
+
+      // Upload image data to database
+      final imageUrl =
+          await _userDataService.uploadProfileImage(base64Data, fileName);
+
+      if (imageUrl != null) {
+        setState(() {
+          _profileImageUrl = imageUrl;
+        });
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Profile photo updated successfully!'),
+              backgroundColor: AppColors.primaryGreen,
+            ),
+          );
+        }
+      } else {
+        throw Exception('Failed to upload image');
+      }
+    } catch (e) {
+      print('Error uploading image: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to upload image: $e'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    } finally {
+      setState(() {
+        _isUploadingImage = false;
+      });
     }
   }
 
@@ -267,49 +442,101 @@ class _Helper22ProfileEditPageState extends State<Helper22ProfileEditPage> {
                     width: 3,
                   ),
                 ),
-                child: ClipOval(
-                  child: _userProfile?['profile_image_url'] != null
-                      ? Image.network(
-                          _userProfile!['profile_image_url'],
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) =>
-                              Container(
-                            color: AppColors.lightGrey,
-                            child: const Icon(
-                              Icons.person,
-                              size: 60,
-                              color: AppColors.textSecondary,
+                child: GestureDetector(
+                  onTap: _selectProfileImage,
+                  child: Stack(
+                    children: [
+                      // Show selected image or profile image
+                      if (_selectedImageBytes != null)
+                        ProfileImageWidget(
+                          imageUrl: 'data:image/jpeg;base64,${base64Encode(_selectedImageBytes!)}',
+                          size: 120,
+                          fallbackText: 'H',
+                        )
+                      else
+                        ProfileImageWidget(
+                          imageUrl: _profileImageUrl,
+                          size: 120,
+                          fallbackText: _userProfile?['first_name']?.toString().isNotEmpty == true
+                              ? _userProfile!['first_name'][0].toUpperCase()
+                              : 'H',
+                        ),
+                      
+                      // Upload indicator
+                      if (_isUploadingImage)
+                        Container(
+                          width: 120,
+                          height: 120,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: Colors.black.withOpacity(0.5),
+                          ),
+                          child: const Center(
+                            child: CircularProgressIndicator(
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                AppColors.primaryGreen,
+                              ),
                             ),
                           ),
-                        )
-                      : Container(
-                          color: AppColors.lightGrey,
+                        ),
+                      
+                      // Edit icon overlay
+                      Positioned(
+                        bottom: 0,
+                        right: 0,
+                        child: Container(
+                          padding: const EdgeInsets.all(6),
+                          decoration: BoxDecoration(
+                            color: AppColors.primaryGreen,
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: Colors.white,
+                              width: 2,
+                            ),
+                          ),
                           child: const Icon(
-                            Icons.person,
-                            size: 60,
-                            color: AppColors.textSecondary,
+                            Icons.camera_alt,
+                            color: Colors.white,
+                            size: 16,
                           ),
                         ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
               Positioned(
                 bottom: 0,
                 right: 0,
-                child: Container(
-                  width: 36,
-                  height: 36,
-                  decoration: BoxDecoration(
-                    color: AppColors.primaryGreen,
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: AppColors.white,
-                      width: 2,
+                child: GestureDetector(
+                  onTap: _isUploadingImage ? null : _selectProfileImage,
+                  child: Container(
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      color: AppColors.primaryGreen,
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: AppColors.white,
+                        width: 2,
+                      ),
                     ),
-                  ),
-                  child: const Icon(
-                    Icons.camera_alt,
-                    color: AppColors.white,
-                    size: 20,
+                    child: _isUploadingImage
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                AppColors.white,
+                              ),
+                            ),
+                          )
+                        : const Icon(
+                            Icons.camera_alt,
+                            color: AppColors.white,
+                            size: 20,
+                          ),
                   ),
                 ),
               ),
@@ -317,12 +544,114 @@ class _Helper22ProfileEditPageState extends State<Helper22ProfileEditPage> {
           ),
           const SizedBox(height: 16),
           Text(
-            'Tap to change profile photo',
+            _isUploadingImage
+                ? 'Uploading photo...'
+                : 'Tap to change profile photo',
             style: AppTextStyles.bodyMedium.copyWith(
               color: AppColors.textSecondary,
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildProfileImage() {
+    // Show selected image first
+    if (_selectedImageBytes != null) {
+      return Image.memory(
+        _selectedImageBytes!,
+        fit: BoxFit.cover,
+        width: 114,
+        height: 114,
+      );
+    }
+
+    // Show network/base64 image if available
+    if (_profileImageUrl != null && _profileImageUrl!.isNotEmpty) {
+      // Check if it's a base64 data URL
+      if (_profileImageUrl!.startsWith('data:image')) {
+        try {
+          // Extract base64 data from data URL
+          final base64Data = _profileImageUrl!.split(',')[1];
+          final bytes = base64Decode(base64Data);
+          return Image.memory(
+            bytes,
+            fit: BoxFit.cover,
+            width: 114,
+            height: 114,
+            errorBuilder: (context, error, stackTrace) {
+              return _buildDefaultProfileImage();
+            },
+          );
+        } catch (e) {
+          print('Error decoding base64 image: $e');
+          return _buildDefaultProfileImage();
+        }
+      } else {
+        // Handle regular network URL
+        return Image.network(
+          _profileImageUrl!,
+          fit: BoxFit.cover,
+          width: 114,
+          height: 114,
+          errorBuilder: (context, error, stackTrace) {
+            return _buildDefaultProfileImage();
+          },
+          loadingBuilder: (context, child, loadingProgress) {
+            if (loadingProgress == null) {
+              return child;
+            }
+            return Container(
+              width: 114,
+              height: 114,
+              color: AppColors.lightGrey,
+              child: Center(
+                child: CircularProgressIndicator(
+                  value: loadingProgress.expectedTotalBytes != null
+                      ? loadingProgress.cumulativeBytesLoaded /
+                          loadingProgress.expectedTotalBytes!
+                      : null,
+                  valueColor: const AlwaysStoppedAnimation<Color>(
+                    AppColors.primaryGreen,
+                  ),
+                ),
+              ),
+            );
+          },
+        );
+      }
+    }
+
+    // Show default profile image
+    return _buildDefaultProfileImage();
+  }
+
+  Widget _buildDefaultProfileImage() {
+    String initials = 'H';
+    if (_userProfile != null) {
+      final firstName = _userProfile!['first_name'] ?? '';
+      final lastName = _userProfile!['last_name'] ?? '';
+      if (firstName.isNotEmpty || lastName.isNotEmpty) {
+        initials =
+            '${firstName.isNotEmpty ? firstName[0] : ''}${lastName.isNotEmpty ? lastName[0] : ''}'
+                .toUpperCase();
+      }
+    }
+
+    return Container(
+      width: 114,
+      height: 114,
+      color: AppColors.primaryGreen,
+      child: Center(
+        child: Text(
+          initials,
+          style: const TextStyle(
+            fontSize: 36,
+            fontWeight: FontWeight.bold,
+            color: AppColors.white,
+          ),
+        ),
       ),
     );
   }

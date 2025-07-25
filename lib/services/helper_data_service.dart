@@ -205,11 +205,20 @@ class HelperDataService {
 
       final response = await _supabase.from('users').select('''
             id, first_name, last_name, email, phone, profile_image_url,
-            location_city, date_of_birth, gender, about_me, created_at
+            location_city, date_of_birth, gender, about_me, created_at,
+            emergency_contact_name, emergency_contact_phone
           ''').eq('id', helpeeId).eq('user_type', 'helpee').maybeSingle();
 
       if (response != null) {
-        print('✅ Helpee profile data fetched successfully');
+        print(
+            '✅ Helpee profile data fetched: ${response['first_name']} ${response['last_name']}');
+
+        // Add debug info about emergency contacts
+        final emergencyName = response['emergency_contact_name'];
+        final emergencyPhone = response['emergency_contact_phone'];
+        print(
+            '📞 Emergency contact in users table: name=$emergencyName, phone=$emergencyPhone');
+
         return response;
       } else {
         print('❌ Helpee not found');
@@ -231,12 +240,13 @@ class HelperDataService {
           .from('ratings_reviews')
           .select('''
             id, rating, review_text, created_at,
-            reviewer:users!ratings_reviews_reviewer_id_fkey(first_name, last_name),
+            reviewer:users!ratings_reviews_reviewer_id_fkey(id, first_name, last_name, profile_image_url),
             jobs(title)
           ''')
           .eq('reviewee_id', helpeeId)
           .eq('review_type', 'helper_to_helpee')
           .not('review_text', 'is', null)
+          .neq('review_text', '')
           .order('created_at', ascending: false)
           .limit(10);
 
@@ -244,6 +254,184 @@ class HelperDataService {
       return List<Map<String, dynamic>>.from(response);
     } catch (e) {
       print('❌ Error fetching helpee reviews: $e');
+      return [];
+    }
+  }
+
+  /// Get helpee's latest reviews for profile display
+  Future<List<Map<String, dynamic>>> getHelpeeLatestReviews(
+      String helpeeId) async {
+    try {
+      print('🔍 Fetching latest reviews for helpee: $helpeeId');
+
+      // First, let's see what's available in ratings_reviews table
+      try {
+        print('🔍 Checking ratings_reviews table for helpee...');
+        final allReviewsResponse =
+            await _supabase.from('ratings_reviews').select('''
+              id, rating, review_text, created_at,
+              reviewer_id, reviewee_id, review_type
+            ''').eq('reviewee_id', helpeeId);
+
+        print(
+            '📊 Found ${allReviewsResponse.length} total entries in ratings_reviews for helpee $helpeeId');
+
+        if (allReviewsResponse.isNotEmpty) {
+          print('📝 Sample data: ${allReviewsResponse.first}');
+
+          // Now get the ones with reviewer details
+          final reviewsWithDetails = await _supabase
+              .from('ratings_reviews')
+              .select('''
+                id, rating, review_text, created_at,
+                reviewer:users!ratings_reviews_reviewer_id_fkey(id, first_name, last_name, profile_image_url)
+              ''')
+              .eq('reviewee_id', helpeeId)
+              .eq('review_type', 'helper_to_helpee')
+              .order('created_at', ascending: false)
+              .limit(3);
+
+          if (reviewsWithDetails.isNotEmpty) {
+            print(
+                '✅ Found ${reviewsWithDetails.length} reviews with details for helpee');
+            return List<Map<String, dynamic>>.from(reviewsWithDetails);
+          }
+        }
+      } catch (e) {
+        print('⚠️ Error with ratings_reviews table for helpee: $e');
+      }
+
+      // Try the ratings table
+      try {
+        print('🔍 Checking ratings table for helpee...');
+        final allRatingsResponse = await _supabase.from('ratings').select('''
+              id, rating, review_text, created_at,
+              rater_id, rated_user_id
+            ''').eq('rated_user_id', helpeeId);
+
+        print(
+            '📊 Found ${allRatingsResponse.length} total entries in ratings for helpee $helpeeId');
+
+        if (allRatingsResponse.isNotEmpty) {
+          print('📝 Sample data: ${allRatingsResponse.first}');
+
+          // Now get the ones with rater details
+          final ratingsWithDetails = await _supabase
+              .from('ratings')
+              .select('''
+                id, rating, review_text, created_at,
+                rater:users!ratings_rater_id_fkey(id, first_name, last_name, profile_image_url)
+              ''')
+              .eq('rated_user_id', helpeeId)
+              .order('created_at', ascending: false)
+              .limit(3);
+
+          // Transform to match expected format
+          final transformedRatings = ratingsWithDetails
+              .map((rating) => {
+                    'id': rating['id'],
+                    'rating': rating['rating'],
+                    'review_text': rating['review_text'] ?? '',
+                    'created_at': rating['created_at'],
+                    'reviewer': rating['rater'],
+                  })
+              .toList();
+
+          if (transformedRatings.isNotEmpty) {
+            print(
+                '✅ Found ${transformedRatings.length} ratings with details for helpee');
+            return transformedRatings;
+          }
+        }
+      } catch (e) {
+        print('⚠️ Error with ratings table for helpee: $e');
+      }
+
+      print('❌ No reviews found for helpee');
+      return [];
+    } catch (e) {
+      print('❌ Error fetching helpee reviews: $e');
+      return [];
+    }
+  }
+
+  /// Get ALL helpee reviews for reviews page
+  Future<List<Map<String, dynamic>>> getHelpeeAllReviews(
+      String helpeeId) async {
+    try {
+      print('🔍 Fetching ALL reviews for helpee: $helpeeId');
+
+      List<Map<String, dynamic>> allReviews = [];
+
+      // Get from ratings_reviews table
+      try {
+        final reviewsWithDetails = await _supabase
+            .from('ratings_reviews')
+            .select('''
+              id, rating, review_text, created_at,
+              reviewer:users!ratings_reviews_reviewer_id_fkey(id, first_name, last_name, profile_image_url)
+            ''')
+            .eq('reviewee_id', helpeeId)
+            .eq('review_type', 'helper_to_helpee')
+            .order('created_at', ascending: false);
+
+        allReviews.addAll(List<Map<String, dynamic>>.from(reviewsWithDetails));
+        print(
+            '📊 Found ${reviewsWithDetails.length} reviews from ratings_reviews table');
+      } catch (e) {
+        print('⚠️ Error with ratings_reviews table: $e');
+      }
+
+      // Get from ratings table as fallback
+      try {
+        final ratingsWithDetails = await _supabase
+            .from('ratings')
+            .select('''
+              id, rating, review_text, created_at,
+              rater:users!ratings_rater_id_fkey(id, first_name, last_name, profile_image_url)
+            ''')
+            .eq('rated_user_id', helpeeId)
+            .order('created_at', ascending: false);
+
+        // Transform to match expected format and add to list
+        final transformedRatings = ratingsWithDetails
+            .map((rating) => {
+                  'id': rating['id'],
+                  'rating': rating['rating'],
+                  'review_text': rating['review_text'] ?? '',
+                  'created_at': rating['created_at'],
+                  'reviewer': rating['rater'],
+                })
+            .toList();
+
+        allReviews.addAll(transformedRatings);
+        print(
+            '📊 Found ${transformedRatings.length} reviews from ratings table');
+      } catch (e) {
+        print('⚠️ Error with ratings table: $e');
+      }
+
+      // Remove duplicates based on ID
+      final uniqueReviews = <String, Map<String, dynamic>>{};
+      for (var review in allReviews) {
+        uniqueReviews[review['id'].toString()] = review;
+      }
+
+      final finalReviews = uniqueReviews.values.toList();
+
+      // Sort by created_at descending
+      finalReviews.sort((a, b) {
+        final dateA =
+            DateTime.tryParse(a['created_at'] ?? '') ?? DateTime.now();
+        final dateB =
+            DateTime.tryParse(b['created_at'] ?? '') ?? DateTime.now();
+        return dateB.compareTo(dateA);
+      });
+
+      print('✅ Returning ${finalReviews.length} unique reviews for helpee');
+      return finalReviews;
+    } catch (e) {
+      print('❌ Error fetching all helpee reviews: $e');
       return [];
     }
   }
@@ -259,35 +447,69 @@ class HelperDataService {
           .select('status, created_at')
           .eq('helpee_id', helpeeId);
 
-      // Get ratings statistics
-      final ratings = await _supabase
+      print('📊 Found ${jobs.length} total jobs for helpee $helpeeId');
+
+      // Get ratings from ratings_reviews table
+      final ratingsReviews = await _supabase
           .from('ratings_reviews')
           .select('rating')
           .eq('reviewee_id', helpeeId)
           .eq('review_type', 'helper_to_helpee')
           .not('rating', 'is', null);
 
+      print(
+          '📊 Found ${ratingsReviews.length} ratings in ratings_reviews for helpee $helpeeId');
+
+      // Also get ratings from ratings table as fallback
+      final ratings = await _supabase
+          .from('ratings')
+          .select('rating')
+          .eq('rated_user_id', helpeeId)
+          .not('rating', 'is', null);
+
+      print(
+          '📊 Found ${ratings.length} ratings in ratings table for helpee $helpeeId');
+
+      // Combine all ratings
+      List<double> allRatings = [];
+
+      // Add ratings from ratings_reviews
+      for (var rating in ratingsReviews) {
+        if (rating['rating'] != null) {
+          allRatings.add((rating['rating'] ?? 0).toDouble());
+        }
+      }
+
+      // Add ratings from ratings table
+      for (var rating in ratings) {
+        if (rating['rating'] != null) {
+          allRatings.add((rating['rating'] ?? 0).toDouble());
+        }
+      }
+
       int totalJobs = jobs.length;
       int completedJobs =
           jobs.where((job) => job['status'] == 'completed').length;
       int pendingJobs = jobs.where((job) => job['status'] == 'pending').length;
       int ongoingJobs = jobs
-          .where((job) =>
-              ['accepted', 'started', 'ongoing'].contains(job['status']))
+          .where((job) => ['accepted', 'started', 'ongoing', 'in_progress']
+              .contains(job['status']))
           .length;
 
       double averageRating = 0.0;
-      int totalReviews = ratings.length;
+      int totalReviews = allRatings.length;
 
       if (totalReviews > 0) {
-        double ratingSum = ratings.fold(
-            0.0, (sum, rating) => sum + (rating['rating'] ?? 0).toDouble());
+        double ratingSum = allRatings.fold(0.0, (sum, rating) => sum + rating);
         averageRating = ratingSum / totalReviews;
       }
 
       // Calculate response rate (simplified - jobs completed vs total)
       double responseRate =
           totalJobs > 0 ? (completedJobs / totalJobs) * 100 : 0.0;
+
+      print(
+          '✅ Calculated helpee stats: jobs=$totalJobs, avg=$averageRating, reviews=$totalReviews');
 
       return {
         'total_jobs': totalJobs,
@@ -446,36 +668,78 @@ class HelperDataService {
     }
   }
 
-  /// Get helper's ratings and reviews
+  /// Get helper's ratings and reviews (for statistics)
   Future<Map<String, dynamic>> getHelperRatingsAndReviews(
       String helperId) async {
     try {
       print('⭐ Fetching ratings and reviews for helper: $helperId');
 
-      final response = await _supabase
+      // First try ratings_reviews table
+      final reviewsResponse = await _supabase
           .from('ratings_reviews')
           .select('''
             id,
             rating,
             review_text,
             created_at,
-            reviewer:users!ratings_reviews_reviewer_id_fkey(first_name, last_name, profile_image_url)
+            reviewer:users!ratings_reviews_reviewer_id_fkey(id, first_name, last_name, profile_image_url)
           ''')
           .eq('reviewee_id', helperId)
           .eq('review_type', 'helpee_to_helper')
           .order('created_at', ascending: false);
 
-      // Rename fields for consistency
-      final formattedReviews = response
-          .map((r) => {
-                'id': r['id'],
-                'rating': r['rating'],
-                'review': r['review_text'],
-                'created_at': r['created_at'],
-                'reviewer': r['reviewer'],
-              })
-          .toList();
+      print(
+          '📊 Found ${reviewsResponse.length} entries in ratings_reviews for helper $helperId');
 
+      // Also try ratings table as fallback
+      final ratingsResponse = await _supabase
+          .from('ratings')
+          .select('''
+            id,
+            rating,
+            review_text,
+            created_at,
+            rater:users!ratings_rater_id_fkey(id, first_name, last_name, profile_image_url)
+          ''')
+          .eq('rated_user_id', helperId)
+          .order('created_at', ascending: false);
+
+      print(
+          '📊 Found ${ratingsResponse.length} entries in ratings for helper $helperId');
+
+      // Combine both sources
+      List<Map<String, dynamic>> allRatings = [];
+
+      // Add ratings_reviews data
+      for (var review in reviewsResponse) {
+        allRatings.add({
+          'id': review['id'],
+          'rating': review['rating'],
+          'review': review['review_text'],
+          'created_at': review['created_at'],
+          'reviewer': review['reviewer'],
+        });
+      }
+
+      // Add ratings data (transformed to match format)
+      for (var rating in ratingsResponse) {
+        allRatings.add({
+          'id': rating['id'],
+          'rating': rating['rating'],
+          'review': rating['review_text'],
+          'created_at': rating['created_at'],
+          'reviewer': rating['rater'],
+        });
+      }
+
+      // Remove duplicates based on ID (if any)
+      final uniqueRatings = <String, Map<String, dynamic>>{};
+      for (var rating in allRatings) {
+        uniqueRatings[rating['id'].toString()] = rating;
+      }
+      final formattedReviews = uniqueRatings.values.toList();
+
+      // Calculate statistics
       double totalRating = 0;
       int totalReviews = formattedReviews.length;
 
@@ -486,6 +750,9 @@ class HelperDataService {
       }
 
       double averageRating = totalReviews > 0 ? totalRating / totalReviews : 0;
+
+      print(
+          '✅ Calculated helper stats: avg=$averageRating, reviews=$totalReviews');
 
       return {
         'average_rating': averageRating,
@@ -499,6 +766,198 @@ class HelperDataService {
         'total_reviews': 0,
         'reviews': [],
       };
+    }
+  }
+
+  /// Get helper's latest reviews for profile display
+  Future<List<Map<String, dynamic>>> getHelperLatestReviews(
+      String helperId) async {
+    try {
+      print('⭐ Fetching latest reviews for helper: $helperId');
+
+      // First, let's see what tables exist and what data is available
+      try {
+        // Try ratings_reviews table first with less restrictive filters
+        print('🔍 Checking ratings_reviews table...');
+        final allReviewsResponse =
+            await _supabase.from('ratings_reviews').select('''
+              id,
+              rating,
+              review_text,
+              created_at,
+              reviewer_id,
+              reviewee_id,
+              review_type
+            ''').eq('reviewee_id', helperId);
+
+        print(
+            '📊 Found ${allReviewsResponse.length} total entries in ratings_reviews for helper $helperId');
+
+        if (allReviewsResponse.isNotEmpty) {
+          print('📝 Sample data: ${allReviewsResponse.first}');
+
+          // Now get the ones with reviewer details and actual review text
+          final reviewsWithDetails = await _supabase
+              .from('ratings_reviews')
+              .select('''
+                id,
+                rating,
+                review_text,
+                created_at,
+                reviewer:users!ratings_reviews_reviewer_id_fkey(id, first_name, last_name, profile_image_url)
+              ''')
+              .eq('reviewee_id', helperId)
+              .eq('review_type', 'helpee_to_helper')
+              .order('created_at', ascending: false)
+              .limit(3);
+
+          if (reviewsWithDetails.isNotEmpty) {
+            print(
+                '✅ Found ${reviewsWithDetails.length} reviews with details for helper');
+            return List<Map<String, dynamic>>.from(reviewsWithDetails);
+          }
+        }
+      } catch (e) {
+        print('⚠️ Error with ratings_reviews table: $e');
+      }
+
+      // Try the ratings table
+      try {
+        print('🔍 Checking ratings table...');
+        final allRatingsResponse = await _supabase.from('ratings').select('''
+              id,
+              rating,
+              review_text,
+              created_at,
+              rater_id,
+              rated_user_id
+            ''').eq('rated_user_id', helperId);
+
+        print(
+            '📊 Found ${allRatingsResponse.length} total entries in ratings for helper $helperId');
+
+        if (allRatingsResponse.isNotEmpty) {
+          print('📝 Sample data: ${allRatingsResponse.first}');
+
+          // Now get the ones with rater details
+          final ratingsWithDetails = await _supabase
+              .from('ratings')
+              .select('''
+                id,
+                rating,
+                review_text,
+                created_at,
+                rater:users!ratings_rater_id_fkey(id, first_name, last_name, profile_image_url)
+              ''')
+              .eq('rated_user_id', helperId)
+              .order('created_at', ascending: false)
+              .limit(3);
+
+          // Transform to match expected format
+          final transformedRatings = ratingsWithDetails
+              .map((rating) => {
+                    'id': rating['id'],
+                    'rating': rating['rating'],
+                    'review_text': rating['review_text'] ?? '',
+                    'created_at': rating['created_at'],
+                    'reviewer': rating['rater'],
+                  })
+              .toList();
+
+          print(
+              '✅ Found ${transformedRatings.length} ratings with details for helper');
+          return transformedRatings;
+        }
+      } catch (e) {
+        print('⚠️ Error with ratings table: $e');
+      }
+
+      print('❌ No reviews found in either table for helper $helperId');
+      return [];
+    } catch (e) {
+      print('❌ Error fetching helper latest reviews: $e');
+      return [];
+    }
+  }
+
+  /// Get ALL helper reviews for reviews page
+  Future<List<Map<String, dynamic>>> getHelperAllReviews(
+      String helperId) async {
+    try {
+      print('🔍 Fetching ALL reviews for helper: $helperId');
+
+      List<Map<String, dynamic>> allReviews = [];
+
+      // Get from ratings_reviews table
+      try {
+        final reviewsWithDetails = await _supabase
+            .from('ratings_reviews')
+            .select('''
+              id, rating, review_text, created_at,
+              reviewer:users!ratings_reviews_reviewer_id_fkey(id, first_name, last_name, profile_image_url)
+            ''')
+            .eq('reviewee_id', helperId)
+            .eq('review_type', 'helpee_to_helper')
+            .order('created_at', ascending: false);
+
+        allReviews.addAll(List<Map<String, dynamic>>.from(reviewsWithDetails));
+        print(
+            '📊 Found ${reviewsWithDetails.length} reviews from ratings_reviews table');
+      } catch (e) {
+        print('⚠️ Error with ratings_reviews table: $e');
+      }
+
+      // Get from ratings table as fallback
+      try {
+        final ratingsWithDetails = await _supabase
+            .from('ratings')
+            .select('''
+              id, rating, review_text, created_at,
+              rater:users!ratings_rater_id_fkey(id, first_name, last_name, profile_image_url)
+            ''')
+            .eq('rated_user_id', helperId)
+            .order('created_at', ascending: false);
+
+        // Transform to match expected format and add to list
+        final transformedRatings = ratingsWithDetails
+            .map((rating) => {
+                  'id': rating['id'],
+                  'rating': rating['rating'],
+                  'review_text': rating['review_text'] ?? '',
+                  'created_at': rating['created_at'],
+                  'reviewer': rating['rater'],
+                })
+            .toList();
+
+        allReviews.addAll(transformedRatings);
+        print(
+            '📊 Found ${transformedRatings.length} reviews from ratings table');
+      } catch (e) {
+        print('⚠️ Error with ratings table: $e');
+      }
+
+      // Remove duplicates based on ID
+      final uniqueReviews = <String, Map<String, dynamic>>{};
+      for (var review in allReviews) {
+        uniqueReviews[review['id'].toString()] = review;
+      }
+
+      final finalReviews = uniqueReviews.values.toList();
+
+      // Sort by created_at descending
+      finalReviews.sort((a, b) {
+        final dateA =
+            DateTime.tryParse(a['created_at'] ?? '') ?? DateTime.now();
+        final dateB =
+            DateTime.tryParse(b['created_at'] ?? '') ?? DateTime.now();
+        return dateB.compareTo(dateA);
+      });
+
+      print('✅ Returning ${finalReviews.length} unique reviews for helper');
+      return finalReviews;
+    } catch (e) {
+      print('❌ Error fetching all helper reviews: $e');
+      return [];
     }
   }
 
@@ -606,16 +1065,25 @@ class HelperDataService {
       final userProfile =
           await _supabase.from('users').select('*').eq('id', helperId).single();
 
+      print(
+          '✅ Basic profile loaded: ${userProfile['first_name']} ${userProfile['last_name']}');
+
       // Get job types with category names
       final jobTypes = await getHelperJobTypes(helperId);
       List<String> jobTypeNames =
           jobTypes.map((jt) => jt['job_categories']['name'] as String).toList();
 
+      print('✅ Job types loaded: ${jobTypeNames.length} types');
+
       // Get ratings and reviews
       final ratingsData = await getHelperRatingsAndReviews(helperId);
+      print(
+          '✅ Ratings data: avg=${ratingsData['average_rating']}, reviews=${ratingsData['total_reviews']}');
 
       // Get job statistics
       final jobStats = await getHelperJobStatistics(helperId);
+      print(
+          '✅ Job stats: total=${jobStats['total_jobs']}, completed=${jobStats['completed_jobs']}');
 
       // Get availability
       final availability = await getHelperAvailability(helperId);
@@ -626,8 +1094,10 @@ class HelperDataService {
       // Get comprehensive statistics
       final comprehensiveStats =
           await getHelperComprehensiveStatistics(helperId);
+      print(
+          '✅ Comprehensive stats: completed=${comprehensiveStats['completed_jobs']}, total_earnings=${comprehensiveStats['total_earnings']}');
 
-      return {
+      final profileData = {
         // Basic profile info
         'id': userProfile['id'],
         'full_name':
@@ -644,38 +1114,52 @@ class HelperDataService {
         'job_types': jobTypes,
         'job_type_names': jobTypeNames,
 
-        // Ratings and reviews
-        'average_rating': ratingsData['average_rating'],
-        'total_reviews': ratingsData['total_reviews'],
+        // Ratings and reviews - FIXED: Use calculated statistics
+        'average_rating': ratingsData['average_rating'] ?? 0.0,
+        'total_reviews': ratingsData['total_reviews'] ?? 0,
         'reviews': ratingsData['reviews'],
 
-        // Basic statistics
-        'total_jobs': jobStats['total_jobs'],
-        'experience_years': jobStats['experience_years'],
-        'total_hours': jobStats['total_hours'],
+        // Basic statistics - FIXED: Use proper job statistics
+        'total_jobs': jobStats['total_jobs'] ?? 0,
+        'experience_years': jobStats['experience_years'] ?? 0,
+        'total_hours': jobStats['total_hours'] ?? 0,
 
         // Comprehensive statistics for Statistics tab
-        'completed_jobs': comprehensiveStats['completed_jobs'],
-        'ongoing_jobs': comprehensiveStats['ongoing_jobs'],
-        'pending_jobs': comprehensiveStats['pending_jobs'],
-        'total_earnings': comprehensiveStats['total_earnings'],
-        'avg_earning_per_job': comprehensiveStats['avg_earning_per_job'],
-        'this_month_earnings': comprehensiveStats['this_month_earnings'],
-        'last_month_earnings': comprehensiveStats['last_month_earnings'],
-        'total_hours_worked': comprehensiveStats['total_hours_worked'],
-        'avg_hours_per_job': comprehensiveStats['avg_hours_per_job'],
-        'this_month_hours': comprehensiveStats['this_month_hours'],
-        'avg_response_time': comprehensiveStats['avg_response_time'],
-        'category_stats': comprehensiveStats['category_stats'],
+        'completed_jobs': comprehensiveStats['completed_jobs'] ?? 0,
+        'ongoing_jobs': comprehensiveStats['ongoing_jobs'] ?? 0,
+        'pending_jobs': comprehensiveStats['pending_jobs'] ?? 0,
+        'total_earnings': comprehensiveStats['total_earnings'] ?? 0.0,
+        'avg_earning_per_job': comprehensiveStats['avg_earning_per_job'] ?? 0.0,
+        'this_month_earnings': comprehensiveStats['this_month_earnings'] ?? 0.0,
+        'last_month_earnings': comprehensiveStats['last_month_earnings'] ?? 0.0,
+        'total_hours_worked': comprehensiveStats['total_hours'] ?? 0,
+        'avg_hours_per_job': (comprehensiveStats['completed_jobs'] ?? 0) > 0
+            ? (comprehensiveStats['total_hours'] ?? 0) /
+                (comprehensiveStats['completed_jobs'] ?? 1)
+            : 0.0,
+        'this_month_hours': comprehensiveStats['this_month_hours'] ?? 0,
+        'avg_response_time': 30, // Default 30 minutes
+        'category_stats': comprehensiveStats['category_stats'] ?? [],
 
-        // Availability
-        'is_available': availability['is_available'],
-        'availability_status': availability['status'],
-        'response_time': availability['response_time'],
-
-        // Documents for resume
+        // Additional profile fields
+        'availability': availability,
         'documents': documents,
+        'date_of_birth': userProfile['date_of_birth'],
+        'bio': userProfile['about_me'] ??
+            'Professional helper ready to assist you.',
+        'location_city': userProfile['location_city'],
+        'first_name': userProfile['first_name'],
+        'last_name': userProfile['last_name'],
+        'phone': userProfile['phone'],
       };
+
+      print('🎯 Final profile data summary:');
+      print('   - Average Rating: ${profileData['average_rating']}');
+      print('   - Total Reviews: ${profileData['total_reviews']}');
+      print('   - Total Jobs: ${profileData['total_jobs']}');
+      print('   - Completed Jobs: ${profileData['completed_jobs']}');
+
+      return profileData;
     } catch (e) {
       print('❌ Error fetching helper profile for helpee: $e');
       return null;

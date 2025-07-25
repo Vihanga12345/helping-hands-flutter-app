@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../utils/app_colors.dart';
 import '../../utils/app_text_styles.dart';
-import '../../services/localization_service.dart';
+import '../../services/custom_auth_service.dart';
 
 class MessageNotificationPopup extends StatefulWidget {
   final String senderName;
@@ -20,31 +20,6 @@ class MessageNotificationPopup extends StatefulWidget {
     this.onClose,
   }) : super(key: key);
 
-  // Static show method for displaying the popup
-  static void show(
-    BuildContext context, {
-    required String senderName,
-    required String messageText,
-    required String conversationId,
-    String? senderImageUrl,
-  }) {
-    OverlayEntry? overlayEntry;
-
-    overlayEntry = OverlayEntry(
-      builder: (context) => MessageNotificationPopup(
-        senderName: senderName,
-        messageText: messageText,
-        conversationId: conversationId,
-        senderImageUrl: senderImageUrl,
-        onClose: () {
-          overlayEntry?.remove();
-        },
-      ),
-    );
-
-    Overlay.of(context).insert(overlayEntry);
-  }
-
   @override
   State<MessageNotificationPopup> createState() =>
       _MessageNotificationPopupState();
@@ -60,18 +35,22 @@ class _MessageNotificationPopupState extends State<MessageNotificationPopup>
   void initState() {
     super.initState();
     _animationController = AnimationController(
-        duration: const Duration(milliseconds: 300), vsync: this);
+      duration: const Duration(milliseconds: 300),
+      vsync: this,
+    );
+
     _scaleAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
         CurvedAnimation(
             parent: _animationController, curve: Curves.elasticOut));
+
     _opacityAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
         CurvedAnimation(parent: _animationController, curve: Curves.easeIn));
 
     _animationController.forward();
 
-    // Auto close after 4 seconds and navigate to chat
-    Future.delayed(const Duration(seconds: 4), () {
-      if (mounted) _navigateToChat();
+    // Auto-dismiss after 3 seconds and navigate to chat
+    Future.delayed(const Duration(seconds: 3), () {
+      if (mounted) _closeAndNavigateToChat();
     });
   }
 
@@ -81,21 +60,32 @@ class _MessageNotificationPopupState extends State<MessageNotificationPopup>
     super.dispose();
   }
 
-  void _closePopup() async {
-    await _animationController.reverse();
-    if (widget.onClose != null) widget.onClose!();
-  }
-
-  void _navigateToChat() async {
+  void _closeAndNavigateToChat() async {
     await _animationController.reverse();
     if (widget.onClose != null) widget.onClose!();
 
     // Navigate to chat page
     if (mounted) {
-      context.push('/chat', extra: {
-        'conversationId': widget.conversationId,
-        'otherUserName': widget.senderName,
-      });
+      _navigateToChat();
+    }
+  }
+
+  void _navigateToChat() {
+    try {
+      final authService = CustomAuthService();
+      final currentUser = authService.currentUser;
+
+      if (currentUser != null && mounted) {
+        // Navigate to chat with conversation data
+        context.go('/chat', extra: {
+          'conversationId': widget.conversationId,
+          'otherUserName': widget.senderName,
+        });
+
+        print('✅ Navigated to chat from message notification');
+      }
+    } catch (e) {
+      print('❌ Error navigating to chat from notification: $e');
     }
   }
 
@@ -114,125 +104,134 @@ class _MessageNotificationPopupState extends State<MessageNotificationPopup>
               child: Transform.scale(
                 scale: _scaleAnimation.value,
                 child: GestureDetector(
-                  onTap: _navigateToChat,
+                  onTap: _closeAndNavigateToChat,
                   child: Container(
                     width: 340,
-                    height: 295,
+                    height: 320,
                     decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(20),
-                        boxShadow: [
-                          BoxShadow(
-                              color: Colors.black.withOpacity(0.25),
-                              blurRadius: 8,
-                              offset: const Offset(0, 4),
-                              spreadRadius: 2)
-                        ]),
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.25),
+                          blurRadius: 8,
+                          offset: const Offset(0, 4),
+                          spreadRadius: 2,
+                        ),
+                      ],
+                    ),
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        // Profile image or message icon
+                        // Message icon
                         Container(
                           width: 80,
                           height: 80,
                           decoration: BoxDecoration(
-                              color: AppColors.primaryGreen,
-                              shape: BoxShape.circle,
-                              boxShadow: [
-                                BoxShadow(
-                                    color:
-                                        AppColors.primaryGreen.withOpacity(0.3),
-                                    blurRadius: 8,
-                                    offset: const Offset(0, 3),
-                                    spreadRadius: 2)
-                              ]),
-                          child: widget.senderImageUrl != null &&
-                                  widget.senderImageUrl!.isNotEmpty
-                              ? ClipOval(
-                                  child: Image.network(
-                                    widget.senderImageUrl!,
-                                    width: 80,
-                                    height: 80,
-                                    fit: BoxFit.cover,
-                                    errorBuilder:
-                                        (context, error, stackTrace) =>
-                                            const Icon(Icons.message,
-                                                color: Colors.white, size: 40),
-                                  ),
-                                )
-                              : const Icon(Icons.message,
-                                  color: Colors.white, size: 40),
+                            color: AppColors.primaryGreen,
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: AppColors.primaryGreen.withOpacity(0.3),
+                                blurRadius: 8,
+                                offset: const Offset(0, 3),
+                                spreadRadius: 2,
+                              ),
+                            ],
+                          ),
+                          child: const Icon(
+                            Icons.message,
+                            color: Colors.white,
+                            size: 40,
+                          ),
                         ),
-                        const SizedBox(height: 20),
+
+                        const SizedBox(height: 24),
+
+                        // Title
+                        Text(
+                          'New Message',
+                          textAlign: TextAlign.center,
+                          style: AppTextStyles.heading3.copyWith(
+                            color: Colors.black87,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+
+                        const SizedBox(height: 12),
 
                         // Sender name
                         Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 30),
                           child: Text(
-                            'New Message from'.tr(),
+                            'From: ${widget.senderName}',
                             textAlign: TextAlign.center,
                             style: AppTextStyles.bodyMedium.copyWith(
-                                color: AppColors.textSecondary, fontSize: 14),
+                              fontSize: 16,
+                              color: AppColors.primaryGreen,
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
                         ),
-                        const SizedBox(height: 5),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 30),
-                          child: Text(
-                            widget.senderName,
-                            textAlign: TextAlign.center,
-                            style: AppTextStyles.heading3.copyWith(
-                                fontSize: 20,
-                                color: AppColors.textPrimary,
-                                fontWeight: FontWeight.w700),
-                          ),
-                        ),
-                        const SizedBox(height: 10),
+
+                        const SizedBox(height: 12),
 
                         // Message preview
                         Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 40),
-                          child: Text(
-                            widget.messageText.length > 50
-                                ? '${widget.messageText.substring(0, 47)}...'
-                                : widget.messageText,
-                            textAlign: TextAlign.center,
-                            style: AppTextStyles.bodyMedium.copyWith(
-                                color: AppColors.textSecondary,
+                          padding: const EdgeInsets.symmetric(horizontal: 30),
+                          child: Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: AppColors.lightGrey.withOpacity(0.5),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              widget.messageText.length > 60
+                                  ? '${widget.messageText.substring(0, 60)}...'
+                                  : widget.messageText,
+                              textAlign: TextAlign.center,
+                              style: AppTextStyles.bodySmall.copyWith(
                                 fontSize: 14,
-                                height: 1.3),
+                                color: Colors.black87,
+                                height: 1.3,
+                              ),
+                              maxLines: 3,
+                              overflow: TextOverflow.ellipsis,
+                            ),
                           ),
                         ),
+
                         const SizedBox(height: 20),
 
-                        // Tap to open chat hint
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 40),
-                          child: Text(
-                            'Tap to open chat'.tr(),
-                            textAlign: TextAlign.center,
-                            style: AppTextStyles.bodySmall.copyWith(
-                                color: AppColors.primaryGreen,
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600),
+                        // Tap to open indicator
+                        Text(
+                          'Tap to open chat',
+                          style: AppTextStyles.bodySmall.copyWith(
+                            fontSize: 12,
+                            color: Colors.grey[600],
+                            fontStyle: FontStyle.italic,
                           ),
                         ),
-                        const SizedBox(height: 15),
 
-                        // Progress bar
+                        const SizedBox(height: 16),
+
+                        // Progress indicator
                         Container(
                           width: 100,
                           height: 4,
                           decoration: BoxDecoration(
-                              color: Colors.grey.withOpacity(0.2),
-                              borderRadius: BorderRadius.circular(2)),
+                            color: Colors.grey.withOpacity(0.2),
+                            borderRadius: BorderRadius.circular(2),
+                          ),
                           child: FractionallySizedBox(
                             alignment: Alignment.centerLeft,
                             widthFactor: _animationController.value,
                             child: Container(
-                                decoration: BoxDecoration(
-                                    color: AppColors.primaryGreen,
-                                    borderRadius: BorderRadius.circular(2))),
+                              decoration: BoxDecoration(
+                                color: AppColors.primaryGreen,
+                                borderRadius: BorderRadius.circular(2),
+                              ),
+                            ),
                           ),
                         ),
                       ],
@@ -244,6 +243,28 @@ class _MessageNotificationPopupState extends State<MessageNotificationPopup>
           ),
         );
       },
+    );
+  }
+
+  /// Static method to show message popup
+  static void show(
+    BuildContext context, {
+    required String senderName,
+    required String messageText,
+    required String conversationId,
+    String? senderImageUrl,
+  }) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      barrierColor: Colors.transparent,
+      builder: (BuildContext context) => MessageNotificationPopup(
+        senderName: senderName,
+        messageText: messageText,
+        conversationId: conversationId,
+        senderImageUrl: senderImageUrl,
+        onClose: () => Navigator.of(context).pop(),
+      ),
     );
   }
 }

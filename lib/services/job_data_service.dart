@@ -72,10 +72,23 @@ class JobDataService {
     try {
       print('🔍 Getting jobs for helper: $helperId, status: $status');
 
-      // For ongoing status, include both 'ongoing', 'accepted', and 'started' jobs
-      final statusesToQuery = status.toLowerCase() == 'ongoing'
-          ? ['ongoing', 'accepted', 'started']
-          : [status.toLowerCase()];
+      List<String> statusesToQuery;
+
+      // Handle different status filters
+      if (status.toLowerCase() == 'all') {
+        statusesToQuery = [
+          'pending',
+          'accepted',
+          'ongoing',
+          'started',
+          'completed',
+          'cancelled'
+        ];
+      } else if (status.toLowerCase() == 'ongoing') {
+        statusesToQuery = ['ongoing', 'accepted', 'started'];
+      } else {
+        statusesToQuery = [status.toLowerCase()];
+      }
 
       try {
         // Try to use the new database function that filters by job categories

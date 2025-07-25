@@ -55,7 +55,7 @@ dependencies:
   file_picker: ^8.0.7
   
   # WebRTC Calling (FREE Alternative) & Permissions
-  flutter_webrtc: ^0.9.47 # Re-enabled for messaging and calling features
+  # flutter_webrtc: ^0.9.48+hotfix.1 # Temporarily disabled due to compilation issues
   permission_handler: ^11.0.1
   
   # Notifications

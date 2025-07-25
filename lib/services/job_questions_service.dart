@@ -438,4 +438,43 @@ class JobQuestionsService {
 
     return true;
   }
+
+  /// Create a new question for a job category
+  Future<bool> createQuestion({
+    required String categoryId,
+    required String questionText,
+    required String questionType,
+  }) async {
+    await initialize();
+
+    try {
+      // Get the next order number for this category
+      final existingQuestions = await _supabase
+          .from('job_category_questions')
+          .select('question_order')
+          .eq('category_id', categoryId)
+          .eq('is_active', true)
+          .order('question_order', ascending: false)
+          .limit(1);
+
+      int nextOrder = 1;
+      if (existingQuestions.isNotEmpty) {
+        nextOrder = (existingQuestions.first['question_order'] ?? 0) + 1;
+      }
+
+      await _supabase.from('job_category_questions').insert({
+        'category_id': categoryId,
+        'question_text': questionText,
+        'question_type': questionType,
+        'question_order': nextOrder,
+        'is_active': true,
+      });
+
+      print('✅ Question created successfully');
+      return true;
+    } catch (e) {
+      print('❌ Error creating question: $e');
+      return false;
+    }
+  }
 }

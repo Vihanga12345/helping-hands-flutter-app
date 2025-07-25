@@ -11,25 +11,27 @@ class Helpee28JobCompletedPage extends StatefulWidget {
   const Helpee28JobCompletedPage({super.key});
 
   @override
-  State<Helpee28JobCompletedPage> createState() => _Helpee28JobCompletedPageState();
+  State<Helpee28JobCompletedPage> createState() =>
+      _Helpee28JobCompletedPageState();
 }
 
 class _Helpee28JobCompletedPageState extends State<Helpee28JobCompletedPage> {
   @override
   Widget build(BuildContext context) {
-    final jobData = GoRouterState.of(context).extra as Map<String, dynamic>? ?? {
-      'jobId': 'JOB1001',
-      'jobTitle': 'House Cleaning',
-      'helperName': 'Saman Perera',
-      'helperRating': '4.8',
-      'completedDate': '15 Dec 2024',
-      'completedTime': '2:00 PM',
-      'totalDuration': '4 hours',
-      'address': '123 Galle Road, Colombo 03',
-      'price': 'LKR 2,500',
-      'startTime': '10:00 AM',
-      'isPaid': false,
-    };
+    final jobData = GoRouterState.of(context).extra as Map<String, dynamic>? ??
+        {
+          'jobId': 'JOB1001',
+          'jobTitle': 'House Cleaning',
+          'helperName': 'Saman Perera',
+          'helperRating': '4.8',
+          'completedDate': '15 Dec 2024',
+          'completedTime': '2:00 PM',
+          'totalDuration': '4 hours',
+          'address': '123 Galle Road, Colombo 03',
+          'price': 'LKR 2,500',
+          'startTime': '10:00 AM',
+          'isPaid': false,
+        };
 
     return Scaffold(
       body: Column(
@@ -41,7 +43,7 @@ class _Helpee28JobCompletedPageState extends State<Helpee28JobCompletedPage> {
             showMenuButton: false,
             showNotificationButton: false,
           ),
-          
+
           // Body Content
           Expanded(
             child: Container(
@@ -67,7 +69,8 @@ class _Helpee28JobCompletedPageState extends State<Helpee28JobCompletedPage> {
                         decoration: BoxDecoration(
                           color: AppColors.success.withOpacity(0.1),
                           borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: AppColors.success.withOpacity(0.3)),
+                          border: Border.all(
+                              color: AppColors.success.withOpacity(0.3)),
                         ),
                         child: const Column(
                           children: [
@@ -97,9 +100,9 @@ class _Helpee28JobCompletedPageState extends State<Helpee28JobCompletedPage> {
                           ],
                         ),
                       ),
-                      
+
                       const SizedBox(height: 20),
-                      
+
                       // Job Summary Card
                       Container(
                         width: double.infinity,
@@ -135,7 +138,8 @@ class _Helpee28JobCompletedPageState extends State<Helpee28JobCompletedPage> {
                                 const SizedBox(width: 12),
                                 Expanded(
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       Text(
                                         jobData['jobTitle'],
@@ -155,7 +159,8 @@ class _Helpee28JobCompletedPageState extends State<Helpee28JobCompletedPage> {
                                   ),
                                 ),
                                 Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 12, vertical: 6),
                                   decoration: BoxDecoration(
                                     color: AppColors.success.withOpacity(0.1),
                                     borderRadius: BorderRadius.circular(20),
@@ -171,17 +176,21 @@ class _Helpee28JobCompletedPageState extends State<Helpee28JobCompletedPage> {
                                 ),
                               ],
                             ),
-                            
+
                             const SizedBox(height: 20),
-                            
+
                             // Job Details
-                            _buildDetailRow(Icons.calendar_today, 'Date', jobData['completedDate']),
-                            _buildDetailRow(Icons.access_time, 'Time', '${jobData['startTime']} - ${jobData['completedTime']}'),
-                            _buildDetailRow(Icons.timer, 'Duration', jobData['totalDuration']),
-                            _buildDetailRow(Icons.location_on, 'Location', jobData['address']),
-                            
+                            _buildDetailRow(Icons.calendar_today, 'Date',
+                                jobData['completedDate']),
+                            _buildDetailRow(Icons.access_time, 'Time',
+                                '${jobData['startTime']} - ${jobData['completedTime']}'),
+                            _buildDetailRow(Icons.timer, 'Duration',
+                                jobData['totalDuration']),
+                            _buildDetailRow(Icons.location_on, 'Location',
+                                jobData['address']),
+
                             const Divider(height: 32),
-                            
+
                             // Payment Summary
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -206,9 +215,9 @@ class _Helpee28JobCompletedPageState extends State<Helpee28JobCompletedPage> {
                           ],
                         ),
                       ),
-                      
+
                       const SizedBox(height: 20),
-                      
+
                       // Helper Information Card
                       Container(
                         width: double.infinity,
@@ -235,7 +244,6 @@ class _Helpee28JobCompletedPageState extends State<Helpee28JobCompletedPage> {
                               ),
                             ),
                             const SizedBox(height: 16),
-                            
                             Row(
                               children: [
                                 // Helper Avatar
@@ -243,10 +251,12 @@ class _Helpee28JobCompletedPageState extends State<Helpee28JobCompletedPage> {
                                   width: 60,
                                   height: 60,
                                   decoration: BoxDecoration(
-                                    color: AppColors.primaryGreen.withOpacity(0.1),
+                                    color:
+                                        AppColors.primaryGreen.withOpacity(0.1),
                                     borderRadius: BorderRadius.circular(30),
                                     border: Border.all(
-                                      color: AppColors.primaryGreen.withOpacity(0.3),
+                                      color: AppColors.primaryGreen
+                                          .withOpacity(0.3),
                                       width: 2,
                                     ),
                                   ),
@@ -256,13 +266,14 @@ class _Helpee28JobCompletedPageState extends State<Helpee28JobCompletedPage> {
                                     size: 30,
                                   ),
                                 ),
-                                
+
                                 const SizedBox(width: 16),
-                                
+
                                 // Helper Details
                                 Expanded(
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       Text(
                                         jobData['helperName'],
@@ -301,14 +312,15 @@ class _Helpee28JobCompletedPageState extends State<Helpee28JobCompletedPage> {
                                     ],
                                   ),
                                 ),
-                                
+
                                 // Rate Helper Button
                                 ElevatedButton(
                                   onPressed: () => _rateHelper(context),
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: AppColors.primaryGreen,
                                     foregroundColor: AppColors.white,
-                                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 16, vertical: 8),
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(20),
                                     ),
@@ -323,9 +335,9 @@ class _Helpee28JobCompletedPageState extends State<Helpee28JobCompletedPage> {
                           ],
                         ),
                       ),
-                      
+
                       const SizedBox(height: 20),
-                      
+
                       // Payment Section
                       if (!jobData['isPaid'])
                         Container(
@@ -359,7 +371,8 @@ class _Helpee28JobCompletedPageState extends State<Helpee28JobCompletedPage> {
                                 decoration: BoxDecoration(
                                   color: Colors.orange.withOpacity(0.1),
                                   borderRadius: BorderRadius.circular(8),
-                                  border: Border.all(color: Colors.orange.withOpacity(0.3)),
+                                  border: Border.all(
+                                      color: Colors.orange.withOpacity(0.3)),
                                 ),
                                 child: const Row(
                                   children: [
@@ -397,7 +410,7 @@ class _Helpee28JobCompletedPageState extends State<Helpee28JobCompletedPage> {
                             ],
                           ),
                         ),
-                      
+
                       if (jobData['isPaid'])
                         Container(
                           width: double.infinity,
@@ -405,11 +418,13 @@ class _Helpee28JobCompletedPageState extends State<Helpee28JobCompletedPage> {
                           decoration: BoxDecoration(
                             color: AppColors.success.withOpacity(0.1),
                             borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: AppColors.success.withOpacity(0.3)),
+                            border: Border.all(
+                                color: AppColors.success.withOpacity(0.3)),
                           ),
                           child: const Row(
                             children: [
-                              Icon(Icons.check_circle, color: AppColors.success),
+                              Icon(Icons.check_circle,
+                                  color: AppColors.success),
                               SizedBox(width: 12),
                               Expanded(
                                 child: Text(
@@ -424,9 +439,9 @@ class _Helpee28JobCompletedPageState extends State<Helpee28JobCompletedPage> {
                             ],
                           ),
                         ),
-                      
+
                       const SizedBox(height: 20),
-                      
+
                       // Action Buttons
                       Column(
                         children: [
@@ -447,9 +462,9 @@ class _Helpee28JobCompletedPageState extends State<Helpee28JobCompletedPage> {
                               ),
                             ),
                           ),
-                          
+
                           const SizedBox(height: 12),
-                          
+
                           // More Actions
                           Row(
                             children: [
@@ -460,7 +475,8 @@ class _Helpee28JobCompletedPageState extends State<Helpee28JobCompletedPage> {
                                   label: const Text('Receipt'),
                                   style: OutlinedButton.styleFrom(
                                     foregroundColor: AppColors.primaryGreen,
-                                    side: const BorderSide(color: AppColors.primaryGreen),
+                                    side: const BorderSide(
+                                        color: AppColors.primaryGreen),
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(12),
                                     ),
@@ -475,7 +491,8 @@ class _Helpee28JobCompletedPageState extends State<Helpee28JobCompletedPage> {
                                   label: const Text('Share'),
                                   style: OutlinedButton.styleFrom(
                                     foregroundColor: AppColors.primaryGreen,
-                                    side: const BorderSide(color: AppColors.primaryGreen),
+                                    side: const BorderSide(
+                                        color: AppColors.primaryGreen),
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(12),
                                     ),
@@ -486,9 +503,9 @@ class _Helpee28JobCompletedPageState extends State<Helpee28JobCompletedPage> {
                           ),
                         ],
                       ),
-                      
+
                       const SizedBox(height: 20),
-                      
+
                       // Feedback Card
                       Container(
                         width: double.infinity,
@@ -496,14 +513,16 @@ class _Helpee28JobCompletedPageState extends State<Helpee28JobCompletedPage> {
                         decoration: BoxDecoration(
                           color: AppColors.primaryGreen.withOpacity(0.05),
                           borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: AppColors.primaryGreen.withOpacity(0.2)),
+                          border: Border.all(
+                              color: AppColors.primaryGreen.withOpacity(0.2)),
                         ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             const Row(
                               children: [
-                                Icon(Icons.feedback, color: AppColors.primaryGreen),
+                                Icon(Icons.feedback,
+                                    color: AppColors.primaryGreen),
                                 SizedBox(width: 8),
                                 Text(
                                   'How was your experience?',
@@ -530,7 +549,8 @@ class _Helpee28JobCompletedPageState extends State<Helpee28JobCompletedPage> {
                                 onPressed: () => _giveFeedback(context),
                                 style: OutlinedButton.styleFrom(
                                   foregroundColor: AppColors.primaryGreen,
-                                  side: const BorderSide(color: AppColors.primaryGreen),
+                                  side: const BorderSide(
+                                      color: AppColors.primaryGreen),
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(8),
                                   ),
@@ -541,7 +561,7 @@ class _Helpee28JobCompletedPageState extends State<Helpee28JobCompletedPage> {
                           ],
                         ),
                       ),
-                      
+
                       const SizedBox(height: 20),
                     ],
                   ),
@@ -549,7 +569,7 @@ class _Helpee28JobCompletedPageState extends State<Helpee28JobCompletedPage> {
               ),
             ),
           ),
-          
+
           // Navigation Bar
           const AppNavigationBar(
             currentTab: NavigationTab.home,
@@ -627,4 +647,4 @@ class _Helpee28JobCompletedPageState extends State<Helpee28JobCompletedPage> {
       ),
     );
   }
-} 
+}

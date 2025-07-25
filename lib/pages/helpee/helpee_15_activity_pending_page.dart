@@ -61,6 +61,8 @@ class _Helpee15ActivityPendingPageState
     _activitySubscription = liveDataService.activityStream.listen((activities) {
       if (mounted) {
         print(
+            '🔄 Helpee Activity: Received ${activities.length} activities from stream');
+        print(
             '📱 Activity data received: ${activities.length} total activities');
 
         setState(() {
@@ -79,6 +81,11 @@ class _Helpee15ActivityPendingPageState
           _jobsData['completed'] =
               activities.where((job) => job['status'] == 'completed').toList();
         });
+
+        print('📊 Helpee Activity Data:');
+        print('   Pending: ${_jobsData['pending']?.length ?? 0}');
+        print('   Ongoing: ${_jobsData['ongoing']?.length ?? 0}');
+        print('   Completed: ${_jobsData['completed']?.length ?? 0}');
 
         print(
             '📱 Grouped jobs - Pending: ${_jobsData['pending']?.length}, Ongoing: ${_jobsData['ongoing']?.length}, Completed: ${_jobsData['completed']?.length}');
@@ -99,10 +106,60 @@ class _Helpee15ActivityPendingPageState
 
   void _loadInitialData() async {
     try {
+      print('🔄 Helpee Activity: Loading initial data...');
+
+      // Ensure the live data service is initialized
+      if (!liveDataService.isInitialized) {
+        print('⚠️ LiveDataService not initialized, initializing now...');
+        await liveDataService.initialize();
+      }
+
       // Load all activities without status filter to get complete data
       await liveDataService.refreshActivity();
+
+      print('✅ Helpee Activity: Initial data load completed');
     } catch (e) {
-      print('❌ Error loading initial activity data: $e');
+      print('❌ Error loading initial helpee activity data: $e');
+
+      // Fallback: Try to load data directly from JobDataService
+      print('🔄 Fallback: Loading data directly from JobDataService...');
+      _loadDataDirectly();
+    }
+  }
+
+  // Fallback method to load data directly if live service fails
+  void _loadDataDirectly() async {
+    try {
+      final currentUser = _authService.currentUser;
+      if (currentUser == null) {
+        print('❌ No current user found');
+        return;
+      }
+
+      final helpeeId = currentUser['user_id'];
+      print('🔄 Loading helpee data directly for: $helpeeId');
+
+      // Load all job statuses in parallel
+      final results = await Future.wait([
+        _jobDataService.getJobsByUserAndStatus(helpeeId, 'pending'),
+        _jobDataService.getJobsByUserAndStatus(helpeeId, 'ongoing'),
+        _jobDataService.getJobsByUserAndStatus(helpeeId, 'completed'),
+      ]);
+
+      if (mounted) {
+        setState(() {
+          _jobsData['pending'] = results[0];
+          _jobsData['ongoing'] = results[1];
+          _jobsData['completed'] = results[2];
+        });
+
+        print('✅ Direct helpee data load completed:');
+        print('   Pending: ${_jobsData['pending']?.length ?? 0}');
+        print('   Ongoing: ${_jobsData['ongoing']?.length ?? 0}');
+        print('   Completed: ${_jobsData['completed']?.length ?? 0}');
+      }
+    } catch (e) {
+      print('❌ Error in direct helpee data loading: $e');
     }
   }
 
@@ -172,10 +229,10 @@ class _Helpee15ActivityPendingPageState
                       unselectedLabelStyle: AppTextStyles.buttonMedium.copyWith(
                         fontWeight: FontWeight.w500,
                       ),
-                      tabs: const [
-                        Tab(text: 'Pending'),
-                        Tab(text: 'Ongoing'),
-                        Tab(text: 'Completed'),
+                      tabs: [
+                        Tab(text: 'Pending'.tr()),
+                        Tab(text: 'Ongoing'.tr()),
+                        Tab(text: 'Completed'.tr()),
                       ],
                     ),
                   ),
@@ -596,19 +653,19 @@ class _Helpee15ActivityPendingPageState
 
     switch (status) {
       case 'pending':
-        message = 'No pending jobs\nCreate a job request to get started!';
+        message = 'No pending jobs\nCreate a job request to get started!'.tr();
         icon = Icons.pending_actions;
         break;
       case 'ongoing':
-        message = 'No ongoing jobs\nYour active jobs will appear here';
+        message = 'No ongoing jobs\nYour active jobs will appear here'.tr();
         icon = Icons.work_outline;
         break;
       case 'completed':
-        message = 'No completed jobs\nYour finished jobs will appear here';
+        message = 'No completed jobs\nYour finished jobs will appear here'.tr();
         icon = Icons.check_circle_outline;
         break;
       default:
-        message = 'No jobs found';
+        message = 'No jobs found'.tr();
         icon = Icons.work_off;
     }
 
@@ -639,9 +696,9 @@ class _Helpee15ActivityPendingPageState
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primaryGreen,
                 ),
-                child: const Text(
-                  'Create Job Request',
-                  style: TextStyle(color: AppColors.white),
+                child: Text(
+                  'Create Job Request'.tr(),
+                  style: const TextStyle(color: AppColors.white),
                 ),
               ),
             ],
@@ -715,21 +772,21 @@ class _Helpee15ActivityPendingPageState
   }
 
   Widget _buildNotLoggedInState() {
-    return const Center(
+    return Center(
       child: Padding(
-        padding: EdgeInsets.all(50.0),
+        padding: const EdgeInsets.all(50.0),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
+            const Icon(
               Icons.person_off,
               size: 64,
               color: AppColors.textSecondary,
             ),
-            SizedBox(height: 16),
+            const SizedBox(height: 16),
             Text(
-              'Please log in to view your jobs',
-              style: TextStyle(
+              'Please log in to view your jobs'.tr(),
+              style: const TextStyle(
                 fontSize: 16,
                 color: AppColors.textSecondary,
               ),
@@ -750,18 +807,19 @@ class _Helpee15ActivityPendingPageState
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: const Text('Cancel Job'),
+          title: Text('Cancel Job'.tr()),
           content: Text(
-              'Are you sure you want to cancel "${job['title'] ?? 'this job'}"? This action cannot be undone and the job will be permanently deleted.'),
+              'Are you sure you want to cancel "${job['title'] ?? 'this job'}"? This action cannot be undone and the job will be permanently deleted.'
+                  .tr()),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(false),
-              child: const Text('Keep Job'),
+              child: Text('Keep Job'.tr()),
             ),
             TextButton(
               onPressed: () => Navigator.of(context).pop(true),
               style: TextButton.styleFrom(foregroundColor: AppColors.error),
-              child: const Text('Cancel Job'),
+              child: Text('Cancel Job'.tr()),
             ),
           ],
         );
@@ -783,7 +841,8 @@ class _Helpee15ActivityPendingPageState
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
-                  '${job['title'] ?? 'Job'} cancelled and deleted successfully'),
+                  '${job['title'] ?? 'Job'} cancelled and deleted successfully'
+                      .tr()),
               backgroundColor: AppColors.success,
             ),
           );
@@ -797,7 +856,7 @@ class _Helpee15ActivityPendingPageState
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error cancelling job: $e'),
+            content: Text('Error cancelling job: $e'.tr()),
             backgroundColor: AppColors.error,
           ),
         );

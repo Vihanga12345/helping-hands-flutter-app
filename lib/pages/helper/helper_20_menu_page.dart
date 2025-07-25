@@ -288,6 +288,48 @@ class _Helper20MenuPageState extends State<Helper20MenuPage> {
                         ),
                       ),
 
+                      const SizedBox(height: 32),
+
+                      // Footer
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: AppColors.white,
+                          borderRadius: BorderRadius.circular(12),
+                          boxShadow: [
+                            BoxShadow(
+                              color:
+                                  AppColors.shadowColorLight.withOpacity(0.1),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: Column(
+                          children: [
+                            Text(
+                              'by your friend and neighbour',
+                              style: AppTextStyles.bodySmall.copyWith(
+                                color: AppColors.textSecondary,
+                                fontSize: 12,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              'Vihanga',
+                              style: AppTextStyles.bodyMedium.copyWith(
+                                color: AppColors.primaryGreen,
+                                fontWeight: FontWeight.w600,
+                                fontSize: 16,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ],
+                        ),
+                      ),
+
                       const SizedBox(height: 20),
                     ],
                   ),

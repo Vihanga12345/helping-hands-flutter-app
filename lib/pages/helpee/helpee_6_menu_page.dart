@@ -2,8 +2,11 @@ import 'package:flutter/material.dart';
 import '../../models/user_type.dart';
 import 'package:go_router/go_router.dart';
 import '../../utils/app_colors.dart';
+import '../../utils/app_text_styles.dart';
 import '../../widgets/common/app_header.dart';
 import '../../widgets/common/app_navigation_bar.dart';
+import '../../widgets/language_switcher.dart';
+import '../../services/user_data_service.dart';
 import '../../services/custom_auth_service.dart';
 import '../../services/localization_service.dart';
 import '../common/report_page.dart';
@@ -16,262 +19,373 @@ class Helpee6MenuPage extends StatefulWidget {
 }
 
 class _Helpee6MenuPageState extends State<Helpee6MenuPage> {
-  bool _isDarkMode = false;
-  final _authService = CustomAuthService();
+  final UserDataService _userDataService = UserDataService();
+  final CustomAuthService _authService = CustomAuthService();
+
+  Map<String, dynamic>? _userProfile;
+  Map<String, dynamic>? _userStatistics;
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserProfile();
+  }
+
+  Future<void> _loadUserProfile() async {
+    try {
+      setState(() {
+        _isLoading = true;
+      });
+
+      final currentUser = _authService.currentUser;
+      if (currentUser == null) {
+        print('❌ No current user found');
+        return;
+      }
+
+      _userProfile = await _userDataService.getCurrentUserProfile();
+
+      setState(() {
+        _isLoading = false;
+      });
+
+      print('✅ Menu profile data loaded successfully');
+    } catch (e) {
+      print('❌ Error loading menu profile data: $e');
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Column(
-        children: [
-          // Header
-          const AppHeader(
-            title: 'Menu',
-            showMenuButton: false,
+      body: Container(
+        width: double.infinity,
+        height: double.infinity,
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment(0.50, 0.00),
+            end: Alignment(0.50, 1.00),
+            colors: AppColors.backgroundGradient,
           ),
+        ),
+        child: SafeArea(
+          child: Column(
+            children: [
+              // Header
+              AppHeader(
+                title: 'Menu'.tr(),
+                showBackButton: true,
+                onBackPressed: () => context.pop(),
+              ),
 
-          // Content
-          Expanded(
-            child: Container(
-              color: AppColors.backgroundLight,
-              child: Padding(
-                padding: const EdgeInsets.all(24.0),
-                child: Column(
-                  children: [
-                    // Profile Section
-                    Container(
-                      padding: const EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        color: AppColors.white,
-                        borderRadius: BorderRadius.circular(16),
-                        boxShadow: [
-                          BoxShadow(
-                            color: AppColors.shadowColor.withOpacity(0.1),
-                            blurRadius: 10,
-                            offset: const Offset(0, 2),
-                          ),
+              // Content
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
+                    children: [
+                      // Profile Section
+                      Container(
+                        padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          color: AppColors.white,
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: const [
+                            BoxShadow(
+                              color: AppColors.shadowColorLight,
+                              blurRadius: 8,
+                              offset: Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: _isLoading
+                            ? const Center(
+                                child: Padding(
+                                  padding: EdgeInsets.all(20.0),
+                                  child: CircularProgressIndicator(
+                                    color: AppColors.primaryGreen,
+                                  ),
+                                ),
+                              )
+                            : Row(
+                                children: [
+                                  Container(
+                                    width: 60,
+                                    height: 60,
+                                    decoration: BoxDecoration(
+                                      color: AppColors.primaryGreen
+                                          .withOpacity(0.1),
+                                      borderRadius: BorderRadius.circular(30),
+                                    ),
+                                    child: ClipOval(
+                                      child:
+                                          _userProfile?['profile_image_url'] !=
+                                                  null
+                                              ? Image.network(
+                                                  _userProfile![
+                                                      'profile_image_url'],
+                                                  fit: BoxFit.cover,
+                                                  errorBuilder: (context, error,
+                                                          stackTrace) =>
+                                                      const Icon(
+                                                    Icons.person,
+                                                    size: 30,
+                                                    color:
+                                                        AppColors.primaryGreen,
+                                                  ),
+                                                )
+                                              : const Icon(
+                                                  Icons.person,
+                                                  size: 30,
+                                                  color: AppColors.primaryGreen,
+                                                ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 16),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          '${_userProfile?['first_name'] ?? ''} ${_userProfile?['last_name'] ?? ''}'
+                                              .trim(),
+                                          style:
+                                              AppTextStyles.heading3.copyWith(
+                                            fontWeight: FontWeight.w700,
+                                            color: AppColors.textPrimary,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          '${'Verified Helpee'.tr()}',
+                                          style:
+                                              AppTextStyles.bodyMedium.copyWith(
+                                            color: AppColors.textSecondary,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  IconButton(
+                                    onPressed: () {
+                                      context.push('/helpee/profile/edit');
+                                    },
+                                    icon: const Icon(
+                                      Icons.edit,
+                                      color: AppColors.primaryGreen,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                      ),
+
+                      const SizedBox(height: 24),
+
+                      // Menu Items
+                      _buildMenuSection(
+                        context,
+                        'Account & Activity'.tr(),
+                        [
+                          _MenuItem('Notifications'.tr(), Icons.notifications,
+                              () => context.go('/helpee/notifications')),
+                          _MenuItem('Payments'.tr(), Icons.payment,
+                              () => context.go('/helpee/payments')),
                         ],
                       ),
-                      child: Row(
-                        children: [
-                          const CircleAvatar(
-                            radius: 30,
-                            backgroundColor: AppColors.primaryGreen,
-                            child: Icon(
-                              Icons.person,
-                              size: 35,
-                              color: AppColors.white,
+
+                      const SizedBox(height: 16),
+
+                      // Settings Section with Language Switcher
+                      Container(
+                        decoration: BoxDecoration(
+                          color: AppColors.white,
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: const [
+                            BoxShadow(
+                              color: AppColors.shadowColorLight,
+                              blurRadius: 8,
+                              offset: Offset(0, 4),
                             ),
-                          ),
-                          const SizedBox(width: 16),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                _authService.currentUser != null
-                                    ? '${_authService.currentUser!['first_name'] ?? ''} ${_authService.currentUser!['last_name'] ?? ''}'
-                                        .trim()
-                                    : 'User'.tr(),
-                                style: const TextStyle(
-                                  fontSize: 18,
+                          ],
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Padding(
+                              padding: const EdgeInsets.fromLTRB(20, 20, 20, 8),
+                              child: Text(
+                                'Settings'.tr(),
+                                style: const TextStyle().copyWith(
                                   fontWeight: FontWeight.w600,
+                                  color: AppColors.primaryGreen,
                                 ),
-                              ),
-                              Text(
-                                'Helpee Account'.tr(),
-                                style: const TextStyle(
-                                  color: AppColors.textSecondary,
-                                  fontSize: 14,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-
-                    const SizedBox(height: 24),
-
-                    // Menu Items
-                    Expanded(
-                      child: ListView(
-                        children: [
-                          _buildMenuItem(
-                            icon: Icons.notifications,
-                            title: 'Notifications'.tr(),
-                            onTap: () => context.go('/helpee/notifications'),
-                          ),
-                          _buildDarkModeMenuItem(),
-                          _buildLanguageMenuItem(),
-                          _buildMenuItem(
-                            icon: Icons.help,
-                            title: 'Help & Support'.tr(),
-                            onTap: () => context.go('/helpee/help-support'),
-                          ),
-                          _buildMenuItem(
-                            icon: Icons.payment,
-                            title: 'Payments'.tr(),
-                            onTap: () => context.go('/helpee/payments'),
-                          ),
-                          _buildMenuItem(
-                            icon: Icons.info,
-                            title: 'About Us'.tr(),
-                            onTap: () => context.go('/helpee/about-us'),
-                          ),
-                          _buildMenuItem(
-                            icon: Icons.report_problem,
-                            title: 'Report Issue'.tr(),
-                            onTap: () => Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) =>
-                                    const ReportPage(userType: 'helpee'),
                               ),
                             ),
-                          ),
-                          _buildMenuItem(
-                            icon: Icons.logout,
-                            title: 'Logout'.tr(),
-                            onTap: () {
-                              _showLogoutDialog(context);
-                            },
-                            isDestructive: true,
-                          ),
+                            const LanguageSwitcher(),
+                            const SizedBox(height: 8),
+                          ],
+                        ),
+                      ),
+
+                      const SizedBox(height: 16),
+
+                      _buildMenuSection(
+                        context,
+                        'Support & Information'.tr(),
+                        [
+                          _MenuItem('Help & Support'.tr(), Icons.help_outline,
+                              () => context.go('/helpee/help-support')),
+                          _MenuItem(
+                              'Report Issue'.tr(),
+                              Icons.report_problem,
+                              () => Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) =>
+                                          const ReportPage(userType: 'helpee'),
+                                    ),
+                                  )),
+                          _MenuItem('About Us'.tr(), Icons.info_outline,
+                              () => context.go('/helpee/about-us')),
                         ],
                       ),
-                    ),
-                  ],
+
+                      const SizedBox(height: 32),
+
+                      // Logout Button
+                      SizedBox(
+                        width: double.infinity,
+                        height: 56,
+                        child: OutlinedButton.icon(
+                          onPressed: () => _showLogoutDialog(context),
+                          icon:
+                              const Icon(Icons.logout, color: AppColors.error),
+                          label: Text(
+                            'Logout'.tr(),
+                            style: const TextStyle().copyWith(
+                              color: AppColors.error,
+                            ),
+                          ),
+                          style: OutlinedButton.styleFrom(
+                            side: const BorderSide(color: AppColors.error),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                        ),
+                      ),
+
+                      const SizedBox(height: 32),
+
+                      // Footer
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: AppColors.white,
+                          borderRadius: BorderRadius.circular(12),
+                          boxShadow: [
+                            BoxShadow(
+                              color:
+                                  AppColors.shadowColorLight.withOpacity(0.1),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: Column(
+                          children: [
+                            Text(
+                              'by your friend and neighbour',
+                              style: AppTextStyles.bodySmall.copyWith(
+                                color: AppColors.textSecondary,
+                                fontSize: 12,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              'Vihanga',
+                              style: AppTextStyles.bodyMedium.copyWith(
+                                color: AppColors.primaryGreen,
+                                fontWeight: FontWeight.w600,
+                                fontSize: 16,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ],
+                        ),
+                      ),
+
+                      const SizedBox(height: 20),
+                    ],
+                  ),
                 ),
               ),
-            ),
-          ),
 
-          // Navigation Bar
-          const AppNavigationBar(
-            currentTab: NavigationTab.home,
-            userType: UserType.helpee,
+              // Navigation Bar
+              const AppNavigationBar(
+                currentTab: NavigationTab.home,
+                userType: UserType.helpee,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMenuSection(
+      BuildContext context, String title, List<_MenuItem> items) {
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: const [
+          BoxShadow(
+            color: AppColors.shadowColorLight,
+            blurRadius: 8,
+            offset: Offset(0, 4),
           ),
         ],
       ),
-    );
-  }
-
-  Widget _buildMenuItem({
-    required IconData icon,
-    required String title,
-    required VoidCallback onTap,
-    bool isDestructive = false,
-  }) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      child: ListTile(
-        leading: Icon(
-          icon,
-          color: isDestructive ? AppColors.error : AppColors.primaryGreen,
-        ),
-        title: Text(
-          title,
-          style: TextStyle(
-            color: isDestructive ? AppColors.error : AppColors.textPrimary,
-            fontSize: 16,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-        trailing: const Icon(
-          Icons.arrow_forward_ios,
-          size: 16,
-          color: AppColors.textSecondary,
-        ),
-        onTap: onTap,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
-        tileColor: AppColors.white,
-      ),
-    );
-  }
-
-  Widget _buildDarkModeMenuItem() {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      child: ListTile(
-        leading: const Icon(
-          Icons.dark_mode,
-          color: AppColors.primaryGreen,
-        ),
-        title: Text(
-          'Dark Mode'.tr(),
-          style: const TextStyle(
-            color: AppColors.textPrimary,
-            fontSize: 16,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-        trailing: Switch(
-          value: _isDarkMode,
-          onChanged: (value) {
-            setState(() {
-              _isDarkMode = value;
-            });
-          },
-          activeColor: AppColors.primaryGreen,
-        ),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
-        tileColor: AppColors.white,
-      ),
-    );
-  }
-
-  Widget _buildLanguageMenuItem() {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      child: ListTile(
-        leading: const Icon(
-          Icons.language,
-          color: AppColors.primaryGreen,
-        ),
-        title: Text(
-          'Language'.tr(),
-          style: const TextStyle(
-            color: AppColors.textPrimary,
-            fontSize: 16,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-        trailing: DropdownButton<String>(
-          value: LocalizationService().currentLanguage,
-          underline: Container(),
-          icon: const Icon(
-            Icons.arrow_drop_down,
-            color: AppColors.primaryGreen,
-          ),
-          items: const [
-            DropdownMenuItem(
-              value: 'en',
-              child: Text('English'),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 20, 20, 8),
+            child: Text(
+              title,
+              style: const TextStyle().copyWith(
+                fontWeight: FontWeight.w600,
+                color: AppColors.primaryGreen,
+              ),
             ),
-            DropdownMenuItem(
-              value: 'si',
-              child: Text('සිංහල'),
-            ),
-            DropdownMenuItem(
-              value: 'ta',
-              child: Text('தமிழ්'),
-            ),
-          ],
-          onChanged: (String? newLanguage) {
-            if (newLanguage != null) {
-              LocalizationService().changeLanguage(newLanguage);
-              setState(() {}); // Refresh the menu page immediately
-            }
-          },
-        ),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
-        tileColor: AppColors.white,
+          ),
+          ...items.asMap().entries.map((entry) {
+            final index = entry.key;
+            final item = entry.value;
+            return Column(
+              children: [
+                ListTile(
+                  leading: Icon(item.icon, color: AppColors.textSecondary),
+                  title: Text(item.title, style: const TextStyle()),
+                  trailing: const Icon(Icons.chevron_right,
+                      color: AppColors.textSecondary),
+                  onTap: item.onTap,
+                ),
+                if (index < items.length - 1)
+                  const Divider(height: 1, indent: 72),
+              ],
+            );
+          }).toList(),
+          const SizedBox(height: 8),
+        ],
       ),
     );
   }
@@ -288,22 +402,33 @@ class _Helpee6MenuPageState extends State<Helpee6MenuPage> {
               onPressed: () => Navigator.of(context).pop(),
               child: Text('Cancel'.tr()),
             ),
-            TextButton(
+            ElevatedButton(
               onPressed: () async {
                 Navigator.of(context).pop();
                 await _authService.logout();
                 if (context.mounted) {
                   context.go('/');
                 }
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Logged out successfully'.tr())),
+                );
               },
-              child: Text(
-                'Logout'.tr(),
-                style: const TextStyle(color: AppColors.error),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.error,
               ),
+              child: Text('Logout'.tr()),
             ),
           ],
         );
       },
     );
   }
+}
+
+class _MenuItem {
+  final String title;
+  final IconData icon;
+  final VoidCallback onTap;
+
+  _MenuItem(this.title, this.icon, this.onTap);
 }

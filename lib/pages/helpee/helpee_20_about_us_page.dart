@@ -65,18 +65,18 @@ class Helpee20AboutUsPage extends StatelessWidget {
                               width: 80,
                             ),
                             const SizedBox(height: 16),
-                            const Text(
-                              'Helping Hands',
-                              style: TextStyle(
+                            Text(
+                              'Helping Hands'.tr(),
+                              style: const TextStyle(
                                 fontSize: 24,
                                 fontWeight: FontWeight.bold,
                                 color: AppColors.primaryGreen,
                               ),
                             ),
                             const SizedBox(height: 8),
-                            const Text(
-                              'Connecting Communities, One Task at a Time',
-                              style: TextStyle(
+                            Text(
+                              'Connecting Communities, One Task at a Time'.tr(),
+                              style: const TextStyle(
                                 fontSize: 16,
                                 color: AppColors.textSecondary,
                               ),
@@ -90,9 +90,10 @@ class Helpee20AboutUsPage extends StatelessWidget {
 
                       // Mission Section
                       _buildInfoCard(
-                        title: 'Our Mission',
+                        title: 'Our Mission'.tr(),
                         content:
-                            'To create a trusted platform that connects people who need household assistance with skilled helpers in their community. We believe in empowering individuals through meaningful work opportunities while making life easier for busy families.',
+                            'To create a trusted platform that connects people who need household assistance with skilled helpers in their community. We believe in empowering individuals through meaningful work opportunities while making life easier for busy families.'
+                                .tr(),
                         icon: Icons.flag,
                       ),
 
@@ -100,9 +101,10 @@ class Helpee20AboutUsPage extends StatelessWidget {
 
                       // Vision Section
                       _buildInfoCard(
-                        title: 'Our Vision',
+                        title: 'Our Vision'.tr(),
                         content:
-                            'To be Sri Lanka\'s leading household services platform, fostering a community where everyone can access reliable help and create sustainable livelihoods through dignified work.',
+                            'To be Sri Lanka\'s leading household services platform, fostering a community where everyone can access reliable help and create sustainable livelihoods through dignified work.'
+                                .tr(),
                         icon: Icons.visibility,
                       ),
 
@@ -110,9 +112,10 @@ class Helpee20AboutUsPage extends StatelessWidget {
 
                       // Values Section
                       _buildInfoCard(
-                        title: 'Our Values',
+                        title: 'Our Values'.tr(),
                         content:
-                            '• Trust & Safety: Verified helpers and secure payments\n• Quality Service: Skilled professionals you can rely on\n• Community: Supporting local workers and families\n• Transparency: Clear pricing and honest reviews\n• Respect: Treating everyone with dignity and fairness',
+                            '• Trust & Safety: Verified helpers and secure payments\n• Quality Service: Skilled professionals you can rely on\n• Community: Supporting local workers and families\n• Transparency: Clear pricing and honest reviews\n• Respect: Treating everyone with dignity and fairness'
+                                .tr(),
                         icon: Icons.favorite,
                       ),
 
@@ -120,9 +123,10 @@ class Helpee20AboutUsPage extends StatelessWidget {
 
                       // How It Works
                       _buildInfoCard(
-                        title: 'How It Works',
+                        title: 'How It Works'.tr(),
                         content:
-                            '1. Post Your Request: Describe what help you need\n2. Get Matched: Browse qualified helpers in your area\n3. Chat & Hire: Connect directly with your chosen helper\n4. Service Delivered: Get the job done professionally\n5. Pay Securely: Cashless transactions through the app\n6. Rate & Review: Share your experience with the community',
+                            '1. Post Your Request: Describe what help you need\n2. Get Matched: Browse qualified helpers in your area\n3. Chat & Hire: Connect directly with your chosen helper\n4. Service Delivered: Get the job done professionally\n5. Pay Securely: Cashless transactions through the app\n6. Rate & Review: Share your experience with the community'
+                                .tr(),
                         icon: Icons.info_outline,
                       ),
 
@@ -162,9 +166,9 @@ class Helpee20AboutUsPage extends StatelessWidget {
                                   ),
                                 ),
                                 const SizedBox(width: 12),
-                                const Text(
-                                  'Contact Us',
-                                  style: TextStyle(
+                                Text(
+                                  'Contact Us'.tr(),
+                                  style: const TextStyle(
                                     fontSize: 18,
                                     fontWeight: FontWeight.w600,
                                   ),

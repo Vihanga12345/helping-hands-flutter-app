@@ -469,7 +469,11 @@ class _Helper21ProfilePageProfileTabState
             children: [
               _buildStatItem('Jobs', '${stats['total_jobs']}'),
               _buildStatItem('Rating', '${stats['rating'].toStringAsFixed(1)}'),
-              _buildStatItem('Reviews', '${stats['total_reviews']}'),
+              _buildClickableStatItem('Reviews', '${stats['total_reviews']}',
+                  onTap: () {
+                // Navigate to reviews page
+                context.push('/helper/reviews');
+              }),
             ],
           ),
         ],
@@ -899,6 +903,32 @@ class _Helper21ProfilePageProfileTabState
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildClickableStatItem(String label, String value,
+      {VoidCallback? onTap}) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Column(
+        children: [
+          Text(
+            value,
+            style: const TextStyle(
+              color: AppColors.primaryGreen,
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 14,
+              color: AppColors.textSecondary,
+            ),
+          ),
+        ],
+      ),
     );
   }
 

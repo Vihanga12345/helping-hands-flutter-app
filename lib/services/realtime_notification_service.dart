@@ -209,12 +209,18 @@ class RealTimeNotificationService {
   void _showMessagePopup(BuildContext context, String senderName,
       String messageText, String conversationId, String? senderImageUrl) {
     try {
-      MessageNotificationPopup.show(
-        context,
-        senderName: senderName,
-        messageText: messageText,
-        conversationId: conversationId,
-        senderImageUrl: senderImageUrl,
+      // Import the updated message notification popup
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        barrierColor: Colors.transparent,
+        builder: (BuildContext dialogContext) => MessageNotificationPopup(
+          senderName: senderName,
+          messageText: messageText,
+          conversationId: conversationId,
+          senderImageUrl: senderImageUrl,
+          onClose: () => Navigator.of(dialogContext).pop(),
+        ),
       );
       print('✅ Message popup shown for $senderName');
     } catch (e) {
@@ -333,9 +339,9 @@ class RealTimeNotificationService {
             print('📝 Job created/published - showing popup');
             _popupService.showJobCreatedPopup(jobData);
           }
-        break;
+          break;
 
-          case 'accepted':
+        case 'accepted':
           if (oldStatus == 'pending' || oldStatus == null) {
             // Job was accepted by helper
             print('✅ Job accepted - showing popup');
@@ -349,9 +355,9 @@ class RealTimeNotificationService {
             print('❌ Job rejected - showing popup');
             _popupService.showJobRejectedPopup(jobData);
           }
-            break;
+          break;
 
-          case 'started':
+        case 'started':
         case 'ongoing':
           if (oldStatus == 'accepted' ||
               oldStatus == 'pending' ||
@@ -360,25 +366,25 @@ class RealTimeNotificationService {
             print('🚀 Job started - showing popup');
             _popupService.showJobStartedPopup(jobData);
           }
-            break;
+          break;
 
-          case 'paused':
+        case 'paused':
           if (oldStatus == 'started' || oldStatus == 'ongoing') {
             // Job was paused by helper
             print('⏸️ Job paused - showing popup');
             _popupService.showJobPausedPopup(jobData);
           }
-            break;
+          break;
 
-          case 'resumed':
+        case 'resumed':
           if (oldStatus == 'paused') {
             // Job was resumed by helper
             print('▶️ Job resumed - showing popup');
             _popupService.showJobResumedPopup(jobData);
           }
-            break;
+          break;
 
-          case 'completed':
+        case 'completed':
           if (oldStatus == 'started' ||
               oldStatus == 'ongoing' ||
               oldStatus == 'resumed' ||
@@ -396,14 +402,14 @@ class RealTimeNotificationService {
               });
             }
           }
-            break;
+          break;
 
         case 'payment_confirmed':
           // Both users confirmed payment - navigate to rating
           print('💳 Payment confirmed, navigating to rating...');
           await _navigateToRating(jobId);
-            break;
-        }
+          break;
+      }
     } catch (e) {
       print('❌ Error handling job status transition: $e');
     }
